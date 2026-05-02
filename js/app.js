@@ -140,7 +140,8 @@ function renderAuth() {
   return `
     <div class="screen screen-auth">
       <div class="auth-hero">
-        <div class="logo-mark">S</div>
+        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png"
+          class="logo-img" alt="Severo">
         <h1 class="logo-title">Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>

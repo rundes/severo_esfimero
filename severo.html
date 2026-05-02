@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#1565C0">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png">
+  <link rel="apple-touch-icon" href="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png">
   <title>Severo — Relevamientos</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
@@ -192,6 +194,14 @@ html, body {
   justify-content: center;
   color: #fff;
   margin-bottom: 16px;
+}
+
+.logo-img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
 }
 
 .logo-title {
@@ -1643,7 +1653,8 @@ function renderAuth() {
   return `
     <div class="screen screen-auth">
       <div class="auth-hero">
-        <div class="logo-mark">S</div>
+        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png"
+          class="logo-img" alt="Severo">
         <h1 class="logo-title">Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>

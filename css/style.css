@@ -183,6 +183,14 @@ html, body {
   margin-bottom: 16px;
 }
 
+.logo-img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
+}
+
 .logo-title {
   font-size: 2rem;
   font-weight: 800;
