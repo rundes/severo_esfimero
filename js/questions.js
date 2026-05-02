@@ -1,11 +1,36 @@
 const PREGUNTAS = {
   ciudadano: [
     {
-      id: 'nombre',
-      label: 'Nombre completo',
+      id: 'dni',
+      label: 'DNI',
+      type: 'text',
+      required: false,
+      placeholder: 'Número de documento',
+      padronKey: true,
+    },
+    {
+      id: 'apellido',
+      label: 'Apellido',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
+      padronField: 'apellido',
+    },
+    {
+      id: 'nombre',
+      label: 'Nombre',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'nombre',
+    },
+    {
+      id: 'domicilio',
+      label: 'Domicilio',
+      type: 'text',
+      required: false,
+      placeholder: 'Calle y número',
+      padronField: 'domicilio',
     },
     {
       id: 'edad',
@@ -117,9 +142,41 @@ const PREGUNTAS = {
   sociohabitacional: [
     // BLOQUE 1 — Identificación
     {
-      id: 'barrio',
+      id: 'dni',
       block: 'Identificación y localización',
-      label: 'Barrio',
+      label: 'DNI',
+      type: 'text',
+      required: false,
+      placeholder: 'Número de documento',
+      padronKey: true,
+    },
+    {
+      id: 'apellido',
+      label: 'Apellido',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'apellido',
+    },
+    {
+      id: 'nombre',
+      label: 'Nombre',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'nombre',
+    },
+    {
+      id: 'domicilio',
+      label: 'Domicilio',
+      type: 'text',
+      required: false,
+      placeholder: 'Calle y número',
+      padronField: 'domicilio',
+    },
+    {
+      id: 'barrio',
+      label: 'Barrio / Distrito',
       type: 'radio',
       required: false,
       options: [

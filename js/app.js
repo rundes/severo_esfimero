@@ -9,12 +9,14 @@ const State = {
   screen: 'auth',
   user: null,
   location: null,
-  surveyType: null,   // 'ciudadano' | 'problematica'
+  surveyType: null,   // 'ciudadano' | 'problematica' | 'sociohabitacional'
   answers: {},
   currentQ: 0,
   surveys: [],
   detailRecord: null,
   toast: null,
+  padronLoaded: false,   // true si ya se hizo la búsqueda en este relevamiento
+  padronFilled: {},      // { [questionId]: true } para campos pre-llenados desde el padrón
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -309,7 +311,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  go('survey', { surveyType: type, currentQ: 0, answers: {} });
+  go('survey', { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {} });
 }
 
 function renderSurvey() {
@@ -350,6 +352,7 @@ function renderSurvey() {
         <label class="question-label">
           ${q.label}
           ${q.required ? '<span class="required">*</span>' : ''}
+          ${q.padronField && State.padronFilled[q.id] ? '<span class="padron-badge">padrón</span>' : ''}
         </label>
         ${q.hint ? `<p class="question-hint">${q.hint}</p>` : ''}
         <div class="question-input">
@@ -451,7 +454,7 @@ function surveyBack() {
   }
 }
 
-function surveyNext(skip) {
+async function surveyNext(skip) {
   const questions = PREGUNTAS[State.surveyType] || [];
   const q = questions[State.currentQ];
 
@@ -465,6 +468,11 @@ function surveyNext(skip) {
     }
   }
 
+  // Búsqueda en el padrón al salir del campo DNI
+  if (!skip && q.padronKey && State.answers[q.id] && !State.padronLoaded) {
+    await doPadronLookup(q, questions);
+  }
+
   const next = nextVisibleIdx(State.currentQ, questions);
   if (next >= questions.length) {
     go('summary');
@@ -472,6 +480,36 @@ function surveyNext(skip) {
     State.currentQ = next;
     render();
   }
+}
+
+async function doPadronLookup(dniQuestion, questions) {
+  const dni = String(State.answers[dniQuestion.id]).trim();
+  if (!dni) return;
+
+  State.padronLoaded = true;
+
+  let record;
+  try {
+    record = CONFIG.USE_MOCK
+      ? Padron.searchByDNI(dni)
+      : await Padron.searchByDNIAsync(dni);
+  } catch {
+    return;
+  }
+
+  if (!record) return; // ciudadano nuevo, sin datos previos
+
+  // Pre-llenar campos mapeados que todavía no tienen respuesta
+  let filled = 0;
+  questions.forEach((q) => {
+    if (q.padronField && record[q.padronField] !== undefined && !State.answers[q.id]) {
+      State.answers[q.id] = record[q.padronField];
+      State.padronFilled[q.id] = true;
+      filled++;
+    }
+  });
+
+  if (filled > 0) showToast('Datos del ciudadano cargados del padrón');
 }
 
 function renderSummary() {
@@ -525,6 +563,20 @@ async function doSave() {
       answers: { ...State.answers },
     };
     await SheetsDB.save(State.surveyType, record);
+
+    // Upsert en el padrón si hay DNI
+    const questions = PREGUNTAS[State.surveyType] || [];
+    const dniQ = questions.find((q) => q.padronKey);
+    if (dniQ && State.answers[dniQ.id]) {
+      const padronRecord = { dni: String(State.answers[dniQ.id]).trim() };
+      questions.forEach((q) => {
+        if (q.padronField && State.answers[q.id] !== undefined && State.answers[q.id] !== '') {
+          padronRecord[q.padronField] = State.answers[q.id];
+        }
+      });
+      try { await Padron.upsertByDNI(padronRecord); } catch { /* no bloquea el guardado */ }
+    }
+
     go('done');
   } catch (err) {
     go('summary');

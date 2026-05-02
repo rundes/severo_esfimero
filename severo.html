@@ -385,6 +385,21 @@ html, body {
 
 .required { color: var(--error); margin-left: 4px; }
 
+.padron-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: #E0F2F1;
+  border: 1px solid #80CBC4;
+  border-radius: 4px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
 .question-hint {
   font-size: .85rem;
   color: var(--text-2);
@@ -585,6 +600,7 @@ html, body {
   <div id="app">
     <div class="loading-init">Cargando…</div>
   </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
 const CONFIG = {
@@ -593,20 +609,48 @@ const CONFIG = {
   SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
   SHEET_CIUDADANOS: 'Ciudadanos',
   SHEET_PROBLEMATICAS: 'Problematicas',
+  SHEET_SOCIOHABITACIONAL: 'Sociohabitacional',
+  SHEET_PADRON: 'Padron',
 
   // true = usa localStorage (prototipo), false = usa Google Sheets API real
   USE_MOCK: true,
 };
 
-
+  </script>
+  <script>
 const PREGUNTAS = {
   ciudadano: [
     {
-      id: 'nombre',
-      label: 'Nombre completo',
+      id: 'dni',
+      label: 'DNI',
+      type: 'text',
+      required: false,
+      placeholder: 'Número de documento',
+      padronKey: true,
+    },
+    {
+      id: 'apellido',
+      label: 'Apellido',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
+      padronField: 'apellido',
+    },
+    {
+      id: 'nombre',
+      label: 'Nombre',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'nombre',
+    },
+    {
+      id: 'domicilio',
+      label: 'Domicilio',
+      type: 'text',
+      required: false,
+      placeholder: 'Calle y número',
+      padronField: 'domicilio',
     },
     {
       id: 'edad',
@@ -718,9 +762,41 @@ const PREGUNTAS = {
   sociohabitacional: [
     // BLOQUE 1 — Identificación
     {
-      id: 'barrio',
+      id: 'dni',
       block: 'Identificación y localización',
-      label: 'Barrio',
+      label: 'DNI',
+      type: 'text',
+      required: false,
+      placeholder: 'Número de documento',
+      padronKey: true,
+    },
+    {
+      id: 'apellido',
+      label: 'Apellido',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'apellido',
+    },
+    {
+      id: 'nombre',
+      label: 'Nombre',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+      padronField: 'nombre',
+    },
+    {
+      id: 'domicilio',
+      label: 'Domicilio',
+      type: 'text',
+      required: false,
+      placeholder: 'Calle y número',
+      padronField: 'domicilio',
+    },
+    {
+      id: 'barrio',
+      label: 'Barrio / Distrito',
       type: 'radio',
       required: false,
       options: [
@@ -967,7 +1043,8 @@ const PREGUNTAS = {
   ],
 };
 
-
+  </script>
+  <script>
 const Geo = {
   async getLocation() {
     return new Promise((resolve, reject) => {
@@ -1005,7 +1082,8 @@ const Geo = {
   },
 };
 
-
+  </script>
+  <script>
 const SheetsDB = {
   async save(type, record) {
     if (CONFIG.USE_MOCK) return this._mockSave(type, record);
@@ -1122,9 +1200,10 @@ const SheetsDB = {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
-        return { ...base, answers: { nombre: row[7], edad: row[8], residencia: row[9],
-          calidad_vida: row[10], problemas: row[11] ? row[11].split(', ') : [],
-          mejoras: row[12], comentarios: row[13] } };
+        return { ...base, answers: { dni: row[7], apellido: row[8], nombre: row[9],
+          domicilio: row[10], edad: row[11], residencia: row[12],
+          calidad_vida: row[13], problemas: row[14] ? row[14].split(', ') : [],
+          mejoras: row[15], comentarios: row[16] } };
       } else {
         return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
           urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
@@ -1133,7 +1212,97 @@ const SheetsDB = {
   },
 };
 
+// ── Padrón de ciudadanos ─────────────────────────────────────────────────────
+// Columns: DNI | Nombre | Apellido | Domicilio | ActualizadoEn
 
+const Padron = {
+  searchByDNI(dni) {
+    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
+    return null; // modo API: usar searchByDNIAsync
+  },
+
+  async searchByDNIAsync(dni) {
+    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
+    return this._apiSearch(dni);
+  },
+
+  async upsertByDNI(record) {
+    if (CONFIG.USE_MOCK) return this._mockUpsert(record);
+    return this._apiUpsert(record);
+  },
+
+  // ── Mock ──────────────────────────────────────────────────────────────────
+
+  _mockSearch(dni) {
+    if (!dni) return null;
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    return items.find((r) => r.dni === String(dni).trim()) || null;
+  },
+
+  _mockUpsert(record) {
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    const idx = items.findIndex((r) => r.dni === String(record.dni).trim());
+    const updated = { ...record, updatedAt: new Date().toISOString() };
+    if (idx >= 0) items[idx] = { ...items[idx], ...updated };
+    else items.push(updated);
+    localStorage.setItem('severo_padron', JSON.stringify(items));
+    return updated;
+  },
+
+  // ── Google Sheets API ────────────────────────────────────────────────────
+
+  async _apiSearch(dni) {
+    const token = SheetsDB._getToken();
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${CONFIG.SHEET_PADRON}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const data = await res.json();
+    const found = (data.values || []).slice(1).find((r) => r[0] === String(dni).trim());
+    if (!found) return null;
+    return { dni: found[0], nombre: found[1] || '', apellido: found[2] || '', domicilio: found[3] || '' };
+  },
+
+  async _apiUpsert(record) {
+    const token = SheetsDB._getToken();
+    const sheet = CONFIG.SHEET_PADRON;
+
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const data = await res.json();
+    const rows = data.values || [];
+    const rowIdx = rows.slice(1).findIndex((r) => r[0] === String(record.dni).trim());
+    const row = [record.dni, record.nombre || '', record.apellido || '', record.domicilio || '', new Date().toISOString()];
+
+    if (rowIdx >= 0) {
+      const range = `${sheet}!A${rowIdx + 2}:E${rowIdx + 2}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [row] }),
+        }
+      );
+    } else {
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}!A1:append?valueInputOption=USER_ENTERED`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [row] }),
+        }
+      );
+    }
+  },
+};
+
+  </script>
+  <script>
 const Auth = {
   _user: null,
 
@@ -1184,7 +1353,8 @@ const Auth = {
   },
 };
 
-
+  </script>
+  <script>
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
 let _map = null;
@@ -1196,12 +1366,14 @@ const State = {
   screen: 'auth',
   user: null,
   location: null,
-  surveyType: null,   // 'ciudadano' | 'problematica'
+  surveyType: null,   // 'ciudadano' | 'problematica' | 'sociohabitacional'
   answers: {},
   currentQ: 0,
   surveys: [],
   detailRecord: null,
   toast: null,
+  padronLoaded: false,   // true si ya se hizo la búsqueda en este relevamiento
+  padronFilled: {},      // { [questionId]: true } para campos pre-llenados desde el padrón
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -1496,7 +1668,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  go('survey', { surveyType: type, currentQ: 0, answers: {} });
+  go('survey', { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {} });
 }
 
 function renderSurvey() {
@@ -1537,6 +1709,7 @@ function renderSurvey() {
         <label class="question-label">
           ${q.label}
           ${q.required ? '<span class="required">*</span>' : ''}
+          ${q.padronField && State.padronFilled[q.id] ? '<span class="padron-badge">padrón</span>' : ''}
         </label>
         ${q.hint ? `<p class="question-hint">${q.hint}</p>` : ''}
         <div class="question-input">
@@ -1638,7 +1811,7 @@ function surveyBack() {
   }
 }
 
-function surveyNext(skip) {
+async function surveyNext(skip) {
   const questions = PREGUNTAS[State.surveyType] || [];
   const q = questions[State.currentQ];
 
@@ -1652,6 +1825,11 @@ function surveyNext(skip) {
     }
   }
 
+  // Búsqueda en el padrón al salir del campo DNI
+  if (!skip && q.padronKey && State.answers[q.id] && !State.padronLoaded) {
+    await doPadronLookup(q, questions);
+  }
+
   const next = nextVisibleIdx(State.currentQ, questions);
   if (next >= questions.length) {
     go('summary');
@@ -1659,6 +1837,36 @@ function surveyNext(skip) {
     State.currentQ = next;
     render();
   }
+}
+
+async function doPadronLookup(dniQuestion, questions) {
+  const dni = String(State.answers[dniQuestion.id]).trim();
+  if (!dni) return;
+
+  State.padronLoaded = true;
+
+  let record;
+  try {
+    record = CONFIG.USE_MOCK
+      ? Padron.searchByDNI(dni)
+      : await Padron.searchByDNIAsync(dni);
+  } catch {
+    return;
+  }
+
+  if (!record) return; // ciudadano nuevo, sin datos previos
+
+  // Pre-llenar campos mapeados que todavía no tienen respuesta
+  let filled = 0;
+  questions.forEach((q) => {
+    if (q.padronField && record[q.padronField] !== undefined && !State.answers[q.id]) {
+      State.answers[q.id] = record[q.padronField];
+      State.padronFilled[q.id] = true;
+      filled++;
+    }
+  });
+
+  if (filled > 0) showToast('Datos del ciudadano cargados del padrón');
 }
 
 function renderSummary() {
@@ -1712,6 +1920,20 @@ async function doSave() {
       answers: { ...State.answers },
     };
     await SheetsDB.save(State.surveyType, record);
+
+    // Upsert en el padrón si hay DNI
+    const questions = PREGUNTAS[State.surveyType] || [];
+    const dniQ = questions.find((q) => q.padronKey);
+    if (dniQ && State.answers[dniQ.id]) {
+      const padronRecord = { dni: String(State.answers[dniQ.id]).trim() };
+      questions.forEach((q) => {
+        if (q.padronField && State.answers[q.id] !== undefined && State.answers[q.id] !== '') {
+          padronRecord[q.padronField] = State.answers[q.id];
+        }
+      });
+      try { await Padron.upsertByDNI(padronRecord); } catch { /* no bloquea el guardado */ }
+    }
+
     go('done');
   } catch (err) {
     go('summary');

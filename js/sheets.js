@@ -114,13 +114,103 @@ const SheetsDB = {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
-        return { ...base, answers: { nombre: row[7], edad: row[8], residencia: row[9],
-          calidad_vida: row[10], problemas: row[11] ? row[11].split(', ') : [],
-          mejoras: row[12], comentarios: row[13] } };
+        return { ...base, answers: { dni: row[7], apellido: row[8], nombre: row[9],
+          domicilio: row[10], edad: row[11], residencia: row[12],
+          calidad_vida: row[13], problemas: row[14] ? row[14].split(', ') : [],
+          mejoras: row[15], comentarios: row[16] } };
       } else {
         return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
           urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
       }
     });
+  },
+};
+
+// ── Padrón de ciudadanos ─────────────────────────────────────────────────────
+// Columns: DNI | Nombre | Apellido | Domicilio | ActualizadoEn
+
+const Padron = {
+  searchByDNI(dni) {
+    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
+    return null; // modo API: usar searchByDNIAsync
+  },
+
+  async searchByDNIAsync(dni) {
+    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
+    return this._apiSearch(dni);
+  },
+
+  async upsertByDNI(record) {
+    if (CONFIG.USE_MOCK) return this._mockUpsert(record);
+    return this._apiUpsert(record);
+  },
+
+  // ── Mock ──────────────────────────────────────────────────────────────────
+
+  _mockSearch(dni) {
+    if (!dni) return null;
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    return items.find((r) => r.dni === String(dni).trim()) || null;
+  },
+
+  _mockUpsert(record) {
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    const idx = items.findIndex((r) => r.dni === String(record.dni).trim());
+    const updated = { ...record, updatedAt: new Date().toISOString() };
+    if (idx >= 0) items[idx] = { ...items[idx], ...updated };
+    else items.push(updated);
+    localStorage.setItem('severo_padron', JSON.stringify(items));
+    return updated;
+  },
+
+  // ── Google Sheets API ────────────────────────────────────────────────────
+
+  async _apiSearch(dni) {
+    const token = SheetsDB._getToken();
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${CONFIG.SHEET_PADRON}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const data = await res.json();
+    const found = (data.values || []).slice(1).find((r) => r[0] === String(dni).trim());
+    if (!found) return null;
+    return { dni: found[0], nombre: found[1] || '', apellido: found[2] || '', domicilio: found[3] || '' };
+  },
+
+  async _apiUpsert(record) {
+    const token = SheetsDB._getToken();
+    const sheet = CONFIG.SHEET_PADRON;
+
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const data = await res.json();
+    const rows = data.values || [];
+    const rowIdx = rows.slice(1).findIndex((r) => r[0] === String(record.dni).trim());
+    const row = [record.dni, record.nombre || '', record.apellido || '', record.domicilio || '', new Date().toISOString()];
+
+    if (rowIdx >= 0) {
+      const range = `${sheet}!A${rowIdx + 2}:E${rowIdx + 2}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [row] }),
+        }
+      );
+    } else {
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}!A1:append?valueInputOption=USER_ENTERED`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [row] }),
+        }
+      );
+    }
   },
 };

@@ -4,6 +4,8 @@ const CONFIG = {
   SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
   SHEET_CIUDADANOS: 'Ciudadanos',
   SHEET_PROBLEMATICAS: 'Problematicas',
+  SHEET_SOCIOHABITACIONAL: 'Sociohabitacional',
+  SHEET_PADRON: 'Padron',
 
   // true = usa localStorage (prototipo), false = usa Google Sheets API real
   USE_MOCK: true,
