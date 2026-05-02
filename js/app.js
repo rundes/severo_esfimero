@@ -17,6 +17,7 @@ const State = {
   toast: null,
   padronLoaded: false,   // true si ya se hizo la búsqueda en este relevamiento
   padronFilled: {},      // { [questionId]: true } para campos pre-llenados desde el padrón
+  padronMeta:   null,    // { coordRange } para saber dónde escribir lat/lng en el sheet
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -311,7 +312,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  go('survey', { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {} });
+  go('survey', { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null });
 }
 
 function renderSurvey() {
@@ -497,7 +498,10 @@ async function doPadronLookup(dniQuestion, questions) {
     return;
   }
 
-  if (!record) return; // ciudadano nuevo, sin datos previos
+  if (!record) return; // ciudadano no encontrado en el padrón
+
+  // Guardar meta para el update de lat/lng al guardar
+  State.padronMeta = record._meta || null;
 
   // Pre-llenar campos mapeados que todavía no tienen respuesta
   let filled = 0;
@@ -564,17 +568,27 @@ async function doSave() {
     };
     await SheetsDB.save(State.surveyType, record);
 
-    // Upsert en el padrón si hay DNI
+    // Actualizar el padrón si hay DNI y ubicación capturada
     const questions = PREGUNTAS[State.surveyType] || [];
     const dniQ = questions.find((q) => q.padronKey);
-    if (dniQ && State.answers[dniQ.id]) {
-      const padronRecord = { dni: String(State.answers[dniQ.id]).trim() };
-      questions.forEach((q) => {
-        if (q.padronField && State.answers[q.id] !== undefined && State.answers[q.id] !== '') {
-          padronRecord[q.padronField] = State.answers[q.id];
-        }
-      });
-      try { await Padron.upsertByDNI(padronRecord); } catch { /* no bloquea el guardado */ }
+    if (dniQ && State.answers[dniQ.id] && State.location) {
+      if (CONFIG.USE_MOCK) {
+        // Mock: upsert completo en localStorage (para pruebas)
+        const padronRecord = { dni: String(State.answers[dniQ.id]).trim() };
+        questions.forEach((q) => {
+          if (q.padronField && State.answers[q.id] !== undefined && State.answers[q.id] !== '') {
+            padronRecord[q.padronField] = State.answers[q.id];
+          }
+        });
+        padronRecord.lat = State.location.lat;
+        padronRecord.lng = State.location.lng;
+        try { await Padron.upsertByDNI(padronRecord); } catch { /* silencioso */ }
+      } else if (State.padronMeta) {
+        // API real: solo escribe LATITUD y LONGITUD en la fila del padrón electoral
+        try {
+          await Padron.updateLatLng(State.padronMeta, State.location.lat, State.location.lng);
+        } catch { /* no bloquea el guardado */ }
+      }
     }
 
     go('done');

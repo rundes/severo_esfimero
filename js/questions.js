@@ -10,7 +10,7 @@ const PREGUNTAS = {
     },
     {
       id: 'apellido',
-      label: 'Apellido',
+      label: 'Apellido y nombre',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
@@ -22,7 +22,6 @@ const PREGUNTAS = {
       type: 'text',
       required: false,
       placeholder: 'Opcional',
-      padronField: 'nombre',
     },
     {
       id: 'domicilio',
@@ -152,7 +151,7 @@ const PREGUNTAS = {
     },
     {
       id: 'apellido',
-      label: 'Apellido',
+      label: 'Apellido y nombre',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
@@ -164,7 +163,6 @@ const PREGUNTAS = {
       type: 'text',
       required: false,
       placeholder: 'Opcional',
-      padronField: 'nombre',
     },
     {
       id: 'domicilio',
