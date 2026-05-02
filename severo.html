@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1565C0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Severo — Relevamientos</title>
+  <style>
+/* ── Variables ──────────────────────────────────────────────────────────────── */
+:root {
+  --primary:      #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light:#E3F2FD;
+  --accent:       #00897B;
+  --bg:           #F4F6F9;
+  --surface:      #FFFFFF;
+  --border:       #DDE1E7;
+  --text:         #1A1A2E;
+  --text-2:       #5C6677;
+  --error:        #C62828;
+  --success:      #2E7D32;
+  --warn:         #E65100;
+  --radius:       12px;
+  --shadow:       0 2px 12px rgba(0,0,0,.08);
+  --transition:   .18s ease;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  position: relative;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.screen-center {
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 32px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--primary);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-height: 56px;
+}
+
+.header-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.header-count {
+  font-size: .85rem;
+  opacity: .8;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 6px;
+  border-radius: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover { background: rgba(255,255,255,.15); }
+
+/* ── Progress bar ───────────────────────────────────────────────────────────── */
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+}
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width .3s ease;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 48px;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--primary-dark); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+.btn-outline:hover { background: var(--primary-light); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+}
+.btn-ghost:hover { background: var(--border); }
+
+.btn-block { width: 100%; }
+
+.btn-mock {
+  background: var(--surface);
+  color: var(--primary);
+  border: 2px solid var(--border);
+  width: 100%;
+}
+.btn-mock:hover { border-color: var(--primary); background: var(--primary-light); }
+
+/* ── Auth screen ────────────────────────────────────────────────────────────── */
+.screen-auth {
+  background: var(--primary);
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 0;
+}
+
+.auth-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+  color: #fff;
+}
+
+.logo-mark {
+  width: 72px;
+  height: 72px;
+  background: rgba(255,255,255,.2);
+  border: 3px solid rgba(255,255,255,.5);
+  border-radius: 20px;
+  font-size: 2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.logo-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -.5px;
+}
+
+.logo-sub {
+  opacity: .8;
+  margin-top: 4px;
+}
+
+.auth-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: .85rem;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Home screen ────────────────────────────────────────────────────────────── */
+.home-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.user-name { font-weight: 600; }
+.user-email { font-size: .85rem; color: var(--text-2); }
+
+.home-actions {
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Geo screen ─────────────────────────────────────────────────────────────── */
+.geo-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 12px;
+  text-align: center;
+}
+
+.geo-icon { font-size: 3rem; }
+.geo-status { font-size: 1.05rem; font-weight: 600; }
+.geo-coords { font-size: .85rem; color: var(--text-2); font-family: monospace; min-height: 1.2em; }
+
+#geoActions { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+/* ── Type select ────────────────────────────────────────────────────────────── */
+.type-loc {
+  padding: 10px 16px;
+  font-size: .85rem;
+  color: var(--text-2);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.type-cards {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.type-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.type-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.type-card-icon { font-size: 2rem; }
+.type-card-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.type-card-desc  { font-size: .9rem; color: var(--text-2); line-height: 1.4; }
+
+/* ── Block header ───────────────────────────────────────────────────────────── */
+.block-header {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-bottom: 1px solid #BBDEFB;
+}
+
+/* ── Survey screen ──────────────────────────────────────────────────────────── */
+.survey-body {
+  flex: 1;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.question-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  display: block;
+}
+
+.required { color: var(--error); margin-left: 4px; }
+
+.question-hint {
+  font-size: .85rem;
+  color: var(--text-2);
+  background: #FFF8E1;
+  border-left: 3px solid #FFB300;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.4;
+}
+
+.question-input { display: flex; flex-direction: column; gap: 8px; }
+
+.input {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  transition: var(--transition);
+  font-family: inherit;
+}
+.input:focus { outline: none; border-color: var(--primary); }
+
+.textarea { resize: vertical; min-height: 96px; }
+
+/* Scale */
+.scale-row {
+  display: flex;
+  gap: 8px;
+}
+.scale-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.scale-btn:hover   { border-color: var(--primary); background: var(--primary-light); }
+.scale-btn.active  { border-color: var(--primary); background: var(--primary); color: #fff; }
+.scale-num { font-size: 1.1rem; font-weight: 700; }
+.scale-lbl { font-size: .6rem; text-align: center; line-height: 1.2; }
+
+/* Chips */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: .9rem;
+  transition: var(--transition);
+  color: var(--text);
+}
+.chip:hover  { border-color: var(--primary); background: var(--primary-light); }
+.chip.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+/* Radio */
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: .95rem;
+}
+.radio-option input[type=radio] { margin-top: 2px; accent-color: var(--primary); }
+.radio-option:hover  { border-color: var(--primary); background: var(--primary-light); }
+.radio-option.active { border-color: var(--primary); background: var(--primary-light); }
+
+.survey-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+}
+.survey-footer .btn-primary { flex: 1; }
+
+/* ── Summary ────────────────────────────────────────────────────────────────── */
+.summary-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: .9rem;
+  color: var(--text-2);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.loc-link { color: var(--primary); text-decoration: none; }
+.loc-link:hover { text-decoration: underline; }
+
+.summary-table { width: 100%; border-collapse: collapse; }
+.summary-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.summary-label { color: var(--text-2); font-size: .85rem; width: 40%; }
+.summary-value { font-size: .95rem; font-weight: 500; }
+
+/* ── Saving / Done ──────────────────────────────────────────────────────────── */
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.done-icon   { font-size: 3.5rem; }
+.done-sub    { color: var(--text-2); }
+.done-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 16px; }
+
+/* ── List ───────────────────────────────────────────────────────────────────── */
+.list-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.survey-card {
+  display: flex;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.survey-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+
+.card-icon  { font-size: 1.8rem; }
+.card-body  { flex: 1; min-width: 0; }
+.card-type  { font-weight: 700; font-size: .85rem; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; }
+.card-preview { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-date  { font-size: .8rem; color: var(--text-2); margin-top: 4px; }
+.card-loc   { font-size: .75rem; color: var(--text-2); font-family: monospace; }
+
+/* ── Toast ──────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: .9rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  white-space: nowrap;
+  z-index: 100;
+}
+.toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Utilities ──────────────────────────────────────────────────────────────── */
+.hint {
+  font-size: .82rem;
+  color: var(--text-2);
+  text-align: center;
+  padding: 8px 16px;
+}
+.center { text-align: center; }
+.loading-init {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--text-2);
+}
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading-init">Cargando…</div>
+  </div>
+  <script>
+const CONFIG = {
+  // Reemplazar con credenciales reales de Google Cloud Console
+  GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+  SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
+  SHEET_CIUDADANOS: 'Ciudadanos',
+  SHEET_PROBLEMATICAS: 'Problematicas',
+
+  // true = usa localStorage (prototipo), false = usa Google Sheets API real
+  USE_MOCK: true,
+};
+
+
+const PREGUNTAS = {
+  ciudadano: [
+    {
+      id: 'nombre',
+      label: 'Nombre completo',
+      type: 'text',
+      required: false,
+      placeholder: 'Opcional',
+    },
+    {
+      id: 'edad',
+      label: 'Rango de edad',
+      type: 'select',
+      required: true,
+      options: ['18–30', '31–45', '46–60', 'Más de 60'],
+    },
+    {
+      id: 'residencia',
+      label: '¿Hace cuánto tiempo vive en el barrio?',
+      type: 'select',
+      required: true,
+      options: ['Menos de 1 año', '1 a 5 años', '5 a 10 años', 'Más de 10 años'],
+    },
+    {
+      id: 'calidad_vida',
+      label: '¿Cómo evaluaría la calidad de vida en el barrio?',
+      type: 'scale',
+      required: true,
+      labels: ['Muy mala', 'Mala', 'Regular', 'Buena', 'Muy buena'],
+    },
+    {
+      id: 'problemas',
+      label: '¿Cuáles son los principales problemas que nota en el barrio?',
+      type: 'checkbox',
+      required: false,
+      options: ['Seguridad', 'Limpieza', 'Iluminación', 'Estado de calles', 'Espacios verdes', 'Transporte público', 'Otro'],
+    },
+    {
+      id: 'mejoras',
+      label: '¿Qué mejoras le gustaría ver en el barrio?',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Describa las mejoras que considera necesarias…',
+    },
+    {
+      id: 'comentarios',
+      label: 'Comentarios adicionales',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Cualquier otra información relevante…',
+    },
+  ],
+
+  problematica: [
+    {
+      id: 'categoria',
+      label: 'Categoría del problema',
+      type: 'select',
+      required: true,
+      options: [
+        'Bache / Grieta en calzada',
+        'Suciedad / Basura acumulada',
+        'Luminaria apagada o rota',
+        'Vereda en mal estado',
+        'Problema cloacal',
+        'Árbol caído o peligroso',
+        'Poda necesaria',
+        'Otro',
+      ],
+    },
+    {
+      id: 'direccion',
+      label: 'Referencia de ubicación',
+      type: 'text',
+      required: false,
+      placeholder: 'Ej: Av. San Martín 1234, esquina Rivadavia',
+    },
+    {
+      id: 'descripcion',
+      label: 'Descripción del problema',
+      type: 'textarea',
+      required: true,
+      placeholder: 'Describa detalladamente el problema observado…',
+    },
+    {
+      id: 'urgencia',
+      label: '¿Cuál es el nivel de urgencia?',
+      type: 'radio',
+      required: true,
+      options: [
+        { value: 'bajo',  label: 'Bajo — no requiere atención inmediata' },
+        { value: 'medio', label: 'Medio — requiere atención en los próximos días' },
+        { value: 'alto',  label: 'Alto — riesgo para personas o el tránsito' },
+      ],
+    },
+    {
+      id: 'afecta_transito',
+      label: '¿El problema afecta el tránsito vehicular o peatonal?',
+      type: 'radio',
+      required: true,
+      options: [
+        { value: 'si', label: 'Sí' },
+        { value: 'no', label: 'No' },
+      ],
+    },
+    {
+      id: 'observaciones',
+      label: 'Observaciones adicionales',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Información adicional relevante…',
+    },
+  ],
+
+  // ── Encuesta Socio-Habitacional Maipú 2026 ──────────────────────────────────
+  // P01 (lat/lng) se captura automáticamente por geolocalización, no aparece aquí.
+  sociohabitacional: [
+    // BLOQUE 1 — Identificación
+    {
+      id: 'barrio',
+      block: 'Identificación y localización',
+      label: 'Barrio',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Alvarado',      label: 'Alvarado' },
+        { value: 'Belgrano',      label: 'Belgrano' },
+        { value: 'Unión',         label: 'Unión' },
+        { value: 'Centro',        label: 'Centro' },
+        { value: 'Villa Vannelli',label: 'Villa Vannelli' },
+        { value: 'Villa Italia',  label: 'Villa Italia' },
+      ],
+    },
+
+    // BLOQUE 2 — Composición del hogar
+    {
+      id: 'personas_total',
+      block: 'Composición del hogar',
+      label: 'Cantidad de personas que viven en la vivienda',
+      type: 'number',
+      required: false,
+    },
+    {
+      id: 'personas_menores',
+      label: 'Cantidad de personas menores de 18 años',
+      type: 'number',
+      required: false,
+    },
+    {
+      id: 'personas_mayores65',
+      label: 'Cantidad de personas mayores de 65 años',
+      type: 'number',
+      required: false,
+    },
+    {
+      id: 'familias',
+      label: '¿Cuántas familias viven en la vivienda?',
+      type: 'number',
+      required: false,
+    },
+
+    // BLOQUE 3 — Tenencia y características
+    {
+      id: 'tenencia',
+      block: 'Tenencia y características de la vivienda',
+      label: 'Tenencia de la vivienda',
+      hint: 'Si es propia seguirá P08 y P09. Si es alquilada, cedida u ocupada pasará directamente a tipo de vivienda.',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Propia',                      label: 'Propia' },
+        { value: 'Propia en proceso de pago',   label: 'Propia en proceso de pago (crédito/cuotas)' },
+        { value: 'Alquilada',                   label: 'Alquilada' },
+        { value: 'Cedida/prestada',             label: 'Cedida/prestada' },
+        { value: 'Ocupación informal',          label: 'Ocupación informal' },
+      ],
+    },
+    {
+      id: 'escritura',
+      label: '¿Cuenta con la escritura?',
+      type: 'radio',
+      required: false,
+      showIf: (a) => ['Propia', 'Propia en proceso de pago'].includes(a.tenencia),
+      options: [
+        { value: 'Si',         label: 'Sí' },
+        { value: 'No',         label: 'No' },
+        { value: 'En trámite', label: 'En trámite' },
+      ],
+    },
+    {
+      id: 'cuotas_adeuda',
+      label: '¿Cuántas cuotas adeuda?',
+      type: 'number',
+      required: false,
+      showIf: (a) => a.tenencia === 'Propia en proceso de pago',
+    },
+    {
+      id: 'tipo_vivienda',
+      label: 'Tipo de vivienda',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Casa',                 label: 'Casa' },
+        { value: 'Departamento',         label: 'Departamento' },
+        { value: 'Vivienda precaria',    label: 'Vivienda precaria' },
+        { value: 'Pieza de inquilinato', label: 'Pieza de inquilinato' },
+        { value: 'Otra',                 label: 'Otra' },
+      ],
+    },
+    {
+      id: 'material_paredes',
+      label: 'Material predominante de las paredes',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Ladrillo/material', label: 'Ladrillo/material' },
+        { value: 'Madera',            label: 'Madera' },
+        { value: 'Chapa',             label: 'Chapa' },
+        { value: 'Mixto',             label: 'Mixto' },
+        { value: 'Otro',              label: 'Otro' },
+      ],
+    },
+    {
+      id: 'ambientes_dormir',
+      label: 'Cantidad de ambientes para dormir (piezas)',
+      type: 'number',
+      required: false,
+    },
+
+    // BLOQUE 4 — Servicios básicos
+    {
+      id: 'desague',
+      block: 'Servicios básicos',
+      label: 'Condiciones del baño: desagüe',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Red cloacal', label: 'Red cloacal' },
+        { value: 'Pozo ciego',  label: 'Pozo ciego' },
+        { value: 'Otro',        label: 'Otro' },
+      ],
+    },
+    {
+      id: 'agua_potable',
+      label: '¿Tiene agua potable?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
+      id: 'electricidad',
+      label: '¿Tiene electricidad?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Conexión formal',   label: 'Conexión formal' },
+        { value: 'Conexión informal', label: 'Conexión informal' },
+        { value: 'No tiene',          label: 'No tiene' },
+      ],
+    },
+    {
+      id: 'gas',
+      label: '¿Tiene gas?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'De red',   label: 'De red' },
+        { value: 'Garrafa',  label: 'Garrafa' },
+        { value: 'No tiene', label: 'No tiene' },
+      ],
+    },
+
+    // BLOQUE 5 — Discapacidad
+    {
+      id: 'discapacidad',
+      block: 'Discapacidad',
+      label: '¿En el hogar vive alguna persona con alguna discapacidad?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
+      id: 'tipo_discapacidad',
+      label: '¿Qué tipo de discapacidad?',
+      type: 'checkbox',
+      required: false,
+      showIf: (a) => a.discapacidad === 'Si',
+      options: ['Motriz', 'Visual', 'Auditiva', 'Intelectual', 'Psicosocial', 'Otra'],
+    },
+    {
+      id: 'cud',
+      label: '¿Cuenta con Certificado Único de Discapacidad (CUD)?',
+      type: 'radio',
+      required: false,
+      showIf: (a) => a.discapacidad === 'Si',
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+
+    // BLOQUE 6 — Participación municipal
+    {
+      id: 'actividades_menores',
+      block: 'Participación en actividades municipales',
+      label: '¿Participan de actividades del municipio los menores de 18 años?',
+      type: 'checkbox',
+      required: false,
+      options: ['Deportes', 'Cultura'],
+    },
+    {
+      id: 'actividades_adultos',
+      label: '¿Participan de actividades del municipio los que tienen entre 15 y 64 años?',
+      type: 'checkbox',
+      required: false,
+      options: ['Deportes', 'Cultura'],
+    },
+    {
+      id: 'actividades_mayores',
+      label: '¿Participan de actividades del municipio los mayores de 65 años?',
+      type: 'checkbox',
+      required: false,
+      options: ['Deportes', 'Cultura'],
+    },
+
+    // BLOQUE 7 — Opinión y cierre
+    {
+      id: 'mejora_barrio',
+      block: 'Opinión y cierre',
+      label: '¿Qué considera que debe mejorar su barrio?',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Describa libremente…',
+    },
+    {
+      id: 'mejora_municipio',
+      label: 'Pensando en su barrio, ¿qué le gustaría que el municipio mejorara?',
+      type: 'text',
+      required: true,
+      placeholder: 'Respuesta libre…',
+    },
+    {
+      id: 'falta_maipu',
+      label: '¿Qué le falta a Maipú?',
+      type: 'text',
+      required: true,
+      placeholder: 'Respuesta libre…',
+    },
+    {
+      id: 'voto',
+      label: '¿Nos votaría?',
+      type: 'radio',
+      required: true,
+      options: [
+        { value: 'SI',      label: 'Sí' },
+        { value: 'NO',      label: 'No' },
+        { value: 'DUDOSO',  label: 'Dudoso' },
+      ],
+    },
+  ],
+};
+
+
+const Geo = {
+  async getLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('El navegador no soporta geolocalización'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy),
+        }),
+        (err) => {
+          const msgs = {
+            1: 'Permiso de ubicación denegado',
+            2: 'Ubicación no disponible',
+            3: 'Tiempo de espera agotado',
+          };
+          reject(new Error(msgs[err.code] || 'Error al obtener ubicación'));
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    });
+  },
+
+  format(location) {
+    if (!location) return 'Sin ubicación';
+    return `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)} (±${location.accuracy}m)`;
+  },
+
+  mapsUrl(location) {
+    if (!location) return null;
+    return `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+  },
+};
+
+
+const SheetsDB = {
+  async save(type, record) {
+    if (CONFIG.USE_MOCK) return this._mockSave(type, record);
+    return this._apiAppend(type, record);
+  },
+
+  getAll(type) {
+    if (CONFIG.USE_MOCK) return this._mockGetAll(type);
+    // En modo API se necesita await; usar getAllAsync()
+    throw new Error('Modo API: usar await SheetsDB.getAllAsync(type)');
+  },
+
+  async getAllAsync(type) {
+    if (CONFIG.USE_MOCK) return this._mockGetAll(type);
+    return this._apiGetAll(type);
+  },
+
+  async update(type, id, updates) {
+    if (CONFIG.USE_MOCK) return this._mockUpdate(type, id, updates);
+    // La actualización en Sheets requiere conocer la fila exacta; se implementa en v2
+    console.warn('update() en modo API aún no implementado');
+  },
+
+  // ── Mock (localStorage) ──────────────────────────────────────────────────
+
+  _mockSave(type, record) {
+    const key = `severo_${type}`;
+    const items = JSON.parse(localStorage.getItem(key) || '[]');
+    const saved = { ...record, id: Date.now(), savedAt: new Date().toISOString() };
+    items.unshift(saved);
+    localStorage.setItem(key, JSON.stringify(items));
+    return saved;
+  },
+
+  _mockGetAll(type) {
+    const key = `severo_${type}`;
+    return JSON.parse(localStorage.getItem(key) || '[]');
+  },
+
+  _mockUpdate(type, id, updates) {
+    const key = `severo_${type}`;
+    const items = JSON.parse(localStorage.getItem(key) || '[]');
+    const idx = items.findIndex((i) => i.id === id);
+    if (idx >= 0) {
+      items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
+      localStorage.setItem(key, JSON.stringify(items));
+    }
+  },
+
+  // ── Google Sheets API ────────────────────────────────────────────────────
+
+  async _apiAppend(type, record) {
+    const sheet = type === 'ciudadano' ? CONFIG.SHEET_CIUDADANOS : CONFIG.SHEET_PROBLEMATICAS;
+    const token = this._getToken();
+    const row = this._toRow(type, record);
+
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}!A1:append?valueInputOption=USER_ENTERED`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [row] }),
+      }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    return record;
+  },
+
+  async _apiGetAll(type) {
+    const sheet = type === 'ciudadano' ? CONFIG.SHEET_CIUDADANOS : CONFIG.SHEET_PROBLEMATICAS;
+    const token = this._getToken();
+
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheet}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const data = await res.json();
+    return this._fromRows(type, data.values || []);
+  },
+
+  _getToken() {
+    // El token de acceso se obtiene al hacer login con scope de Sheets
+    // Ver: https://developers.google.com/identity/oauth2/web/guides/use-token-model
+    const t = localStorage.getItem('severo_access_token');
+    if (!t) throw new Error('Sin token de acceso. Reautenticar con scope de Sheets.');
+    return t;
+  },
+
+  _toRow(type, r) {
+    const base = [
+      r.id || '',
+      r.savedAt || new Date().toISOString(),
+      r.operador?.email || '',
+      r.operador?.name || '',
+      r.location?.lat || '',
+      r.location?.lng || '',
+      r.location?.accuracy || '',
+    ];
+    if (type === 'ciudadano') {
+      const a = r.answers || {};
+      return [...base, a.nombre || '', a.edad || '', a.residencia || '',
+        a.calidad_vida || '', (a.problemas || []).join(', '), a.mejoras || '', a.comentarios || ''];
+    } else {
+      const a = r.answers || {};
+      return [...base, a.categoria || '', a.direccion || '', a.descripcion || '',
+        a.urgencia || '', a.afecta_transito || '', a.observaciones || ''];
+    }
+  },
+
+  _fromRows(type, rows) {
+    // Inverse of _toRow; first row assumed to be headers
+    return rows.slice(1).map((row) => {
+      const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
+        location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
+      if (type === 'ciudadano') {
+        return { ...base, answers: { nombre: row[7], edad: row[8], residencia: row[9],
+          calidad_vida: row[10], problemas: row[11] ? row[11].split(', ') : [],
+          mejoras: row[12], comentarios: row[13] } };
+      } else {
+        return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
+          urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
+      }
+    });
+  },
+};
+
+
+const Auth = {
+  _user: null,
+
+  init() {
+    const saved = localStorage.getItem('severo_user');
+    if (saved) {
+      try { this._user = JSON.parse(saved); } catch (_) { this._user = null; }
+    }
+  },
+
+  getUser() { return this._user; },
+  isLoggedIn() { return !!this._user; },
+
+  mockLogin() {
+    this._user = {
+      name: 'Operador Prueba',
+      email: 'operador@municipio.gob.ar',
+      picture: null,
+      isMock: true,
+    };
+    localStorage.setItem('severo_user', JSON.stringify(this._user));
+    return this._user;
+  },
+
+  // Llamado por el callback de Google Identity Services
+  handleCredential(response) {
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      this._user = {
+        name: payload.name,
+        email: payload.email,
+        picture: payload.picture || null,
+      };
+      localStorage.setItem('severo_user', JSON.stringify(this._user));
+      return this._user;
+    } catch (e) {
+      console.error('Error al procesar credencial de Google:', e);
+      return null;
+    }
+  },
+
+  logout() {
+    this._user = null;
+    localStorage.removeItem('severo_user');
+    if (window.google?.accounts?.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+  },
+};
+
+
+// ── Estado global ────────────────────────────────────────────────────────────
+
+const State = {
+  screen: 'auth',
+  user: null,
+  location: null,
+  surveyType: null,   // 'ciudadano' | 'problematica'
+  answers: {},
+  currentQ: 0,
+  surveys: [],
+  detailRecord: null,
+  toast: null,
+};
+
+// ── Entrada ──────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.init();
+  if (Auth.isLoggedIn()) {
+    go('home', { user: Auth.getUser() });
+  } else {
+    render();
+  }
+});
+
+// Callback registrado por Google Identity Services
+window.gsiCallback = (response) => {
+  const user = Auth.handleCredential(response);
+  if (user) go('home', { user });
+};
+
+// ── Navegación ───────────────────────────────────────────────────────────────
+
+function go(screen, updates = {}) {
+  Object.assign(State, updates, { screen });
+  render();
+}
+
+function render() {
+  const el = document.getElementById('app');
+  const screens = {
+    auth:         renderAuth,
+    home:         renderHome,
+    geo:          renderGeo,
+    typeSelect:   renderTypeSelect,
+    survey:       renderSurvey,
+    summary:      renderSummary,
+    saving:       renderSaving,
+    done:         renderDone,
+    list:         renderList,
+    detail:       renderDetail,
+  };
+  el.innerHTML = (screens[State.screen] || renderAuth)();
+  bindEvents();
+  if (State.screen === 'geo') startGeoCapture();
+  if (State.screen === 'saving') doSave();
+  if (State.screen === 'list') loadList();
+  if (State.toast) showToast(State.toast);
+}
+
+// ── Utilidades UI ────────────────────────────────────────────────────────────
+
+function avatar(user) {
+  if (user?.picture) return `<img src="${user.picture}" class="avatar" alt="">`;
+  const initials = (user?.name || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  return `<div class="avatar avatar-initials">${initials}</div>`;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit' });
+}
+
+function typeLabel(type) {
+  if (type === 'ciudadano')        return 'Ciudadano';
+  if (type === 'sociohabitacional') return 'Socio-habitacional';
+  return 'Problemática';
+}
+
+function typeIcon(type) {
+  if (type === 'ciudadano')        return '🧑';
+  if (type === 'sociohabitacional') return '🏠';
+  return '⚠️';
+}
+
+// ── Helpers de visibilidad condicional ───────────────────────────────────────
+
+function isVisible(q) {
+  return !q.showIf || q.showIf(State.answers);
+}
+
+function nextVisibleIdx(from, questions) {
+  let idx = from + 1;
+  while (idx < questions.length && !isVisible(questions[idx])) idx++;
+  return idx;
+}
+
+function prevVisibleIdx(from, questions) {
+  let idx = from - 1;
+  while (idx >= 0 && !isVisible(questions[idx])) idx--;
+  return idx;
+}
+
+function visibleQuestions(questions) {
+  return questions.filter(isVisible);
+}
+
+function visiblePosition(questions, currentIdx) {
+  return questions.slice(0, currentIdx + 1).filter(isVisible).length;
+}
+
+// ── Pantallas ────────────────────────────────────────────────────────────────
+
+function renderAuth() {
+  const isConfigured = CONFIG.GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  return `
+    <div class="screen screen-auth">
+      <div class="auth-hero">
+        <div class="logo-mark">S</div>
+        <h1 class="logo-title">Severo</h1>
+        <p class="logo-sub">Sistema de Relevamientos</p>
+      </div>
+      <div class="auth-card">
+        ${isConfigured ? `
+          <div id="g_id_onload"
+            data-client_id="${CONFIG.GOOGLE_CLIENT_ID}"
+            data-callback="gsiCallback"
+            data-auto_prompt="false"></div>
+          <div class="g_id_signin"
+            data-type="standard" data-size="large"
+            data-theme="outline" data-text="sign_in_with"
+            data-shape="rectangular" data-logo_alignment="left">
+          </div>
+          <div class="divider"><span>o</span></div>
+        ` : ''}
+        <button class="btn btn-outline" onclick="mockLogin()">
+          Entrar como operador de prueba
+        </button>
+        ${!isConfigured ? `<p class="hint">Prototipo — datos guardados en el navegador</p>` : ''}
+      </div>
+    </div>`;
+}
+
+function mockLogin() {
+  const user = Auth.mockLogin();
+  go('home', { user });
+}
+
+function renderHome() {
+  const u = State.user;
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <span class="header-title">Relevamientos</span>
+        <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
+      </header>
+      <div class="home-user">
+        ${avatar(u)}
+        <div>
+          <div class="user-name">${u?.name || ''}</div>
+          <div class="user-email">${u?.email || ''}</div>
+        </div>
+      </div>
+      <div class="home-actions">
+        <button class="btn btn-primary btn-block" onclick="startNewSurvey()">
+          + Nuevo relevamiento
+        </button>
+        <button class="btn btn-outline btn-block" onclick="go('list')">
+          Ver historial
+        </button>
+      </div>
+      ${CONFIG.USE_MOCK ? `<p class="hint center">Modo prototipo — datos en localStorage</p>` : ''}
+    </div>`;
+}
+
+function logout() {
+  Auth.logout();
+  go('auth', { user: null });
+}
+
+function startNewSurvey() {
+  go('geo', { answers: {}, currentQ: 0, location: null, surveyType: null });
+}
+
+function renderGeo() {
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('home')">←</button>
+        <span class="header-title">Ubicación</span>
+      </header>
+      <div class="geo-content">
+        <div class="geo-icon" id="geoIcon">📍</div>
+        <p class="geo-status" id="geoStatus">Obteniendo ubicación…</p>
+        <p class="geo-coords" id="geoCoords"></p>
+        <div id="geoActions" style="display:none">
+          <button class="btn btn-primary btn-block" onclick="go('typeSelect')">
+            Continuar
+          </button>
+          <button class="btn btn-ghost btn-block" onclick="go('typeSelect')">
+            Continuar sin ubicación
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function startGeoCapture() {
+  const statusEl = document.getElementById('geoStatus');
+  const coordsEl = document.getElementById('geoCoords');
+  const iconEl   = document.getElementById('geoIcon');
+  const actionsEl = document.getElementById('geoActions');
+
+  try {
+    const loc = await Geo.getLocation();
+    State.location = loc;
+    iconEl.textContent = '✅';
+    statusEl.textContent = 'Ubicación obtenida';
+    coordsEl.textContent = Geo.format(loc);
+    actionsEl.style.display = 'block';
+  } catch (err) {
+    iconEl.textContent = '⚠️';
+    statusEl.textContent = err.message;
+    coordsEl.textContent = 'Podés continuar sin ubicación';
+    actionsEl.style.display = 'block';
+  }
+}
+
+function renderTypeSelect() {
+  const locText = State.location ? Geo.format(State.location) : 'Sin ubicación';
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('geo')">←</button>
+        <span class="header-title">Tipo de relevamiento</span>
+      </header>
+      <div class="type-loc">📍 ${locText}</div>
+      <div class="type-cards">
+        <button class="type-card" onclick="selectType('sociohabitacional')">
+          <div class="type-card-icon">🏠</div>
+          <div class="type-card-title">Encuesta socio-habitacional</div>
+          <div class="type-card-desc">Maipú 2026 — vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
+        </button>
+        <button class="type-card" onclick="selectType('ciudadano')">
+          <div class="type-card-icon">🧑</div>
+          <div class="type-card-title">Entrevistar ciudadano</div>
+          <div class="type-card-desc">Ciclo de preguntas sobre percepción del barrio y calidad de vida</div>
+        </button>
+        <button class="type-card" onclick="selectType('problematica')">
+          <div class="type-card-icon">⚠️</div>
+          <div class="type-card-title">Relevar problemática</div>
+          <div class="type-card-desc">Registro de problemas en vía pública: baches, luminarias, arbolado y más</div>
+        </button>
+      </div>
+    </div>`;
+}
+
+function selectType(type) {
+  go('survey', { surveyType: type, currentQ: 0, answers: {} });
+}
+
+function renderSurvey() {
+  const questions = PREGUNTAS[State.surveyType] || [];
+
+  // Asegurar que la pregunta actual sea visible; si no, avanzar al siguiente visible
+  if (questions[State.currentQ] && !isVisible(questions[State.currentQ])) {
+    State.currentQ = nextVisibleIdx(State.currentQ - 1, questions);
+  }
+
+  const q = questions[State.currentQ];
+  if (!q) { go('summary'); return ''; }
+
+  const visible     = visibleQuestions(questions);
+  const visPos      = visiblePosition(questions, State.currentQ);
+  const visTotal    = visible.length;
+  const progress    = ((visPos - 1) / visTotal) * 100;
+  const isLast      = nextVisibleIdx(State.currentQ, questions) >= questions.length;
+  const val         = State.answers[q.id];
+
+  // Encabezado de bloque (cuando cambia respecto al anterior visible)
+  const prevVisIdx  = prevVisibleIdx(State.currentQ, questions);
+  const prevQ       = questions[prevVisIdx];
+  const blockHeader = q.block && q.block !== prevQ?.block
+    ? `<div class="block-header">${q.block}</div>`
+    : '';
+
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="surveyBack()">←</button>
+        <span class="header-title">${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
+        <span class="header-count">${visPos}/${visTotal}</span>
+      </header>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      ${blockHeader}
+      <div class="survey-body">
+        <label class="question-label">
+          ${q.label}
+          ${q.required ? '<span class="required">*</span>' : ''}
+        </label>
+        ${q.hint ? `<p class="question-hint">${q.hint}</p>` : ''}
+        <div class="question-input">
+          ${renderInput(q, val)}
+        </div>
+      </div>
+      <div class="survey-footer">
+        ${!q.required ? `<button class="btn btn-ghost" onclick="surveyNext(true)">Omitir</button>` : ''}
+        <button class="btn btn-primary" onclick="surveyNext(false)" id="btnNext">
+          ${isLast ? 'Revisar' : 'Siguiente →'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderInput(q, val) {
+  switch (q.type) {
+    case 'text':
+      return `<input type="text" class="input" id="q_${q.id}"
+        value="${val || ''}" placeholder="${q.placeholder || ''}"
+        oninput="saveAnswer('${q.id}', this.value)">`;
+
+    case 'number':
+      return `<input type="number" inputmode="numeric" class="input" id="q_${q.id}"
+        value="${val || ''}" placeholder="0" min="0"
+        oninput="saveAnswer('${q.id}', this.value)">`;
+
+    case 'select':
+      return `<select class="input" id="q_${q.id}" onchange="saveAnswer('${q.id}', this.value)">
+        <option value="">Seleccionar…</option>
+        ${q.options.map((o) => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+      </select>`;
+
+    case 'textarea':
+      return `<textarea class="input textarea" id="q_${q.id}" rows="4"
+        placeholder="${q.placeholder || ''}"
+        oninput="saveAnswer('${q.id}', this.value)">${val || ''}</textarea>`;
+
+    case 'scale': {
+      const labels = q.labels || [];
+      return `<div class="scale-row">
+        ${[1,2,3,4,5].map((n) => `
+          <button class="scale-btn ${val == n ? 'active' : ''}"
+            onclick="saveAnswer('${q.id}', ${n}); render()">
+            <span class="scale-num">${n}</span>
+            <span class="scale-lbl">${labels[n-1] || ''}</span>
+          </button>`).join('')}
+      </div>`;
+    }
+
+    case 'checkbox': {
+      const selected = Array.isArray(val) ? val : [];
+      return `<div class="chip-group">
+        ${q.options.map((o) => `
+          <button class="chip ${selected.includes(o) ? 'active' : ''}"
+            onclick="toggleChip('${q.id}', '${o}')">
+            ${o}
+          </button>`).join('')}
+      </div>`;
+    }
+
+    case 'radio':
+      return `<div class="radio-group">
+        ${q.options.map((o) => `
+          <label class="radio-option ${val === o.value ? 'active' : ''}">
+            <input type="radio" name="q_${q.id}" value="${o.value}"
+              ${val === o.value ? 'checked' : ''}
+              onchange="saveAnswer('${q.id}', this.value); render()">
+            <span>${o.label}</span>
+          </label>`).join('')}
+      </div>`;
+
+    default:
+      return '';
+  }
+}
+
+function saveAnswer(id, value) {
+  State.answers[id] = value;
+}
+
+function toggleChip(id, option) {
+  const current = Array.isArray(State.answers[id]) ? State.answers[id] : [];
+  const idx = current.indexOf(option);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(option);
+  State.answers[id] = [...current];
+  render();
+}
+
+function surveyBack() {
+  const questions = PREGUNTAS[State.surveyType] || [];
+  const prev = prevVisibleIdx(State.currentQ, questions);
+  if (prev < 0) {
+    go('typeSelect');
+  } else {
+    State.currentQ = prev;
+    render();
+  }
+}
+
+function surveyNext(skip) {
+  const questions = PREGUNTAS[State.surveyType] || [];
+  const q = questions[State.currentQ];
+
+  if (!skip && q.required) {
+    const val = State.answers[q.id];
+    const empty = val === undefined || val === null || val === '' ||
+      (Array.isArray(val) && val.length === 0);
+    if (empty) {
+      showToast('Este campo es obligatorio');
+      return;
+    }
+  }
+
+  const next = nextVisibleIdx(State.currentQ, questions);
+  if (next >= questions.length) {
+    go('summary');
+  } else {
+    State.currentQ = next;
+    render();
+  }
+}
+
+function renderSummary() {
+  const questions = PREGUNTAS[State.surveyType] || [];
+  const rows = questions.map((q) => {
+    const val = State.answers[q.id];
+    let display = '—';
+    if (val !== undefined && val !== null && val !== '') {
+      display = Array.isArray(val) ? val.join(', ') : String(val);
+    }
+    return `<tr>
+      <td class="summary-label">${q.label}</td>
+      <td class="summary-value">${display}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('survey')">←</button>
+        <span class="header-title">Resumen</span>
+      </header>
+      <div class="summary-body">
+        <div class="summary-meta">
+          <span>${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
+          ${State.location ? `<a href="${Geo.mapsUrl(State.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>📍 Sin ubicación</span>'}
+        </div>
+        <table class="summary-table">${rows}</table>
+      </div>
+      <div class="survey-footer">
+        <button class="btn btn-ghost" onclick="go('survey')">Editar</button>
+        <button class="btn btn-primary" onclick="go('saving')">Guardar</button>
+      </div>
+    </div>`;
+}
+
+function renderSaving() {
+  return `
+    <div class="screen screen-center">
+      <div class="spinner"></div>
+      <p>Guardando…</p>
+    </div>`;
+}
+
+async function doSave() {
+  try {
+    const record = {
+      type: State.surveyType,
+      operador: State.user,
+      location: State.location,
+      answers: { ...State.answers },
+    };
+    await SheetsDB.save(State.surveyType, record);
+    go('done');
+  } catch (err) {
+    go('summary');
+    State.toast = 'Error al guardar: ' + err.message;
+    render();
+  }
+}
+
+function renderDone() {
+  return `
+    <div class="screen screen-center">
+      <div class="done-icon">✅</div>
+      <h2>Relevamiento guardado</h2>
+      <p class="done-sub">${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</p>
+      <div class="done-actions">
+        <button class="btn btn-primary btn-block" onclick="startNewSurvey()">+ Nuevo relevamiento</button>
+        <button class="btn btn-outline btn-block" onclick="go('list')">Ver historial</button>
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const ciudadanos      = SheetsDB.getAll('ciudadano');
+  const problemas       = SheetsDB.getAll('problematica');
+  const sociohabit      = SheetsDB.getAll('sociohabitacional');
+  const all = [
+    ...ciudadanos.map((r)   => ({...r, type: 'ciudadano'})),
+    ...problemas.map((r)    => ({...r, type: 'problematica'})),
+    ...sociohabit.map((r)   => ({...r, type: 'sociohabitacional'})),
+  ];
+  all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  const cards = all.length === 0
+    ? `<p class="hint center">Todavía no hay relevamientos guardados.</p>`
+    : all.map((r) => {
+        const firstQ = PREGUNTAS[r.type]?.[0];
+        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
+        return `
+          <div class="survey-card" onclick="openDetail(${r.id}, '${r.type}')">
+            <div class="card-icon">${typeIcon(r.type)}</div>
+            <div class="card-body">
+              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-preview">${String(preview).slice(0, 60)}</div>
+              <div class="card-date">${formatDate(r.savedAt)}</div>
+              ${r.location ? `<div class="card-loc">📍 ${Geo.format(r.location)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('home')">←</button>
+        <span class="header-title">Historial</span>
+        <span class="header-count">${all.length}</span>
+      </header>
+      <div class="list-body">${cards}</div>
+    </div>`;
+}
+
+function loadList() {
+  // Si se usa API real, aquí iría el fetch async y re-render
+}
+
+function openDetail(id, type) {
+  const items = SheetsDB.getAll(type);
+  const record = items.find((r) => r.id === id);
+  if (record) go('detail', { detailRecord: { ...record, type } });
+}
+
+function renderDetail() {
+  const r = State.detailRecord;
+  if (!r) { go('list'); return ''; }
+  const questions = PREGUNTAS[r.type] || [];
+
+  const rows = questions.map((q) => {
+    const val = r.answers?.[q.id];
+    let display = '—';
+    if (val !== undefined && val !== null && val !== '') {
+      display = Array.isArray(val) ? val.join(', ') : String(val);
+    }
+    return `<tr>
+      <td class="summary-label">${q.label}</td>
+      <td class="summary-value">${display}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('list')">←</button>
+        <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
+      </header>
+      <div class="summary-body">
+        <div class="summary-meta">
+          <span>${formatDate(r.savedAt)}</span>
+          <span>${r.operador?.name || ''}</span>
+          ${r.location ? `<a href="${Geo.mapsUrl(r.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>Sin ubicación</span>'}
+        </div>
+        <table class="summary-table">${rows}</table>
+      </div>
+    </div>`;
+}
+
+// ── Eventos y utilidades ─────────────────────────────────────────────────────
+
+function bindEvents() {
+  // Los eventos están inline via onclick para simplicidad del prototipo
+}
+
+function showToast(msg) {
+  State.toast = null;
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.getElementById('app').appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+  </script>
+  <!--
+    Google Identity Services (OAuth).
+    Solo actúa si CONFIG.GOOGLE_CLIENT_ID está configurado.
+  -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>
