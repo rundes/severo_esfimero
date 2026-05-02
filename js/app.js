@@ -1,3 +1,8 @@
+// ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
+
+let _map = null;
+let _marker = null;
+
 // ── Estado global ────────────────────────────────────────────────────────────
 
 const State = {
@@ -37,6 +42,13 @@ function go(screen, updates = {}) {
 }
 
 function render() {
+  // Destruir el mapa Leaflet si salimos de la pantalla geo
+  if (_map && State.screen !== 'geo') {
+    _map.remove();
+    _map = null;
+    _marker = null;
+  }
+
   const el = document.getElementById('app');
   const screens = {
     auth:         renderAuth,
@@ -191,41 +203,80 @@ function renderGeo() {
         <button class="btn-icon" onclick="go('home')">←</button>
         <span class="header-title">Ubicación</span>
       </header>
-      <div class="geo-content">
-        <div class="geo-icon" id="geoIcon">📍</div>
-        <p class="geo-status" id="geoStatus">Obteniendo ubicación…</p>
+      <div class="geo-status-bar" id="geoStatusBar">
+        <div class="geo-spinner" id="geoSpinner"></div>
+        <span id="geoStatus">Obteniendo ubicación…</span>
+      </div>
+      <div id="geoMap" class="geo-map"></div>
+      <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
-        <div id="geoActions" style="display:none">
-          <button class="btn btn-primary btn-block" onclick="go('typeSelect')">
-            Continuar
-          </button>
-          <button class="btn btn-ghost btn-block" onclick="go('typeSelect')">
-            Continuar sin ubicación
-          </button>
+        <div class="geo-actions">
+          <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
+          <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
         </div>
       </div>
     </div>`;
 }
 
 async function startGeoCapture() {
-  const statusEl = document.getElementById('geoStatus');
-  const coordsEl = document.getElementById('geoCoords');
-  const iconEl   = document.getElementById('geoIcon');
-  const actionsEl = document.getElementById('geoActions');
+  const statusEl  = document.getElementById('geoStatus');
+  const spinnerEl = document.getElementById('geoSpinner');
+  const coordsEl  = document.getElementById('geoCoords');
+  const footerEl  = document.getElementById('geoFooter');
+
+  // Coordenadas por defecto: Maipú, Mendoza
+  const DEFAULT = { lat: -32.9817, lng: -68.7946 };
+
+  function initMap(lat, lng) {
+    _map = L.map('geoMap').setView([lat, lng], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 20,
+    }).addTo(_map);
+
+    _marker = L.marker([lat, lng], { draggable: true }).addTo(_map);
+
+    const updateCoords = (latlng) => {
+      coordsEl.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+    };
+
+    _marker.on('drag', (e) => updateCoords(e.latlng));
+    _marker.on('dragend', (e) => updateCoords(e.target.getLatLng()));
+
+    // Tap/click en el mapa mueve el pin
+    _map.on('click', (e) => {
+      _marker.setLatLng(e.latlng);
+      updateCoords(e.latlng);
+    });
+
+    updateCoords({ lat, lng });
+    footerEl.style.display = 'block';
+    setTimeout(() => _map.invalidateSize(), 100);
+  }
 
   try {
     const loc = await Geo.getLocation();
-    State.location = loc;
-    iconEl.textContent = '✅';
-    statusEl.textContent = 'Ubicación obtenida';
-    coordsEl.textContent = Geo.format(loc);
-    actionsEl.style.display = 'block';
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+    initMap(loc.lat, loc.lng);
   } catch (err) {
-    iconEl.textContent = '⚠️';
-    statusEl.textContent = err.message;
-    coordsEl.textContent = 'Podés continuar sin ubicación';
-    actionsEl.style.display = 'block';
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = `${err.message} — ajustá el pin manualmente`;
+    initMap(DEFAULT.lat, DEFAULT.lng);
   }
+}
+
+function confirmGeo() {
+  if (_marker) {
+    const pos = _marker.getLatLng();
+    State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
+  }
+  go('typeSelect');
+}
+
+function skipGeo() {
+  State.location = null;
+  go('typeSelect');
 }
 
 function renderTypeSelect() {
