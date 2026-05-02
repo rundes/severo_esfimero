@@ -4,7 +4,13 @@ const SheetsDB = {
     return this._apiAppend(type, record);
   },
 
-  async getAll(type) {
+  getAll(type) {
+    if (CONFIG.USE_MOCK) return this._mockGetAll(type);
+    // En modo API se necesita await; usar getAllAsync()
+    throw new Error('Modo API: usar await SheetsDB.getAllAsync(type)');
+  },
+
+  async getAllAsync(type) {
     if (CONFIG.USE_MOCK) return this._mockGetAll(type);
     return this._apiGetAll(type);
   },
