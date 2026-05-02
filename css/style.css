@@ -309,6 +309,18 @@ html, body {
 .type-card-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
 .type-card-desc  { font-size: .9rem; color: var(--text-2); line-height: 1.4; }
 
+/* ── Block header ───────────────────────────────────────────────────────────── */
+.block-header {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-bottom: 1px solid #BBDEFB;
+}
+
 /* ── Survey screen ──────────────────────────────────────────────────────────── */
 .survey-body {
   flex: 1;
@@ -327,6 +339,16 @@ html, body {
 }
 
 .required { color: var(--error); margin-left: 4px; }
+
+.question-hint {
+  font-size: .85rem;
+  color: var(--text-2);
+  background: #FFF8E1;
+  border-left: 3px solid #FFB300;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.4;
+}
 
 .question-input { display: flex; flex-direction: column; gap: 8px; }
 

@@ -74,11 +74,41 @@ function formatDate(iso) {
 }
 
 function typeLabel(type) {
-  return type === 'ciudadano' ? 'Ciudadano' : 'Problemática';
+  if (type === 'ciudadano')        return 'Ciudadano';
+  if (type === 'sociohabitacional') return 'Socio-habitacional';
+  return 'Problemática';
 }
 
 function typeIcon(type) {
-  return type === 'ciudadano' ? '🧑' : '⚠️';
+  if (type === 'ciudadano')        return '🧑';
+  if (type === 'sociohabitacional') return '🏠';
+  return '⚠️';
+}
+
+// ── Helpers de visibilidad condicional ───────────────────────────────────────
+
+function isVisible(q) {
+  return !q.showIf || q.showIf(State.answers);
+}
+
+function nextVisibleIdx(from, questions) {
+  let idx = from + 1;
+  while (idx < questions.length && !isVisible(questions[idx])) idx++;
+  return idx;
+}
+
+function prevVisibleIdx(from, questions) {
+  let idx = from - 1;
+  while (idx >= 0 && !isVisible(questions[idx])) idx--;
+  return idx;
+}
+
+function visibleQuestions(questions) {
+  return questions.filter(isVisible);
+}
+
+function visiblePosition(questions, currentIdx) {
+  return questions.slice(0, currentIdx + 1).filter(isVisible).length;
 }
 
 // ── Pantallas ────────────────────────────────────────────────────────────────
@@ -208,6 +238,11 @@ function renderTypeSelect() {
       </header>
       <div class="type-loc">📍 ${locText}</div>
       <div class="type-cards">
+        <button class="type-card" onclick="selectType('sociohabitacional')">
+          <div class="type-card-icon">🏠</div>
+          <div class="type-card-title">Encuesta socio-habitacional</div>
+          <div class="type-card-desc">Maipú 2026 — vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
+        </button>
         <button class="type-card" onclick="selectType('ciudadano')">
           <div class="type-card-icon">🧑</div>
           <div class="type-card-title">Entrevistar ciudadano</div>
@@ -228,27 +263,44 @@ function selectType(type) {
 
 function renderSurvey() {
   const questions = PREGUNTAS[State.surveyType] || [];
+
+  // Asegurar que la pregunta actual sea visible; si no, avanzar al siguiente visible
+  if (questions[State.currentQ] && !isVisible(questions[State.currentQ])) {
+    State.currentQ = nextVisibleIdx(State.currentQ - 1, questions);
+  }
+
   const q = questions[State.currentQ];
   if (!q) { go('summary'); return ''; }
 
-  const total = questions.length;
-  const progress = ((State.currentQ) / total) * 100;
-  const isLast = State.currentQ === total - 1;
-  const val = State.answers[q.id];
+  const visible     = visibleQuestions(questions);
+  const visPos      = visiblePosition(questions, State.currentQ);
+  const visTotal    = visible.length;
+  const progress    = ((visPos - 1) / visTotal) * 100;
+  const isLast      = nextVisibleIdx(State.currentQ, questions) >= questions.length;
+  const val         = State.answers[q.id];
+
+  // Encabezado de bloque (cuando cambia respecto al anterior visible)
+  const prevVisIdx  = prevVisibleIdx(State.currentQ, questions);
+  const prevQ       = questions[prevVisIdx];
+  const blockHeader = q.block && q.block !== prevQ?.block
+    ? `<div class="block-header">${q.block}</div>`
+    : '';
 
   return `
     <div class="screen">
       <header class="app-header">
         <button class="btn-icon" onclick="surveyBack()">←</button>
         <span class="header-title">${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
-        <span class="header-count">${State.currentQ + 1}/${total}</span>
+        <span class="header-count">${visPos}/${visTotal}</span>
       </header>
       <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      ${blockHeader}
       <div class="survey-body">
         <label class="question-label">
           ${q.label}
           ${q.required ? '<span class="required">*</span>' : ''}
         </label>
+        ${q.hint ? `<p class="question-hint">${q.hint}</p>` : ''}
         <div class="question-input">
           ${renderInput(q, val)}
         </div>
@@ -267,6 +319,11 @@ function renderInput(q, val) {
     case 'text':
       return `<input type="text" class="input" id="q_${q.id}"
         value="${val || ''}" placeholder="${q.placeholder || ''}"
+        oninput="saveAnswer('${q.id}', this.value)">`;
+
+    case 'number':
+      return `<input type="number" inputmode="numeric" class="input" id="q_${q.id}"
+        value="${val || ''}" placeholder="0" min="0"
         oninput="saveAnswer('${q.id}', this.value)">`;
 
     case 'select':
@@ -333,10 +390,12 @@ function toggleChip(id, option) {
 }
 
 function surveyBack() {
-  if (State.currentQ === 0) {
+  const questions = PREGUNTAS[State.surveyType] || [];
+  const prev = prevVisibleIdx(State.currentQ, questions);
+  if (prev < 0) {
     go('typeSelect');
   } else {
-    State.currentQ--;
+    State.currentQ = prev;
     render();
   }
 }
@@ -355,10 +414,11 @@ function surveyNext(skip) {
     }
   }
 
-  if (State.currentQ >= questions.length - 1) {
+  const next = nextVisibleIdx(State.currentQ, questions);
+  if (next >= questions.length) {
     go('summary');
   } else {
-    State.currentQ++;
+    State.currentQ = next;
     render();
   }
 }
@@ -436,10 +496,14 @@ function renderDone() {
 }
 
 function renderList() {
-  const ciudadanos = SheetsDB.getAll('ciudadano');
-  const problemas  = SheetsDB.getAll('problematica');
-  const all = [...ciudadanos.map((r) => ({...r, type:'ciudadano'})),
-               ...problemas.map((r)  => ({...r, type:'problematica'}))];
+  const ciudadanos      = SheetsDB.getAll('ciudadano');
+  const problemas       = SheetsDB.getAll('problematica');
+  const sociohabit      = SheetsDB.getAll('sociohabitacional');
+  const all = [
+    ...ciudadanos.map((r)   => ({...r, type: 'ciudadano'})),
+    ...problemas.map((r)    => ({...r, type: 'problematica'})),
+    ...sociohabit.map((r)   => ({...r, type: 'sociohabitacional'})),
+  ];
   all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
   const cards = all.length === 0
