@@ -204,15 +204,24 @@ function logout() {
 }
 
 function startNewSurvey() {
-  go('geo', { answers: {}, currentQ: 0, location: null, surveyType: null });
+  go('typeSelect', { answers: {}, currentQ: 0, location: null, surveyType: null,
+    padronLoaded: false, padronFilled: {}, padronMeta: null,
+    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
 }
 
 function renderGeo() {
+  const geoTitles = {
+    ciudadano:        'Ubicación del domicilio',
+    sociohabitacional:'Ubicación de la vivienda',
+    problematica:     'Ubicación de la problemática',
+  };
+  const title = geoTitles[State.surveyType] || 'Ubicación';
+  const backTarget = State.surveyType === 'ciudadano' ? 'citizenSearch' : 'typeSelect';
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Ubicación</span>
+        <button class="btn-icon" onclick="go('${backTarget}')">←</button>
+        <span class="header-title">📍 ${title}</span>
       </header>
       <div class="geo-status-bar" id="geoStatusBar">
         <div class="geo-spinner" id="geoSpinner"></div>
@@ -282,12 +291,12 @@ function confirmGeo() {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
   }
-  go('typeSelect');
+  go('survey');
 }
 
 function skipGeo() {
   State.location = null;
-  go('typeSelect');
+  go('survey');
 }
 
 function renderTypeSelect() {
@@ -295,7 +304,7 @@ function renderTypeSelect() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('geo')">←</button>
+        <button class="btn-icon" onclick="go('home')">←</button>
         <span class="header-title">Tipo de relevamiento</span>
       </header>
       <div class="type-loc">📍 ${locText}</div>
@@ -320,11 +329,11 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null };
+  const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null, location: null };
   if (type === 'ciudadano') {
     go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
   } else {
-    go('survey', base);
+    go('geo', base);
   }
 }
 
@@ -449,10 +458,11 @@ function selectCitizen(idx) {
     });
   }
 
-  go('survey', {
+  go('geo', {
     surveyType: 'ciudadano',
     currentQ: 0,
     answers,
+    location: null,
     padronLoaded: !!record,
     padronFilled,
     padronMeta: record?._meta || null,
@@ -596,7 +606,7 @@ function surveyBack() {
   const questions = PREGUNTAS[State.surveyType] || [];
   const prev = prevVisibleIdx(State.currentQ, questions);
   if (prev < 0) {
-    go('typeSelect');
+    go('geo');
   } else {
     State.currentQ = prev;
     render();
