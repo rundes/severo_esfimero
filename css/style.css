@@ -582,3 +582,53 @@ html, body {
   min-height: 100vh;
   color: var(--text-2);
 }
+
+/* ── Citizen Search ──────────────────────────────────────────────────────────── */
+.search-group { display: flex; flex-direction: column; gap: 8px; }
+
+.search-divider {
+  text-align: center;
+  font-size: .82rem;
+  color: var(--text-2);
+  padding: 2px 0;
+}
+
+.search-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 16px;
+  color: var(--text-2);
+  font-size: .9rem;
+}
+
+.citizen-results { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+.citizen-result {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.citizen-result:hover { border-color: var(--primary); background: var(--primary-light); }
+
+.citizen-result-name { font-weight: 700; font-size: 1rem; color: var(--text); }
+.citizen-result-info { font-size: .82rem; color: var(--text-2); margin-top: 3px; }
+
+.google-login-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.google-not-configured {
+  font-size: .78rem;
+  color: var(--warn);
+  text-align: center;
+  padding: 4px 0 0;
+}

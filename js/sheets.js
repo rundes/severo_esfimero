@@ -132,25 +132,29 @@ const SheetsDB = {
 // En mock: localStorage 'severo_padron' (para pruebas sin OAuth)
 
 const Padron = {
-  // Búsqueda sincrónica (mock) — no usar en modo API
+  _cache: {},  // In-session cache: { [sheetName]: rows[] }
+
   searchByDNI(dni) {
     if (CONFIG.USE_MOCK) return this._mockSearch(dni);
     return null;
   },
 
-  // Búsqueda asíncrona — busca primero en nativos, luego en extranjeros
   async searchByDNIAsync(dni) {
     if (CONFIG.USE_MOCK) return this._mockSearch(dni);
     return this._apiSearch(dni);
   },
 
-  // Persiste lat/lng en el padrón (mock: localStorage; API: escribe G-H o F-G según pestaña)
+  // Búsqueda por apellido parcial (mínimo 4 chars) — devuelve array de coincidencias
+  async searchByApellidoAsync(query) {
+    if (CONFIG.USE_MOCK) return this._mockSearchByApellido(query);
+    return this._apiSearchByApellido(query);
+  },
+
   async updateLatLng(meta, lat, lng) {
     if (CONFIG.USE_MOCK) return this._mockUpdateLatLng(meta, lat, lng);
     return this._apiUpdateLatLng(meta, lat, lng);
   },
 
-  // Upsert completo de registro en mock (solo se usa en modo prototipo)
   async upsertByDNI(record) {
     if (!CONFIG.USE_MOCK) return;
     return this._mockUpsert(record);
@@ -174,6 +178,16 @@ const Padron = {
     return { ...found, _meta: { dni: dniStr } };
   },
 
+  _mockSearchByApellido(query) {
+    if (!query || query.length < 4) return [];
+    const q = query.toLowerCase();
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    return items
+      .filter((r) => (r.apellido || '').toLowerCase().includes(q))
+      .slice(0, 15)
+      .map((r) => ({ ...r, _meta: { dni: r.dni } }));
+  },
+
   _mockUpsert(record) {
     const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
     const idx = items.findIndex((r) => r.dni === String(record.dni).trim());
@@ -194,51 +208,91 @@ const Padron = {
     }
   },
 
+  // ── API helpers ───────────────────────────────────────────────────────────
+
+  async _fetchSheet(sheetName) {
+    if (this._cache[sheetName]) return this._cache[sheetName];
+    const token = SheetsDB._getToken();
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheetName}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return [];
+    const rows = (await res.json()).values || [];
+    this._cache[sheetName] = rows;
+    return rows;
+  },
+
   // ── Google Sheets API ────────────────────────────────────────────────────
 
   async _apiSearch(dni) {
-    const token = SheetsDB._getToken();
     const dniStr = String(dni).trim();
 
-    // 1. Buscar en nativos (DOCUMENTO = col B, índice 1)
-    const rN = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${CONFIG.SHEET_PADRON_NATIVOS}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (rN.ok) {
-      const rows = (await rN.json()).values || [];
-      const i = rows.findIndex((r, idx) => idx > 0 && String(r[1] || '').trim() === dniStr);
-      if (i > 0) {
-        return {
-          apellido:  this._titleCase(rows[i][3] || ''),   // APELLIDO Y NOMBRE
-          domicilio: this._titleCase(rows[i][5] || ''),   // DOMICILIO
-          lat:       rows[i][6] || '',                    // LATITUD
-          lng:       rows[i][7] || '',                    // LOGITUD
-          _meta: { coordRange: `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 1}:H${i + 1}` },
-        };
-      }
+    const nRows = await this._fetchSheet(CONFIG.SHEET_PADRON_NATIVOS);
+    const iN = nRows.findIndex((r, idx) => idx > 0 && String(r[1] || '').trim() === dniStr);
+    if (iN > 0) {
+      return {
+        apellido:  this._titleCase(nRows[iN][3] || ''),
+        domicilio: this._titleCase(nRows[iN][5] || ''),
+        dni:       dniStr,
+        lat:       nRows[iN][6] || '',
+        lng:       nRows[iN][7] || '',
+        _meta: { coordRange: `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:H${iN + 1}` },
+      };
     }
 
-    // 2. Buscar en extranjeros (DOCUMENTO = col A, índice 0)
-    const rE = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${CONFIG.SHEET_PADRON_EXTRANJEROS}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (rE.ok) {
-      const rows = (await rE.json()).values || [];
-      const i = rows.findIndex((r, idx) => idx > 0 && String(r[0] || '').trim() === dniStr);
-      if (i > 0) {
-        return {
-          apellido:  this._titleCase(rows[i][2] || ''),   // APELLIDO Y NOMBRE
-          domicilio: this._titleCase(rows[i][4] || ''),   // DOMICILIO
-          lat:       rows[i][5] || '',                    // LATITUD
-          lng:       rows[i][6] || '',                    // LONGITUD
-          _meta: { coordRange: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 1}:G${i + 1}` },
-        };
-      }
+    const eRows = await this._fetchSheet(CONFIG.SHEET_PADRON_EXTRANJEROS);
+    const iE = eRows.findIndex((r, idx) => idx > 0 && String(r[0] || '').trim() === dniStr);
+    if (iE > 0) {
+      return {
+        apellido:  this._titleCase(eRows[iE][2] || ''),
+        domicilio: this._titleCase(eRows[iE][4] || ''),
+        dni:       dniStr,
+        lat:       eRows[iE][5] || '',
+        lng:       eRows[iE][6] || '',
+        _meta: { coordRange: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:G${iE + 1}` },
+      };
     }
 
-    return null; // no encontrado en ninguna pestaña
+    return null;
+  },
+
+  async _apiSearchByApellido(query) {
+    if (!query || query.length < 4) return [];
+    const q = query.toLowerCase();
+    const results = [];
+
+    const nRows = await this._fetchSheet(CONFIG.SHEET_PADRON_NATIVOS);
+    nRows.slice(1).forEach((row, i) => {
+      const apellido = this._titleCase(row[3] || '');
+      if (apellido.toLowerCase().includes(q)) {
+        results.push({
+          apellido,
+          domicilio: this._titleCase(row[5] || ''),
+          dni: String(row[1] || '').trim(),
+          lat: row[6] || '',
+          lng: row[7] || '',
+          _meta: { coordRange: `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:H${i + 2}` },
+        });
+      }
+    });
+
+    const eRows = await this._fetchSheet(CONFIG.SHEET_PADRON_EXTRANJEROS);
+    eRows.slice(1).forEach((row, i) => {
+      const apellido = this._titleCase(row[2] || '');
+      if (apellido.toLowerCase().includes(q)) {
+        results.push({
+          apellido,
+          domicilio: this._titleCase(row[4] || ''),
+          dni: String(row[0] || '').trim(),
+          lat: row[5] || '',
+          lng: row[6] || '',
+          _meta: { coordRange: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:G${i + 2}` },
+        });
+      }
+    });
+
+    return results.slice(0, 15);
   },
 
   async _apiUpdateLatLng(meta, lat, lng) {

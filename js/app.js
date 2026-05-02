@@ -2,6 +2,7 @@
 
 let _map = null;
 let _marker = null;
+let _searchDebounce = null;
 
 // ── Estado global ────────────────────────────────────────────────────────────
 
@@ -15,9 +16,14 @@ const State = {
   surveys: [],
   detailRecord: null,
   toast: null,
-  padronLoaded: false,   // true si ya se hizo la búsqueda en este relevamiento
-  padronFilled: {},      // { [questionId]: true } para campos pre-llenados desde el padrón
-  padronMeta:   null,    // { coordRange } para saber dónde escribir lat/lng en el sheet
+  padronLoaded: false,
+  padronFilled: {},
+  padronMeta:   null,
+  // citizen search
+  citizenSearchQuery: '',
+  citizenDNIQuery: '',
+  citizenSearchResults: [],
+  citizenSearching: false,
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -54,16 +60,17 @@ function render() {
 
   const el = document.getElementById('app');
   const screens = {
-    auth:         renderAuth,
-    home:         renderHome,
-    geo:          renderGeo,
-    typeSelect:   renderTypeSelect,
-    survey:       renderSurvey,
-    summary:      renderSummary,
-    saving:       renderSaving,
-    done:         renderDone,
-    list:         renderList,
-    detail:       renderDetail,
+    auth:          renderAuth,
+    home:          renderHome,
+    geo:           renderGeo,
+    typeSelect:    renderTypeSelect,
+    citizenSearch: renderCitizenSearch,
+    survey:        renderSurvey,
+    summary:       renderSummary,
+    saving:        renderSaving,
+    done:          renderDone,
+    list:          renderList,
+    detail:        renderDetail,
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
@@ -138,22 +145,23 @@ function renderAuth() {
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>
       <div class="auth-card">
-        ${isConfigured ? `
-          <div id="g_id_onload"
-            data-client_id="${CONFIG.GOOGLE_CLIENT_ID}"
-            data-callback="gsiCallback"
-            data-auto_prompt="false"></div>
+        <div id="g_id_onload"
+          data-client_id="${CONFIG.GOOGLE_CLIENT_ID}"
+          data-callback="gsiCallback"
+          data-auto_prompt="false"></div>
+        <div class="google-login-wrap">
           <div class="g_id_signin"
             data-type="standard" data-size="large"
             data-theme="outline" data-text="sign_in_with"
             data-shape="rectangular" data-logo_alignment="left">
           </div>
-          <div class="divider"><span>o</span></div>
-        ` : ''}
-        <button class="btn btn-outline" onclick="mockLogin()">
+        </div>
+        ${!isConfigured ? `<p class="google-not-configured">⚠ Configurar GOOGLE_CLIENT_ID para habilitar el acceso con Google</p>` : ''}
+        <div class="divider"><span>o</span></div>
+        <button class="btn btn-ghost btn-block" onclick="mockLogin()" style="font-size:.9rem;border:1px solid var(--border)">
           Entrar como operador de prueba
         </button>
-        ${!isConfigured ? `<p class="hint">Prototipo — datos guardados en el navegador</p>` : ''}
+        ${CONFIG.USE_MOCK ? `<p class="hint" style="margin-top:0">Modo prototipo — datos en localStorage</p>` : ''}
       </div>
     </div>`;
 }
@@ -312,7 +320,147 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  go('survey', { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null });
+  const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null };
+  if (type === 'ciudadano') {
+    go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
+  } else {
+    go('survey', base);
+  }
+}
+
+// ── Citizen Search screen ────────────────────────────────────────────────────
+
+function renderCitizenSearch() {
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('typeSelect')">←</button>
+        <span class="header-title">🧑 Buscar ciudadano</span>
+      </header>
+      <div class="survey-body">
+        <div class="search-group">
+          <label class="question-label">Apellido y nombre</label>
+          <input type="text" class="input" id="searchApellido"
+            placeholder="Ingresá las primeras 4 letras…"
+            value="${State.citizenSearchQuery || ''}"
+            oninput="onCitizenSearchInput('apellido', this.value)"
+            autocomplete="off">
+        </div>
+        <div class="search-divider">— o por número de documento —</div>
+        <div class="search-group">
+          <label class="question-label">DNI</label>
+          <input type="text" inputmode="numeric" class="input" id="searchDNI"
+            placeholder="Número de documento"
+            value="${State.citizenDNIQuery || ''}"
+            oninput="onCitizenSearchInput('dni', this.value)"
+            autocomplete="off">
+        </div>
+        <div id="searchResults">${renderCitizenResults()}</div>
+      </div>
+      <div class="survey-footer">
+        <button class="btn btn-ghost" onclick="selectCitizen(null)">Continuar sin buscar</button>
+      </div>
+    </div>`;
+}
+
+function renderCitizenResults() {
+  if (State.citizenSearching) {
+    return `<div class="search-status"><div class="geo-spinner"></div> Buscando en el padrón…</div>`;
+  }
+  const results = State.citizenSearchResults || [];
+  if (!results.length) {
+    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
+    return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
+  }
+  return `<div class="citizen-results">
+    ${results.map((r, i) => `
+      <div class="citizen-result" onclick="selectCitizen(${i})">
+        <div class="citizen-result-name">${r.apellido || '—'}</div>
+        <div class="citizen-result-info">DNI: ${r.dni || '—'} · ${r.domicilio || 'Sin domicilio registrado'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function onCitizenSearchInput(field, value) {
+  if (field === 'apellido') {
+    State.citizenSearchQuery = value;
+    State.citizenDNIQuery = '';
+    const other = document.getElementById('searchDNI');
+    if (other) other.value = '';
+  } else {
+    State.citizenDNIQuery = value;
+    State.citizenSearchQuery = '';
+    const other = document.getElementById('searchApellido');
+    if (other) other.value = '';
+  }
+
+  clearTimeout(_searchDebounce);
+  const minLen = field === 'apellido' ? 4 : 6;
+
+  if (value.length >= minLen) {
+    State.citizenSearching = true;
+    State.citizenSearchResults = [];
+    updateCitizenSearchUI();
+    _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
+  } else {
+    State.citizenSearchResults = [];
+    State.citizenSearching = false;
+    updateCitizenSearchUI();
+  }
+}
+
+function updateCitizenSearchUI() {
+  const el = document.getElementById('searchResults');
+  if (el) el.innerHTML = renderCitizenResults();
+}
+
+async function doCitizenSearch(field, value) {
+  try {
+    let results;
+    if (field === 'dni') {
+      const record = await Padron.searchByDNIAsync(value);
+      results = record ? [record] : [];
+    } else {
+      results = await Padron.searchByApellidoAsync(value);
+    }
+    State.citizenSearchResults = results || [];
+    State.citizenSearching = false;
+  } catch {
+    State.citizenSearchResults = [];
+    State.citizenSearching = false;
+  }
+  updateCitizenSearchUI();
+}
+
+function selectCitizen(idx) {
+  const record = (idx !== null && State.citizenSearchResults?.[idx]) ? State.citizenSearchResults[idx] : null;
+  const questions = PREGUNTAS.ciudadano;
+  const answers = {};
+  const padronFilled = {};
+
+  if (record) {
+    questions.forEach((q) => {
+      if (q.padronKey && record.dni) {
+        answers[q.id] = record.dni;
+      } else if (q.padronField && record[q.padronField]) {
+        answers[q.id] = record[q.padronField];
+        padronFilled[q.id] = true;
+      }
+    });
+  }
+
+  go('survey', {
+    surveyType: 'ciudadano',
+    currentQ: 0,
+    answers,
+    padronLoaded: !!record,
+    padronFilled,
+    padronMeta: record?._meta || null,
+    citizenSearchResults: [],
+    citizenSearchQuery: '',
+    citizenDNIQuery: '',
+    citizenSearching: false,
+  });
 }
 
 function renderSurvey() {
