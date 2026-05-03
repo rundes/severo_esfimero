@@ -3,7 +3,10 @@
 let _map = null;
 let _marker = null;
 let _searchDebounce = null;
+let _geocodeDebounce = null;
 let _tokenClient = null;
+let _silentRefreshResolve = null;
+let _silentRefreshReject   = null;
 
 // Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
 function initGoogleTokenClient() {
@@ -15,6 +18,17 @@ function initGoogleTokenClient() {
     client_id: id,
     scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
     callback: async (tokenResponse) => {
+      // Refresh silencioso iniciado por ensureFreshToken()
+      if (_silentRefreshResolve) {
+        const resolve = _silentRefreshResolve;
+        const reject  = _silentRefreshReject;
+        _silentRefreshResolve = null;
+        _silentRefreshReject  = null;
+        if (tokenResponse.error) return reject(new Error(tokenResponse.error));
+        localStorage.setItem('severo_access_token', tokenResponse.access_token);
+        return resolve(tokenResponse.access_token);
+      }
+      // Login normal
       if (tokenResponse.error) return;
       try {
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
@@ -32,9 +46,24 @@ function initGoogleTokenClient() {
 }
 
 function googleLogin() {
-  if (_tokenClient) {
+  if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
+}
+
+// Renueva el token silenciosamente sin mostrar popup.
+function ensureFreshToken() {
+  return new Promise((resolve, reject) => {
+    if (!_tokenClient) return reject(new Error('Cliente OAuth no disponible'));
+    _silentRefreshResolve = resolve;
+    _silentRefreshReject  = reject;
     _tokenClient.requestAccessToken({ prompt: '' });
-  }
+    setTimeout(() => {
+      if (_silentRefreshResolve) {
+        _silentRefreshResolve = null;
+        _silentRefreshReject  = null;
+        reject(new Error('Timeout al renovar sesión — volvé a ingresar'));
+      }
+    }, 15000);
+  });
 }
 
 // ── Estado global ────────────────────────────────────────────────────────────
@@ -825,7 +854,13 @@ async function doSave() {
       location: State.location,
       answers: { ...State.answers },
     };
-    await SheetsDB.save(State.surveyType, record);
+    try {
+      await SheetsDB.save(State.surveyType, record);
+    } catch (err) {
+      if (!err.message.includes('401')) throw err;
+      await ensureFreshToken();
+      await SheetsDB.save(State.surveyType, record);
+    }
 
     // Actualizar el padrón si hay DNI, ubicación y meta conocida (lat/lng + DOMICILIO REAL)
     const questions = PREGUNTAS[State.surveyType] || [];
@@ -894,12 +929,22 @@ function renderList() {
 }
 
 async function loadList() {
+  const fetchAll = () => Promise.all([
+    SheetsDB.getAllAsync('ciudadano'),
+    SheetsDB.getAllAsync('problematica'),
+    SheetsDB.getAllAsync('sociohabitacional'),
+  ]);
+
   try {
-    const [ciudadanos, problemas, sociohabit] = await Promise.all([
-      SheetsDB.getAllAsync('ciudadano'),
-      SheetsDB.getAllAsync('problematica'),
-      SheetsDB.getAllAsync('sociohabitacional'),
-    ]);
+    let result;
+    try {
+      result = await fetchAll();
+    } catch (err) {
+      if (!err.message.includes('401')) throw err;
+      await ensureFreshToken();
+      result = await fetchAll();
+    }
+    const [ciudadanos, problemas, sociohabit] = result;
     const all = [
       ...ciudadanos.map((r) => ({ ...r, type: 'ciudadano' })),
       ...problemas.map((r) => ({ ...r, type: 'problematica' })),
