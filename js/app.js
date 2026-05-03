@@ -43,6 +43,7 @@ const State = {
   screen: 'auth',
   user: null,
   location: null,
+  domicilioReal: null,
   surveyType: null,   // 'ciudadano' | 'problematica' | 'sociohabitacional'
   answers: {},
   currentQ: 0,
@@ -231,8 +232,8 @@ function logout() {
 }
 
 function startNewSurvey() {
-  go('typeSelect', { answers: {}, currentQ: 0, location: null, surveyType: null,
-    padronLoaded: false, padronFilled: {}, padronMeta: null,
+  go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
+    surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
 }
 
@@ -313,10 +314,14 @@ async function startGeoCapture() {
   }
 }
 
-function confirmGeo() {
+async function confirmGeo() {
   if (_marker) {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
+    // Geocodificación inversa solo para relevamientos con domicilio de ciudadano
+    if (State.surveyType !== 'problematica') {
+      State.domicilioReal = await Geo.reverseGeocode(pos.lat, pos.lng);
+    }
   }
   go('survey');
 }
@@ -677,9 +682,7 @@ async function doPadronLookup(dniQuestion, questions) {
 
   let record;
   try {
-    record = CONFIG.USE_MOCK
-      ? Padron.searchByDNI(dni)
-      : await Padron.searchByDNIAsync(dni);
+    record = await Padron.searchByDNIAsync(dni);
   } catch {
     return;
   }
@@ -754,27 +757,18 @@ async function doSave() {
     };
     await SheetsDB.save(State.surveyType, record);
 
-    // Actualizar el padrón si hay DNI y ubicación capturada
+    // Actualizar el padrón si hay DNI, ubicación y meta conocida (lat/lng + DOMICILIO REAL)
     const questions = PREGUNTAS[State.surveyType] || [];
     const dniQ = questions.find((q) => q.padronKey);
-    if (dniQ && State.answers[dniQ.id] && State.location) {
-      if (CONFIG.USE_MOCK) {
-        // Mock: upsert completo en localStorage (para pruebas)
-        const padronRecord = { dni: String(State.answers[dniQ.id]).trim() };
-        questions.forEach((q) => {
-          if (q.padronField && State.answers[q.id] !== undefined && State.answers[q.id] !== '') {
-            padronRecord[q.padronField] = State.answers[q.id];
-          }
-        });
-        padronRecord.lat = State.location.lat;
-        padronRecord.lng = State.location.lng;
-        try { await Padron.upsertByDNI(padronRecord); } catch { /* silencioso */ }
-      } else if (State.padronMeta) {
-        // API real: solo escribe LATITUD y LONGITUD en la fila del padrón electoral
-        try {
-          await Padron.updateLatLng(State.padronMeta, State.location.lat, State.location.lng);
-        } catch { /* no bloquea el guardado */ }
-      }
+    if (dniQ && State.answers[dniQ.id] && State.location && State.padronMeta) {
+      try {
+        await Padron.updateLatLng(
+          State.padronMeta,
+          State.location.lat,
+          State.location.lng,
+          State.domicilioReal || null
+        );
+      } catch { /* no bloquea el guardado */ }
     }
 
     go('done');

@@ -1,24 +1,24 @@
 const SheetsDB = {
+  _hasToken() {
+    return !!localStorage.getItem('severo_access_token');
+  },
+
   async save(type, record) {
-    if (CONFIG.USE_MOCK) return this._mockSave(type, record);
+    if (!this._hasToken()) return this._mockSave(type, record);
     return this._apiAppend(type, record);
   },
 
   getAll(type) {
-    if (CONFIG.USE_MOCK) return this._mockGetAll(type);
-    // En modo API se necesita await; usar getAllAsync()
-    throw new Error('Modo API: usar await SheetsDB.getAllAsync(type)');
+    return this._mockGetAll(type);
   },
 
   async getAllAsync(type) {
-    if (CONFIG.USE_MOCK) return this._mockGetAll(type);
+    if (!this._hasToken()) return this._mockGetAll(type);
     return this._apiGetAll(type);
   },
 
   async update(type, id, updates) {
-    if (CONFIG.USE_MOCK) return this._mockUpdate(type, id, updates);
-    // La actualización en Sheets requiere conocer la fila exacta; se implementa en v2
-    console.warn('update() en modo API aún no implementado');
+    return this._mockUpdate(type, id, updates);
   },
 
   // ── Mock (localStorage) ──────────────────────────────────────────────────
@@ -49,8 +49,14 @@ const SheetsDB = {
 
   // ── Google Sheets API ────────────────────────────────────────────────────
 
+  _sheetForType(type) {
+    if (type === 'ciudadano')        return CONFIG.SHEET_CIUDADANOS;
+    if (type === 'sociohabitacional') return CONFIG.SHEET_SOCIOHABITACIONAL;
+    return CONFIG.SHEET_PROBLEMATICAS;
+  },
+
   async _apiAppend(type, record) {
-    const sheet = type === 'ciudadano' ? CONFIG.SHEET_CIUDADANOS : CONFIG.SHEET_PROBLEMATICAS;
+    const sheet = this._sheetForType(type);
     const token = this._getToken();
     const row = this._toRow(type, record);
 
@@ -67,7 +73,7 @@ const SheetsDB = {
   },
 
   async _apiGetAll(type) {
-    const sheet = type === 'ciudadano' ? CONFIG.SHEET_CIUDADANOS : CONFIG.SHEET_PROBLEMATICAS;
+    const sheet = this._sheetForType(type);
     const token = this._getToken();
 
     const res = await fetch(
@@ -80,8 +86,6 @@ const SheetsDB = {
   },
 
   _getToken() {
-    // El token de acceso se obtiene al hacer login con scope de Sheets
-    // Ver: https://developers.google.com/identity/oauth2/web/guides/use-token-model
     const t = localStorage.getItem('severo_access_token');
     if (!t) throw new Error('Sin token de acceso. Reautenticar con scope de Sheets.');
     return t;
@@ -99,17 +103,30 @@ const SheetsDB = {
     ];
     if (type === 'ciudadano') {
       const a = r.answers || {};
-      return [...base, a.nombre || '', a.edad || '', a.residencia || '',
-        a.calidad_vida || '', (a.problemas || []).join(', '), a.mejoras || '', a.comentarios || ''];
-    } else {
-      const a = r.answers || {};
-      return [...base, a.categoria || '', a.direccion || '', a.descripcion || '',
-        a.urgencia || '', a.afecta_transito || '', a.observaciones || ''];
+      return [...base, a.dni || '', a.apellido || '', a.nombre || '', a.domicilio || '',
+        a.edad || '', a.residencia || '', a.calidad_vida || '',
+        (a.problemas || []).join(', '), a.mejoras || '', a.comentarios || ''];
     }
+    if (type === 'sociohabitacional') {
+      const a = r.answers || {};
+      return [...base, a.dni || '', a.apellido || '', a.nombre || '', a.domicilio || '',
+        a.barrio || '', a.personas_total || '', a.personas_menores || '',
+        a.personas_mayores65 || '', a.familias || '', a.tenencia || '',
+        a.escritura || '', a.cuotas_adeuda || '', a.tipo_vivienda || '',
+        a.material_paredes || '', a.ambientes_dormir || '', a.desague || '',
+        a.agua_potable || '', a.electricidad || '', a.gas || '',
+        a.discapacidad || '', (a.tipo_discapacidad || []).join(', '), a.cud || '',
+        (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
+        (a.actividades_mayores || []).join(', '), a.mejora_barrio || '',
+        a.mejora_municipio || '', a.falta_maipu || '', a.voto || ''];
+    }
+    // problematica
+    const a = r.answers || {};
+    return [...base, a.categoria || '', a.direccion || '', a.descripcion || '',
+      a.urgencia || '', a.afecta_transito || '', a.observaciones || ''];
   },
 
   _fromRows(type, rows) {
-    // Inverse of _toRow; first row assumed to be headers
     return rows.slice(1).map((row) => {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
@@ -118,48 +135,66 @@ const SheetsDB = {
           domicilio: row[10], edad: row[11], residencia: row[12],
           calidad_vida: row[13], problemas: row[14] ? row[14].split(', ') : [],
           mejoras: row[15], comentarios: row[16] } };
-      } else {
-        return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
-          urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
       }
+      return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
+        urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
     });
   },
 };
 
 // ── Padrón electoral ─────────────────────────────────────────────────────────
-// Pestaña "nativos":    A=TIPO_DOC, B=DOCUMENTO, D=APELLIDO Y NOMBRE, F=DOMICILIO, G=LATITUD, H=LOGITUD
-// Pestaña "extranjeros": A=DOCUMENTO, C=APELLIDO Y NOMBRE, E=DOMICILIO, F=LATITUD, G=LONGITUD
-// En mock: localStorage 'severo_padron' (para pruebas sin OAuth)
+// Acceso de LECTURA via API Key de Google (planilla debe permitir "ver con vínculo")
+// Acceso de ESCRITURA (lat/lng/domicilio real) via token OAuth del relevador
+//
+// Pestaña "nativos":
+//   A=TIPO_DOC, B=DOCUMENTO, D=APELLIDO Y NOMBRE, F=DOMICILIO,
+//   G=LATITUD, H=LONGITUD, I=DOMICILIO REAL  ← col I nueva, no modifica PADRON INICIAL
+//
+// Pestaña "extranjeros":
+//   A=DOCUMENTO, C=APELLIDO Y NOMBRE, E=DOMICILIO,
+//   F=LATITUD, G=LONGITUD, H=DOMICILIO REAL  ← col H nueva, no modifica PADRON INICIAL
 
 const Padron = {
-  _cache: {},  // In-session cache: { [sheetName]: rows[] }
+  _cache: {},
 
-  _hasToken() {
-    return !!localStorage.getItem('severo_access_token');
+  _apiKeyHeaders() {
+    return {};  // API key goes in query param, no auth header needed
+  },
+
+  _apiKeyParam() {
+    return CONFIG.GOOGLE_API_KEY ? `?key=${CONFIG.GOOGLE_API_KEY}` : '';
+  },
+
+  _hasApiKey() {
+    return !!CONFIG.GOOGLE_API_KEY;
   },
 
   searchByDNI(dni) {
-    return this._mockSearch(dni);  // sync: only mock available
+    return this._mockSearch(dni);
   },
 
   async searchByDNIAsync(dni) {
-    if (!this._hasToken()) return this._mockSearch(dni);
+    if (!this._hasApiKey()) return this._mockSearch(dni);
     return this._apiSearch(dni);
   },
 
-  // Búsqueda por apellido parcial (mínimo 4 chars) — devuelve array de coincidencias
   async searchByApellidoAsync(query) {
-    if (!this._hasToken()) return this._mockSearchByApellido(query);
+    if (!this._hasApiKey()) return this._mockSearchByApellido(query);
     return this._apiSearchByApellido(query);
   },
 
-  async updateLatLng(meta, lat, lng) {
-    if (!this._hasToken()) return this._mockUpdateLatLng(meta, lat, lng);
-    return this._apiUpdateLatLng(meta, lat, lng);
+  async updateLatLng(meta, lat, lng, domicilioReal) {
+    if (!meta?.coordRange) return;
+    // Escribir en padrón requiere token del relevador (debe tener acceso de edición)
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) {
+      // Si no hay token, guardar solo en mock local
+      return this._mockUpdateLatLng(meta, lat, lng);
+    }
+    return this._apiUpdateLatLng(meta, lat, lng, domicilioReal);
   },
 
   async upsertByDNI(record) {
-    if (!CONFIG.USE_MOCK) return;
     return this._mockUpsert(record);
   },
 
@@ -215,10 +250,8 @@ const Padron = {
 
   async _fetchSheet(sheetName) {
     if (this._cache[sheetName]) return this._cache[sheetName];
-    const token = SheetsDB._getToken();
     const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheetName}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheetName}${this._apiKeyParam()}`
     );
     if (!res.ok) return [];
     const rows = (await res.json()).values || [];
@@ -240,7 +273,10 @@ const Padron = {
         dni:       dniStr,
         lat:       nRows[iN][6] || '',
         lng:       nRows[iN][7] || '',
-        _meta: { coordRange: `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:H${iN + 1}` },
+        _meta: {
+          coordRange:     `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:H${iN + 1}`,
+          coordRangeFull: `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:I${iN + 1}`,
+        },
       };
     }
 
@@ -253,7 +289,10 @@ const Padron = {
         dni:       dniStr,
         lat:       eRows[iE][5] || '',
         lng:       eRows[iE][6] || '',
-        _meta: { coordRange: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:G${iE + 1}` },
+        _meta: {
+          coordRange:     `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:G${iE + 1}`,
+          coordRangeFull: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:H${iE + 1}`,
+        },
       };
     }
 
@@ -275,7 +314,10 @@ const Padron = {
           dni: String(row[1] || '').trim(),
           lat: row[6] || '',
           lng: row[7] || '',
-          _meta: { coordRange: `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:H${i + 2}` },
+          _meta: {
+            coordRange:     `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:H${i + 2}`,
+            coordRangeFull: `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:I${i + 2}`,
+          },
         });
       }
     });
@@ -290,7 +332,10 @@ const Padron = {
           dni: String(row[0] || '').trim(),
           lat: row[5] || '',
           lng: row[6] || '',
-          _meta: { coordRange: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:G${i + 2}` },
+          _meta: {
+            coordRange:     `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:G${i + 2}`,
+            coordRangeFull: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:H${i + 2}`,
+          },
         });
       }
     });
@@ -298,15 +343,23 @@ const Padron = {
     return results.slice(0, 15);
   },
 
-  async _apiUpdateLatLng(meta, lat, lng) {
-    if (!meta?.coordRange) return;
-    const token = SheetsDB._getToken();
+  async _apiUpdateLatLng(meta, lat, lng, domicilioReal) {
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) return;
+
+    const useFullRange = !!(domicilioReal && meta.coordRangeFull);
+    const range  = useFullRange ? meta.coordRangeFull : meta.coordRange;
+    const values = useFullRange ? [[lat, lng, domicilioReal]] : [[lat, lng]];
+
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${meta.coordRange}?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values: [[lat, lng]] }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ values }),
       }
     );
   },
