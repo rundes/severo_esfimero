@@ -123,7 +123,14 @@ const SheetsDB = {
     return t;
   },
 
+  _sc(v) {
+    const s = String(v ?? '');
+    // Prevent formula injection in Google Sheets
+    return /^[=+\-@|]/.test(s) ? "'" + s : s;
+  },
+
   _toRow(type, r) {
+    const sc = (v) => this._sc(v);
     const base = [
       r.id || '',
       r.savedAt || new Date().toISOString(),
@@ -135,13 +142,13 @@ const SheetsDB = {
     ];
     if (type === 'ciudadano') {
       const a = r.answers || {};
-      return [...base, a.dni || '', a.apellido || '', a.apodo || '', a.domicilio || '',
+      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio),
         a.edad || '', a.residencia || '', a.calidad_vida || '',
-        (a.problemas || []).join(', '), a.mejoras || '', a.comentarios || ''];
+        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios)];
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
-      return [...base, a.dni || '', a.apellido || '', a.apodo || '', a.domicilio || '',
+      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio),
         a.barrio || '', a.personas_total || '', a.personas_menores || '',
         a.personas_mayores65 || '', a.familias || '', a.tenencia || '',
         a.escritura || '', a.cuotas_adeuda || '', a.tipo_vivienda || '',
@@ -149,13 +156,13 @@ const SheetsDB = {
         a.agua_potable || '', a.electricidad || '', a.gas || '',
         a.discapacidad || '', (a.tipo_discapacidad || []).join(', '), a.cud || '',
         (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
-        (a.actividades_mayores || []).join(', '), a.mejora_barrio || '',
-        a.mejora_municipio || '', a.falta_maipu || '', a.voto || ''];
+        (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
+        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || ''];
     }
     // problematica
     const a = r.answers || {};
-    return [...base, a.categoria || '', a.direccion || '', a.descripcion || '',
-      a.urgencia || '', a.afecta_transito || '', a.observaciones || ''];
+    return [...base, a.categoria || '', sc(a.direccion), sc(a.descripcion),
+      a.urgencia || '', a.afecta_transito || '', sc(a.observaciones)];
   },
 
   _fromRows(type, rows) {

@@ -66,6 +66,12 @@ function ensureFreshToken() {
   });
 }
 
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ── Estado global ────────────────────────────────────────────────────────────
 
 const State = {
@@ -279,13 +285,18 @@ function renderGeo() {
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
   const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
-  const showAddress = State.surveyType !== 'problematica';
   return `
     <div class="screen">
       <header class="app-header">
         <button class="btn-icon" onclick="go('${backTarget}')">←</button>
         <span class="header-title">📍 ${title}</span>
       </header>
+      <div class="geo-search-row">
+        <input type="text" class="input geo-search-input" id="geoSearchInput"
+          placeholder="Buscar dirección…" autocomplete="off"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
+        <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
+      </div>
       <div class="geo-status-bar" id="geoStatusBar">
         <div class="geo-spinner" id="geoSpinner"></div>
         <span id="geoStatus">Obteniendo ubicación…</span>
@@ -293,13 +304,12 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
-        ${showAddress ? `
         <div class="geo-address-row">
           <div class="geo-spinner geo-spinner-sm" id="geoAddrSpinner" style="display:none"></div>
           <input type="text" class="input geo-address-input" id="geoAddress"
             placeholder="Dirección…" autocomplete="off"
-            value="${(State.padronDomicilio || '').replace(/"/g, '&quot;')}">
-        </div>` : ''}
+            value="${esc(State.padronDomicilio || '')}">
+        </div>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -313,13 +323,10 @@ async function startGeoCapture() {
   const spinnerEl = document.getElementById('geoSpinner');
   const coordsEl  = document.getElementById('geoCoords');
   const footerEl  = document.getElementById('geoFooter');
-  const showAddress = State.surveyType !== 'problematica';
-
   // Coordenadas por defecto: Maipú, Mendoza
   const DEFAULT = { lat: -32.9817, lng: -68.7946 };
 
   async function updateAddress(lat, lng) {
-    if (!showAddress) return;
     const addrEl = document.getElementById('geoAddress');
     const addrSpinner = document.getElementById('geoAddrSpinner');
     if (!addrEl) return;
@@ -396,12 +403,37 @@ function confirmGeo() {
   if (_marker) {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
-    if (State.surveyType !== 'problematica') {
-      const addrEl = document.getElementById('geoAddress');
-      State.domicilioReal = addrEl?.value?.trim() || null;
+    const addrEl = document.getElementById('geoAddress');
+    const addr = addrEl?.value?.trim() || null;
+    State.domicilioReal = addr;
+    if (State.surveyType === 'problematica' && addr) {
+      State.answers.direccion = addr;
     }
   }
   go('survey');
+}
+
+async function doGeoSearch() {
+  const input = document.getElementById('geoSearchInput');
+  const query = input?.value?.trim();
+  if (!query) return;
+  const statusEl = document.getElementById('geoStatus');
+  if (statusEl) statusEl.textContent = 'Buscando…';
+  const result = await Geo.geocode(query);
+  if (!result) {
+    if (statusEl) statusEl.textContent = 'No se encontró la dirección';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+  if (_map && _marker) {
+    const ll = L.latLng(result.lat, result.lng);
+    _marker.setLatLng(ll);
+    _map.setView(ll, 17);
+    const coordsEl = document.getElementById('geoCoords');
+    if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
+    const addrEl = document.getElementById('geoAddress');
+    if (addrEl && result.address) addrEl.value = result.address;
+  }
 }
 
 function skipGeo() {
@@ -499,8 +531,8 @@ function renderCitizenResults() {
   return `<div class="citizen-results">
     ${results.map((r, i) => `
       <div class="citizen-result" onclick="selectCitizen(${i})">
-        <div class="citizen-result-name">${r.apellido || '—'}</div>
-        <div class="citizen-result-info">DNI: ${r.dni || '—'} · ${r.domicilio || 'Sin domicilio registrado'}</div>
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
       </div>`).join('')}
   </div>`;
 }
@@ -806,10 +838,10 @@ function renderSummary() {
     const val = State.answers[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
-      display = Array.isArray(val) ? val.join(', ') : String(val);
+      display = Array.isArray(val) ? esc(val.join(', ')) : esc(String(val));
     }
     return `<tr>
-      <td class="summary-label">${q.label}</td>
+      <td class="summary-label">${esc(q.label)}</td>
       <td class="summary-value">${display}</td>
     </tr>`;
   }).join('');
@@ -908,9 +940,9 @@ function renderList() {
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
               <div class="card-type">${typeLabel(r.type)}</div>
-              <div class="card-preview">${String(preview).slice(0, 60)}</div>
+              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${Geo.format(r.location)}</div>` : ''}
+              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -966,9 +998,9 @@ async function loadList() {
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
               <div class="card-type">${typeLabel(r.type)}</div>
-              <div class="card-preview">${String(preview).slice(0, 60)}</div>
+              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${Geo.format(r.location)}</div>` : ''}
+              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -994,10 +1026,10 @@ function renderDetail() {
     const val = r.answers?.[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
-      display = Array.isArray(val) ? val.join(', ') : String(val);
+      display = Array.isArray(val) ? esc(val.join(', ')) : esc(String(val));
     }
     return `<tr>
-      <td class="summary-label">${q.label}</td>
+      <td class="summary-label">${esc(q.label)}</td>
       <td class="summary-value">${display}</td>
     </tr>`;
   }).join('');

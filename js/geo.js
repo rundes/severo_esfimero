@@ -48,4 +48,20 @@ const Geo = {
     } catch {}
     return null;
   },
+
+  async geocode(query) {
+    if (!CONFIG.GOOGLE_API_KEY || !query) return null;
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${CONFIG.GOOGLE_API_KEY}&language=es&region=ar`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.status === 'OK' && data.results?.[0]) {
+        const r = data.results[0];
+        return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, address: r.formatted_address };
+      }
+    } catch {}
+    return null;
+  },
 };

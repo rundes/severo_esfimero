@@ -309,6 +309,22 @@ html, body {
   min-height: 1.2em;
 }
 
+.geo-search-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 0;
+}
+.geo-search-input {
+  flex: 1;
+  font-size: .85rem;
+  padding: 6px 10px;
+}
+.geo-search-btn {
+  flex-shrink: 0;
+  font-size: .85rem;
+  padding: 6px 12px;
+}
+
 .geo-address-row {
   display: flex;
   align-items: center;
