@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="diagrams.net" version="21.0.0" type="device">
+
+  <!-- ═══════════════════════════════════════════════════
+       PÁGINA 1: FLUJO DE NAVEGACIÓN GENERAL
+       ═══════════════════════════════════════════════════ -->
+  <diagram name="Flujo General" id="page_general">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <!-- INICIO -->
+        <mxCell id="g1" value="Inicio" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="525" y="30" width="120" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- AUTH -->
+        <mxCell id="g2" value="🔐 Autenticación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="115" width="210" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg1g2" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g1" target="g2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION LOGIN -->
+        <mxCell id="g3" value="¿Tipo de acceso?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="510" y="220" width="150" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg2g3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g2" target="g3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- GOOGLE LOGIN -->
+        <mxCell id="g4" value="☑ Ingresar con Google" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="265" y="232" width="185" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg3g4" value="Google" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="g3" target="g4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- MOCK LOGIN -->
+        <mxCell id="g5" value="⚙ Operador de prueba" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="232" width="185" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg3g5" value="Mock" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="g3" target="g5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- HOME -->
+        <mxCell id="g6" value="🏠 Home" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="345" width="210" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg4g6" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g4" target="g6" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="357" y="318"/><mxPoint x="585" y="318"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eg5g6" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g5" target="g6" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="813" y="318"/><mxPoint x="585" y="318"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CERRAR SESION (dashed) -->
+        <mxCell id="g18" value="Cerrar sesión" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;fontColor=#666666;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="467" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg6g18" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;" edge="1" source="g6" target="g18" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg18g2" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;" edge="1" source="g18" target="g2" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="430" y="487"/><mxPoint x="430" y="142"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- NUEVO RELEVAMIENTO -->
+        <mxCell id="g7" value="➕ Nuevo relevamiento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="255" y="467" width="195" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg6g7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g6" target="g7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- VER HISTORIAL -->
+        <mxCell id="g8" value="📋 Ver historial" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="710" y="467" width="175" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg6g8" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g6" target="g8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- TYPE SELECT -->
+        <mxCell id="g9" value="Tipo de relevamiento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="255" y="577" width="195" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg7g9" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g7" target="g9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- HISTORIAL SCREEN -->
+        <mxCell id="g10" value="📋 Historial" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="577" width="185" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg8g10" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g8" target="g10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- DETALLE -->
+        <mxCell id="g11" value="🔍 Detalle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="688" width="185" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg10g11" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g10" target="g11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- TRES TIPOS -->
+        <mxCell id="g12" value="🧑 Ciudadano" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="35" y="688" width="155" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="g13" value="⚠️ Problemática" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="210" y="688" width="155" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="g14" value="🏠 Sociohabitacional" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="385" y="688" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg9g12" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g9" target="g12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg9g13" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g9" target="g13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eg9g14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="g9" target="g14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- REFERENCIAS A PÁGINAS -->
+        <mxCell id="g15" value="→ ver página 2" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontStyle=2;fontColor=#808080;" vertex="1" parent="1">
+          <mxGeometry x="35" y="743" width="155" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="g16" value="→ ver página 3" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontStyle=2;fontColor=#808080;" vertex="1" parent="1">
+          <mxGeometry x="210" y="743" width="155" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="g17" value="→ ver página 4" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontStyle=2;fontColor=#808080;" vertex="1" parent="1">
+          <mxGeometry x="385" y="743" width="160" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- LEYENDA -->
+        <mxCell id="gL0" value="Leyenda" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="870" y="350" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="gL1" value="Pantalla" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="870" y="380" width="120" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="gL2" value="Inicio / Fin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="870" y="425" width="120" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="gL3" value="Decisión" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="870" y="470" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="gL4" value="Sistema externo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="525" width="120" height="30" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════
+       PÁGINA 2: FLUJO ENCUESTA CIUDADANO
+       ═══════════════════════════════════════════════════ -->
+  <diagram name="Ciudadano" id="page_ciudadano">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <!-- INICIO -->
+        <mxCell id="c1" value="🏠 Home" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="375" y="20" width="130" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- TYPE SELECT -->
+        <mxCell id="c2" value="Tipo de relevamiento → 🧑 Ciudadano" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="105" width="260" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec1c2" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c1" target="c2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- BUSCAR EN PADRON -->
+        <mxCell id="c3" value="🔍 Buscar en el padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="205" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3n" value="• Buscar por Apellido (≥ 4 letras)&#xa;• Buscar por DNI (≥ 6 dígitos)&#xa;• Resultados en tiempo real (debounce 450 ms)" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="590" y="205" width="255" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec2c3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c2" target="c3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION -->
+        <mxCell id="c4" value="¿Ciudadano encontrado?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="355" y="312" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec3c4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c3" target="c4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- PRECARGAR DATOS -->
+        <mxCell id="c5" value="Pre-cargar datos del padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="90" y="430" width="205" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="c5n" value="• Apellido y nombre&#xa;• DNI&#xa;• Domicilio&#xa;• Lat / Lng (centro del mapa)" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="90" y="490" width="205" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec4c5" value="Sí" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;fontStyle=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="c4" target="c5" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="355" y="347"/><mxPoint x="193" y="347"/><mxPoint x="193" y="456"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CONTINUAR SIN DATOS -->
+        <mxCell id="c6" value="Continuar sin datos del padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="585" y="430" width="190" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec4c6" value="No / Saltar" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="c4" target="c6" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="525" y="347"/><mxPoint x="680" y="347"/><mxPoint x="680" y="456"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GEO SCREEN -->
+        <mxCell id="c7" value="🗺️ Pantalla Geo — Mapa IGN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="575" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="c7n" value="• Centra en lat/lng del padrón (si tiene)&#xa;• Si no: GPS del dispositivo&#xa;• Fallback: centro de Maipú (-32.98, -68.79)&#xa;• Buscar dirección por texto (geocoding)&#xa;• Dirección editable (reverse geocode al mover pin)&#xa;• Pin arrastrable + click en mapa" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="590" y="565" width="265" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec5c7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c5" target="c7" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="193" y="555"/><mxPoint x="440" y="555"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ec6c7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c6" target="c7" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="680" y="555"/><mxPoint x="440" y="555"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SKIP GEO (dashed) -->
+        <mxCell id="c7skip" value="Sin ubicación" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;fontSize=10;" edge="1" source="c7" target="c9" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="240" y="605"/><mxPoint x="240" y="795"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CONFIRMAR UBICACION -->
+        <mxCell id="c8" value="✅ Confirmar ubicación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="688" width="260" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="c8n" value="Guarda: lat, lng&#xa;Dirección → State.domicilioReal" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="590" y="695" width="265" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec7c8" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c7" target="c8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ENCUESTA -->
+        <mxCell id="c9" value="📋 Encuesta ciudadano (10 preguntas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="790" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="c9n" value="1. DNI (dispara búsqueda automática en padrón)&#xa;2. Apellido y nombre (pre-cargado si hay padrón)&#xa;3. Apodo&#xa;4. Domicilio (pre-cargado si hay padrón)&#xa;5. Rango de edad *&#xa;6. Tiempo de residencia en el barrio *&#xa;7. Calidad de vida en el barrio (escala 1–5) *&#xa;8. Problemas del barrio (checkboxes, múltiple)&#xa;9. Mejoras deseadas (texto libre)&#xa;10. Comentarios adicionales&#xa;&#xa;* = campo requerido" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="590" y="780" width="270" height="155" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec8c9" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c8" target="c9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- RESUMEN -->
+        <mxCell id="c10" value="📄 Resumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="905" width="260" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec9c10" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c9" target="c10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec10c9back" value="Editar" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="c10" target="c9" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="248" y="930"/><mxPoint x="248" y="817"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GUARDAR -->
+        <mxCell id="c11" value="💾 Guardar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="1010" width="260" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec10c11" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c10" target="c11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SHEETS EXTERNAL -->
+        <mxCell id="c12" value="📊 Google Sheets&#xa;Pestaña Ciudadanos&#xa;(OAuth token)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="95" y="1125" width="185" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec11c12" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c11" target="c12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- PADRON UPDATE EXTERNAL -->
+        <mxCell id="c13" value="📋 Actualizar padrón&#xa;Lat / Lng + Domicilio real&#xa;(si hay DNI + ubicación)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1125" width="205" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec11c13" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c11" target="c13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- LISTO -->
+        <mxCell id="c14" value="✅ Listo" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="1255" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec12c14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c12" target="c14" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="188" y="1230"/><mxPoint x="440" y="1230"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ec13c14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="c13" target="c14" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="693" y="1230"/><mxPoint x="440" y="1230"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════
+       PÁGINA 3: FLUJO RELEVAMIENTO PROBLEMÁTICA
+       ═══════════════════════════════════════════════════ -->
+  <diagram name="Problemática" id="page_problematica">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <!-- INICIO -->
+        <mxCell id="p1" value="🏠 Home" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="374" y="20" width="130" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- TYPE SELECT -->
+        <mxCell id="p2" value="Tipo de relevamiento → ⚠️ Problemática" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="305" y="105" width="270" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep1p2" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p1" target="p2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- NOTA: sin busqueda de padron -->
+        <mxCell id="p2n" value="Sin búsqueda en el padrón — va directo al mapa" style="text;html=1;strokeColor=#b85450;fillColor=#fce9e9;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;spacingLeft=6;" vertex="1" parent="1">
+          <mxGeometry x="595" y="118" width="265" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- GEO SCREEN -->
+        <mxCell id="p3" value="🗺️ Pantalla Geo — Mapa IGN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="205" width="270" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3n" value="• GPS del dispositivo (fallback: centro de Maipú)&#xa;• Campo de búsqueda de dirección por texto&#xa;• Dirección editable con reverse geocoding&#xa;• Pin arrastrable + click en mapa&#xa;• Sin datos de padrón" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="595" y="200" width="265" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep2p3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p2" target="p3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SKIP GEO (dashed) -->
+        <mxCell id="p3skip" value="Sin ubicación" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;fontSize=10;" edge="1" source="p3" target="p5" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="232" y="235"/><mxPoint x="232" y="440"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CONFIRMAR -->
+        <mxCell id="p4" value="✅ Confirmar ubicación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="305" y="318" width="270" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4n" value="La dirección capturada pre-carga&#xa;el campo 'Referencia de ubicación'" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="595" y="323" width="265" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep3p4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p3" target="p4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ENCUESTA -->
+        <mxCell id="p5" value="📋 Encuesta problemática (6 preguntas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="420" width="270" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5n" value="1. Categoría del problema * (select)&#xa;   · Bache / Grieta en calzada&#xa;   · Suciedad / Basura acumulada&#xa;   · Luminaria apagada o rota&#xa;   · Vereda en mal estado&#xa;   · Problema cloacal&#xa;   · Árbol caído o peligroso / Poda / Otro&#xa;2. Referencia de ubicación (pre-cargada del mapa)&#xa;3. Descripción del problema * (textarea)&#xa;4. Nivel de urgencia * (bajo / medio / alto)&#xa;5. ¿Afecta el tránsito? * (Sí / No)&#xa;6. Observaciones adicionales&#xa;&#xa;* = campo requerido" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="595" y="415" width="265" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep4p5" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p4" target="p5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- RESUMEN -->
+        <mxCell id="p6" value="📄 Resumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="305" y="532" width="270" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep5p6" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p5" target="p6" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep6p5back" value="Editar" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="p6" target="p5" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="237" y="557"/><mxPoint x="237" y="447"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GUARDAR -->
+        <mxCell id="p7" value="💾 Guardar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="305" y="638" width="270" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep6p7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p6" target="p7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SHEETS EXTERNAL -->
+        <mxCell id="p8" value="📊 Google Sheets&#xa;Pestaña Problemáticas&#xa;(OAuth token)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="753" width="270" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="p8n" value="Sin actualización al padrón&#xa;(no hay DNI en este flujo)" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="595" y="763" width="265" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep7p8" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p7" target="p8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- LISTO -->
+        <mxCell id="p9" value="✅ Listo" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="374" y="878" width="130" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ep8p9" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="p8" target="p9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════
+       PÁGINA 4: FLUJO ENCUESTA SOCIOHABITACIONAL
+       ═══════════════════════════════════════════════════ -->
+  <diagram name="Sociohabitacional" id="page_socio">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <!-- INICIO -->
+        <mxCell id="s1" value="🏠 Home" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="20" width="140" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- TYPE SELECT -->
+        <mxCell id="s2" value="Tipo de relevamiento → 🏠 Sociohabitacional" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="105" width="280" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es1s2" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s1" target="s2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- BUSCAR EN PADRON -->
+        <mxCell id="s3" value="🔍 Buscar en el padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="205" width="280" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="es2s3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s2" target="s3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION -->
+        <mxCell id="s4" value="¿Ciudadano encontrado?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="350" y="313" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="es3s4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s3" target="s4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- PRECARGAR -->
+        <mxCell id="s5" value="Pre-cargar datos del padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="85" y="425" width="205" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es4s5" value="Sí" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;fontStyle=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="s4" target="s5" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="350" y="348"/><mxPoint x="188" y="348"/><mxPoint x="188" y="450"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SIN DATOS -->
+        <mxCell id="s6" value="Continuar sin datos del padrón" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="590" y="425" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es4s6" value="No / Saltar" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="s4" target="s6" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="530" y="348"/><mxPoint x="685" y="348"/><mxPoint x="685" y="450"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GEO -->
+        <mxCell id="s7" value="🗺️ Pantalla Geo — Mapa IGN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="528" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="es5s7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s5" target="s7" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="188" y="505"/><mxPoint x="440" y="505"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="es6s7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s6" target="s7" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="685" y="505"/><mxPoint x="440" y="505"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- CONFIRMAR -->
+        <mxCell id="s8" value="✅ Confirmar ubicación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="642" width="280" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es7s8" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s7" target="s8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ENCUESTA -->
+        <mxCell id="s9" value="📋 Encuesta sociohabitacional (26 preguntas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="745" width="280" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="s9n" value="Bloque 1 — Identificación y localización (5 preguntas)&#xa;  DNI · Apellido y nombre · Apodo · Domicilio · Barrio&#xa;&#xa;Bloque 2 — Composición del hogar (4 preguntas)&#xa;  Total personas · Menores de 18 · Mayores de 65 · Familias&#xa;&#xa;Bloque 3 — Tenencia y características de la vivienda (6 preguntas)&#xa;  Tenencia · Escritura · Cuotas adeudadas · Tipo de vivienda&#xa;  Material de paredes · Ambientes para dormir&#xa;&#xa;Bloque 4 — Servicios básicos (4 preguntas)&#xa;  Desagüe · Agua potable · Electricidad · Gas&#xa;&#xa;Bloque 5 — Discapacidad (3 preguntas)&#xa;  ¿Hay persona con discapacidad? · Tipo (condicional) · CUD&#xa;&#xa;Bloque 6 — Actividades municipales (3 preguntas)&#xa;  Menores de 18 · 15–64 años · Mayores de 65&#xa;&#xa;Bloque 7 — Opinión y cierre (4 preguntas *)&#xa;  Mejora barrio · Mejora municipio * · Falta Maipú * · Voto *&#xa;&#xa;* = campo requerido" style="text;html=1;strokeColor=#b3b3b3;fillColor=#ffffcc;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=10;spacingLeft=4;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="610" y="735" width="305" height="290" as="geometry"/>
+        </mxCell>
+        <mxCell id="es8s9" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s8" target="s9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- RESUMEN -->
+        <mxCell id="s10" value="📄 Resumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="860" width="280" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es9s10" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s9" target="s10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="es10s9back" value="Editar" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b3b3b3;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" source="s10" target="s9" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="232" y="885"/><mxPoint x="232" y="772"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GUARDAR -->
+        <mxCell id="s11" value="💾 Guardar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="967" width="280" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es10s11" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s10" target="s11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SHEETS -->
+        <mxCell id="s12" value="📊 Google Sheets&#xa;Pestaña Sociohabitacional&#xa;(OAuth token)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1082" width="190" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="es11s12" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s11" target="s12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- PADRON UPDATE -->
+        <mxCell id="s13" value="📋 Actualizar padrón&#xa;Lat / Lng + Domicilio real&#xa;(si hay DNI + ubicación)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="598" y="1082" width="210" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="es11s13" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s11" target="s13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- LISTO -->
+        <mxCell id="s14" value="✅ Listo" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="1207" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="es12s14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s12" target="s14" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="185" y="1182"/><mxPoint x="440" y="1182"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="es13s14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" source="s13" target="s14" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="703" y="1182"/><mxPoint x="440" y="1182"/></Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+</mxfile>
