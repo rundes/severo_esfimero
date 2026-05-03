@@ -627,6 +627,7 @@ html, body {
   color: var(--text-2);
   font-size: .9rem;
 }
+.search-error { color: #c0392b; font-size: .82rem; text-align: center; }
 
 .citizen-results { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 

@@ -296,10 +296,14 @@ const Padron = {
 
   async _fetchSheet(sheetName) {
     if (this._cache[sheetName]) return this._cache[sheetName];
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${sheetName}${this._apiKeyParam()}`
-    );
-    if (!res.ok) return [];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}${this._apiKeyParam()}`;
+    console.log('[Padron] GET', sheetName, url.replace(/key=[^&]+/, 'key=…'));
+    const res = await fetch(url);
+    console.log('[Padron] status', res.status, sheetName);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`Padrón API ${res.status}: ${body.error?.message || sheetName}`);
+    }
     const rows = (await res.json()).values || [];
     this._cache[sheetName] = rows;
     return rows;

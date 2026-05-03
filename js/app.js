@@ -60,6 +60,7 @@ const State = {
   citizenDNIQuery: '',
   citizenSearchResults: [],
   citizenSearching: false,
+  citizenSearchError: null,
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -237,7 +238,8 @@ function startNewSurvey() {
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
-    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
+    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
+    citizenSearching: false, citizenSearchError: null });
 }
 
 function renderGeo() {
@@ -410,9 +412,11 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
-  const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null, location: null };
+  const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
+    padronMeta: null, padronDomicilio: null, padronLocation: null, location: null };
   if (type === 'ciudadano' || type === 'sociohabitacional') {
-    go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
+    go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '',
+      citizenSearchResults: [], citizenSearching: false, citizenSearchError: null });
   } else {
     go('geo', base);
   }
@@ -457,6 +461,9 @@ function renderCitizenResults() {
   if (State.citizenSearching) {
     return `<div class="search-status"><div class="geo-spinner"></div> Buscando en el padrón…</div>`;
   }
+  if (State.citizenSearchError) {
+    return `<div class="search-status search-error">⚠ ${State.citizenSearchError}</div>`;
+  }
   const results = State.citizenSearchResults || [];
   if (!results.length) {
     const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
@@ -490,11 +497,13 @@ function onCitizenSearchInput(field, value) {
   if (value.length >= minLen) {
     State.citizenSearching = true;
     State.citizenSearchResults = [];
+    State.citizenSearchError = null;
     updateCitizenSearchUI();
     _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
   } else {
     State.citizenSearchResults = [];
     State.citizenSearching = false;
+    State.citizenSearchError = null;
     updateCitizenSearchUI();
   }
 }
@@ -514,8 +523,11 @@ async function doCitizenSearch(field, value) {
       results = await Padron.searchByApellidoAsync(value);
     }
     State.citizenSearchResults = results || [];
+    State.citizenSearchError = null;
     State.citizenSearching = false;
-  } catch {
+  } catch (err) {
+    console.error('[search] error:', err);
+    State.citizenSearchError = err.message;
     State.citizenSearchResults = [];
     State.citizenSearching = false;
   }
