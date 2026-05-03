@@ -1731,7 +1731,7 @@ function renderGeo() {
     problematica:     'Ubicación de la problemática',
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
-  const backTarget = State.surveyType === 'ciudadano' ? 'citizenSearch' : 'typeSelect';
+  const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
   return `
     <div class="screen">
       <header class="app-header">
@@ -1845,7 +1845,7 @@ function renderTypeSelect() {
 
 function selectType(type) {
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {}, padronMeta: null, location: null };
-  if (type === 'ciudadano') {
+  if (type === 'ciudadano' || type === 'sociohabitacional') {
     go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
   } else {
     go('geo', base);
@@ -1859,7 +1859,7 @@ function renderCitizenSearch() {
     <div class="screen">
       <header class="app-header">
         <button class="btn-icon" onclick="go('typeSelect')">←</button>
-        <span class="header-title">🧑 Buscar ciudadano</span>
+        <span class="header-title">🧑 Buscar en el padrón</span>
       </header>
       <div class="survey-body">
         <div class="search-group">
@@ -1958,7 +1958,7 @@ async function doCitizenSearch(field, value) {
 
 function selectCitizen(idx) {
   const record = (idx !== null && State.citizenSearchResults?.[idx]) ? State.citizenSearchResults[idx] : null;
-  const questions = PREGUNTAS.ciudadano;
+  const questions = PREGUNTAS[State.surveyType] || [];
   const answers = {};
   const padronFilled = {};
 
@@ -1966,6 +1966,7 @@ function selectCitizen(idx) {
     questions.forEach((q) => {
       if (q.padronKey && record.dni) {
         answers[q.id] = record.dni;
+        padronFilled[q.id] = true;
       } else if (q.padronField && record[q.padronField]) {
         answers[q.id] = record[q.padronField];
         padronFilled[q.id] = true;
@@ -1974,7 +1975,7 @@ function selectCitizen(idx) {
   }
 
   go('geo', {
-    surveyType: 'ciudadano',
+    surveyType: State.surveyType,
     currentQ: 0,
     answers,
     location: null,
@@ -2026,7 +2027,7 @@ function renderSurvey() {
         <label class="question-label">
           ${q.label}
           ${q.required ? '<span class="required">*</span>' : ''}
-          ${q.padronField && State.padronFilled[q.id] ? '<span class="padron-badge">padrón</span>' : ''}
+          ${(q.padronField || q.padronKey) && State.padronFilled[q.id] ? '<span class="padron-badge">padrón</span>' : ''}
         </label>
         ${q.hint ? `<p class="question-hint">${q.hint}</p>` : ''}
         <div class="question-input">
