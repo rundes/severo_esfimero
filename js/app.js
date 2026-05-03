@@ -540,8 +540,8 @@ function selectCitizen(idx) {
     });
   }
 
-  const padLat = record ? parseFloat(record.lat) : NaN;
-  const padLng = record ? parseFloat(record.lng) : NaN;
+  const padLat = record ? parseFloat(String(record.lat).replace(',', '.')) : NaN;
+  const padLng = record ? parseFloat(String(record.lng).replace(',', '.')) : NaN;
   const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
     ? { lat: padLat, lng: padLng } : null;
 
