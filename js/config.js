@@ -4,7 +4,7 @@ const CONFIG = {
 
   // API Key de Google Cloud (para lectura del padrón y geocodificación inversa)
   // La planilla del padrón debe tener acceso "Cualquier persona con el vínculo puede ver"
-  GOOGLE_API_KEY: '',
+  GOOGLE_API_KEY: 'AIzaSyAFICbCFMxxLS7HWwsvRVCGiKCfoaF4x4I',
 
   // Planilla donde se guardan los relevamientos (ciudadanos, problemáticas, socio-habitacional)
   // El relevador debe tener acceso de edición a esta planilla
