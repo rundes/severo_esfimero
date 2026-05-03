@@ -245,6 +245,7 @@ function renderGeo() {
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
   const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
+  const showAddress = State.surveyType !== 'problematica';
   return `
     <div class="screen">
       <header class="app-header">
@@ -258,6 +259,12 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
+        ${showAddress ? `
+        <div class="geo-address-row">
+          <div class="geo-spinner geo-spinner-sm" id="geoAddrSpinner" style="display:none"></div>
+          <input type="text" class="input geo-address-input" id="geoAddress"
+            placeholder="Dirección…" autocomplete="off">
+        </div>` : ''}
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -266,14 +273,33 @@ function renderGeo() {
     </div>`;
 }
 
+let _geocodeDebounce = null;
+
 async function startGeoCapture() {
   const statusEl  = document.getElementById('geoStatus');
   const spinnerEl = document.getElementById('geoSpinner');
   const coordsEl  = document.getElementById('geoCoords');
   const footerEl  = document.getElementById('geoFooter');
+  const showAddress = State.surveyType !== 'problematica';
 
   // Coordenadas por defecto: Maipú, Mendoza
   const DEFAULT = { lat: -32.9817, lng: -68.7946 };
+
+  async function updateAddress(lat, lng) {
+    if (!showAddress) return;
+    const addrEl = document.getElementById('geoAddress');
+    const addrSpinner = document.getElementById('geoAddrSpinner');
+    if (!addrEl) return;
+    if (addrSpinner) addrSpinner.style.display = 'inline-block';
+    const addr = await Geo.reverseGeocode(lat, lng);
+    if (addrSpinner) addrSpinner.style.display = 'none';
+    if (addr && addrEl) addrEl.value = addr;
+  }
+
+  function scheduleGeocode(lat, lng) {
+    clearTimeout(_geocodeDebounce);
+    _geocodeDebounce = setTimeout(() => updateAddress(lat, lng), 600);
+  }
 
   function initMap(lat, lng) {
     _map = L.map('geoMap').setView([lat, lng], 17);
@@ -289,17 +315,24 @@ async function startGeoCapture() {
     };
 
     _marker.on('drag', (e) => updateCoords(e.latlng));
-    _marker.on('dragend', (e) => updateCoords(e.target.getLatLng()));
+    _marker.on('dragend', (e) => {
+      const ll = e.target.getLatLng();
+      updateCoords(ll);
+      scheduleGeocode(ll.lat, ll.lng);
+    });
 
     // Tap/click en el mapa mueve el pin
     _map.on('click', (e) => {
       _marker.setLatLng(e.latlng);
       updateCoords(e.latlng);
+      scheduleGeocode(e.latlng.lat, e.latlng.lng);
     });
 
     updateCoords({ lat, lng });
     footerEl.style.display = 'block';
     setTimeout(() => _map.invalidateSize(), 100);
+    // Geocode initial position
+    updateAddress(lat, lng);
   }
 
   try {
@@ -314,13 +347,13 @@ async function startGeoCapture() {
   }
 }
 
-async function confirmGeo() {
+function confirmGeo() {
   if (_marker) {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
-    // Geocodificación inversa solo para relevamientos con domicilio de ciudadano
     if (State.surveyType !== 'problematica') {
-      State.domicilioReal = await Geo.reverseGeocode(pos.lat, pos.lng);
+      const addrEl = document.getElementById('geoAddress');
+      State.domicilioReal = addrEl?.value?.trim() || null;
     }
   }
   go('survey');
