@@ -1243,32 +1243,38 @@ const SheetsDB = {
     const token = this._getToken();
     const row = this._toRow(type, record);
 
-    const doAppend = () => fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values: [row] }),
-      }
-    );
+    console.log('[SheetsDB] guardando en pestaña:', sheet);
+    console.log('[SheetsDB] fila:', row);
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}:append?valueInputOption=USER_ENTERED`;
+
+    const doAppend = () => fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [row] }),
+    });
 
     let res = await doAppend();
+    console.log('[SheetsDB] append status:', res.status);
 
-    if (res.status === 400) {
-      // La pestaña probablemente no existe — crearla y reintentar
-      await this._createSheet(CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
+    if (res.status === 400 || res.status === 404) {
+      console.log('[SheetsDB] pestaña no encontrada, creando:', sheet);
+      const createRes = await this._createSheet(CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
+      console.log('[SheetsDB] createSheet status:', createRes.status);
       res = await doAppend();
+      console.log('[SheetsDB] retry status:', res.status);
     }
 
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
-      throw new Error(`Sheets API ${res.status}: ${errBody.error?.message || 'error desconocido'}`);
+      console.error('[SheetsDB] error body:', errBody);
+      throw new Error(`Sheets API ${res.status}: ${errBody.error?.message || JSON.stringify(errBody)}`);
     }
     return record;
   },
 
   async _createSheet(spreadsheetId, sheetName, token) {
-    await fetch(
+    return fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
       {
         method: 'POST',
