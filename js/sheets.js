@@ -63,7 +63,7 @@ const SheetsDB = {
     console.log('[SheetsDB] guardando en pestaña:', sheet);
     console.log('[SheetsDB] fila:', row);
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}:append?valueInputOption=USER_ENTERED`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}!A1:append?valueInputOption=USER_ENTERED`;
 
     const doAppend = () => fetch(url, {
       method: 'POST',
@@ -78,6 +78,7 @@ const SheetsDB = {
       console.log('[SheetsDB] pestaña no encontrada, creando:', sheet);
       const createRes = await this._createSheet(CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
       console.log('[SheetsDB] createSheet status:', createRes.status);
+      await new Promise((r) => setTimeout(r, 800));
       res = await doAppend();
       console.log('[SheetsDB] retry status:', res.status);
     }
