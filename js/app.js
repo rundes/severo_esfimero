@@ -307,9 +307,11 @@ async function startGeoCapture() {
 
   function initMap(lat, lng) {
     _map = L.map('geoMap').setView([lat, lng], 17);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{y}.png', {
+      tms: true,
+      maxNativeZoom: 15,
       maxZoom: 20,
+      attribution: 'Mapa del <a href="https://www.ign.gob.ar">Instituto Geográfico Nacional</a> · &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(_map);
 
     _marker = L.marker([lat, lng], { draggable: true }).addTo(_map);
