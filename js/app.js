@@ -308,8 +308,6 @@ function renderGeo() {
     </div>`;
 }
 
-let _geocodeDebounce = null;
-
 async function startGeoCapture() {
   const statusEl  = document.getElementById('geoStatus');
   const spinnerEl = document.getElementById('geoSpinner');
