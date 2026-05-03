@@ -53,6 +53,8 @@ const State = {
   padronLoaded: false,
   padronFilled: {},
   padronMeta:   null,
+  padronDomicilio: null,  // domicilio registrado en el padrón
+  padronLocation:  null,  // { lat, lng } guardados previamente en el padrón
   // citizen search
   citizenSearchQuery: '',
   citizenDNIQuery: '',
@@ -234,6 +236,7 @@ function logout() {
 function startNewSurvey() {
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
+    padronDomicilio: null, padronLocation: null,
     citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [], citizenSearching: false });
 }
 
@@ -263,7 +266,8 @@ function renderGeo() {
         <div class="geo-address-row">
           <div class="geo-spinner geo-spinner-sm" id="geoAddrSpinner" style="display:none"></div>
           <input type="text" class="input geo-address-input" id="geoAddress"
-            placeholder="Dirección…" autocomplete="off">
+            placeholder="Dirección…" autocomplete="off"
+            value="${(State.padronDomicilio || '').replace(/"/g, '&quot;')}">
         </div>` : ''}
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
@@ -331,8 +335,18 @@ async function startGeoCapture() {
     updateCoords({ lat, lng });
     footerEl.style.display = 'block';
     setTimeout(() => _map.invalidateSize(), 100);
-    // Geocode initial position
-    updateAddress(lat, lng);
+    // Solo geocodificar si no tenemos ya un domicilio del padrón
+    if (!State.padronDomicilio) updateAddress(lat, lng);
+  }
+
+  // Si el padrón tiene coordenadas guardadas, usarlas como centro inicial
+  if (State.padronLocation) {
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = State.padronDomicilio
+      ? 'Domicilio del padrón — arrastrá el pin para actualizar'
+      : 'Arrastrá el pin o tocá el mapa para ajustar';
+    initMap(State.padronLocation.lat, State.padronLocation.lng);
+    return;
   }
 
   try {
@@ -524,6 +538,11 @@ function selectCitizen(idx) {
     });
   }
 
+  const padLat = record ? parseFloat(record.lat) : NaN;
+  const padLng = record ? parseFloat(record.lng) : NaN;
+  const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
+    ? { lat: padLat, lng: padLng } : null;
+
   go('geo', {
     surveyType: State.surveyType,
     currentQ: 0,
@@ -531,7 +550,9 @@ function selectCitizen(idx) {
     location: null,
     padronLoaded: !!record,
     padronFilled,
-    padronMeta: record?._meta || null,
+    padronMeta:      record?._meta || null,
+    padronDomicilio: record?.domicilio || null,
+    padronLocation,
     citizenSearchResults: [],
     citizenSearchQuery: '',
     citizenDNIQuery: '',
