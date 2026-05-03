@@ -896,9 +896,9 @@ function renderList() {
 async function loadList() {
   try {
     const [ciudadanos, problemas, sociohabit] = await Promise.all([
-      SheetsDB.getAllAsync('ciudadano').catch(() => []),
-      SheetsDB.getAllAsync('problematica').catch(() => []),
-      SheetsDB.getAllAsync('sociohabitacional').catch(() => []),
+      SheetsDB.getAllAsync('ciudadano'),
+      SheetsDB.getAllAsync('problematica'),
+      SheetsDB.getAllAsync('sociohabitacional'),
     ]);
     const all = [
       ...ciudadanos.map((r) => ({ ...r, type: 'ciudadano' })),

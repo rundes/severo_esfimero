@@ -107,12 +107,12 @@ const SheetsDB = {
   async _apiGetAll(type) {
     const sheet = this._sheetForType(type);
     const token = this._getToken();
-
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${sheet}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}`;
+    console.log('[SheetsDB] getAllAsync:', sheet);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    console.log('[SheetsDB] getAllAsync status:', res.status, sheet);
+    if (res.status === 400 || res.status === 404) return []; // pestaña aún no creada
+    if (!res.ok) throw new Error(`Sheets API error ${res.status} al leer ${sheet}`);
     const data = await res.json();
     return this._fromRows(type, data.values || []);
   },
@@ -159,7 +159,7 @@ const SheetsDB = {
   },
 
   _fromRows(type, rows) {
-    return rows.slice(1).map((row) => {
+    return rows.filter(row => row.length > 0).map((row) => {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
