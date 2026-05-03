@@ -135,13 +135,13 @@ const SheetsDB = {
     ];
     if (type === 'ciudadano') {
       const a = r.answers || {};
-      return [...base, a.dni || '', a.apellido || '', a.nombre || '', a.domicilio || '',
+      return [...base, a.dni || '', a.apellido || '', a.apodo || '', a.domicilio || '',
         a.edad || '', a.residencia || '', a.calidad_vida || '',
         (a.problemas || []).join(', '), a.mejoras || '', a.comentarios || ''];
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
-      return [...base, a.dni || '', a.apellido || '', a.nombre || '', a.domicilio || '',
+      return [...base, a.dni || '', a.apellido || '', a.apodo || '', a.domicilio || '',
         a.barrio || '', a.personas_total || '', a.personas_menores || '',
         a.personas_mayores65 || '', a.familias || '', a.tenencia || '',
         a.escritura || '', a.cuotas_adeuda || '', a.tipo_vivienda || '',
@@ -163,10 +163,24 @@ const SheetsDB = {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
-        return { ...base, answers: { dni: row[7], apellido: row[8], nombre: row[9],
+        return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
           domicilio: row[10], edad: row[11], residencia: row[12],
           calidad_vida: row[13], problemas: row[14] ? row[14].split(', ') : [],
           mejoras: row[15], comentarios: row[16] } };
+      }
+      if (type === 'sociohabitacional') {
+        return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
+          domicilio: row[10], barrio: row[11], personas_total: row[12],
+          personas_menores: row[13], personas_mayores65: row[14], familias: row[15],
+          tenencia: row[16], escritura: row[17], cuotas_adeuda: row[18],
+          tipo_vivienda: row[19], material_paredes: row[20], ambientes_dormir: row[21],
+          desague: row[22], agua_potable: row[23], electricidad: row[24], gas: row[25],
+          discapacidad: row[26], tipo_discapacidad: row[27] ? row[27].split(', ') : [],
+          cud: row[28], actividades_menores: row[29] ? row[29].split(', ') : [],
+          actividades_adultos: row[30] ? row[30].split(', ') : [],
+          actividades_mayores: row[31] ? row[31].split(', ') : [],
+          mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
+          voto: row[35] } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
         urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };

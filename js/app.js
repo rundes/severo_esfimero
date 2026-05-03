@@ -750,6 +750,8 @@ function renderSaving() {
 async function doSave() {
   try {
     const record = {
+      id: Date.now(),
+      savedAt: new Date().toISOString(),
       type: State.surveyType,
       operador: State.user,
       location: State.location,
@@ -793,23 +795,15 @@ function renderDone() {
 }
 
 function renderList() {
-  const ciudadanos      = SheetsDB.getAll('ciudadano');
-  const problemas       = SheetsDB.getAll('problematica');
-  const sociohabit      = SheetsDB.getAll('sociohabitacional');
-  const all = [
-    ...ciudadanos.map((r)   => ({...r, type: 'ciudadano'})),
-    ...problemas.map((r)    => ({...r, type: 'problematica'})),
-    ...sociohabit.map((r)   => ({...r, type: 'sociohabitacional'})),
-  ];
-  all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+  const all = (State.surveys || []).slice().sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
   const cards = all.length === 0
-    ? `<p class="hint center">Todavía no hay relevamientos guardados.</p>`
-    : all.map((r) => {
+    ? `<div id="listLoading"><p class="hint center">Cargando historial…</p></div>`
+    : all.map((r, i) => {
         const firstQ = PREGUNTAS[r.type]?.[0];
         const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
         return `
-          <div class="survey-card" onclick="openDetail(${r.id}, '${r.type}')">
+          <div class="survey-card" onclick="openDetail(${i})">
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
               <div class="card-type">${typeLabel(r.type)}</div>
@@ -825,20 +819,59 @@ function renderList() {
       <header class="app-header">
         <button class="btn-icon" onclick="go('home')">←</button>
         <span class="header-title">Historial</span>
-        <span class="header-count">${all.length}</span>
+        <span class="header-count" id="listCount">${all.length}</span>
       </header>
-      <div class="list-body">${cards}</div>
+      <div class="list-body" id="listBody">${cards}</div>
     </div>`;
 }
 
-function loadList() {
-  // Si se usa API real, aquí iría el fetch async y re-render
+async function loadList() {
+  try {
+    const [ciudadanos, problemas, sociohabit] = await Promise.all([
+      SheetsDB.getAllAsync('ciudadano').catch(() => []),
+      SheetsDB.getAllAsync('problematica').catch(() => []),
+      SheetsDB.getAllAsync('sociohabitacional').catch(() => []),
+    ]);
+    const all = [
+      ...ciudadanos.map((r) => ({ ...r, type: 'ciudadano' })),
+      ...problemas.map((r) => ({ ...r, type: 'problematica' })),
+      ...sociohabit.map((r) => ({ ...r, type: 'sociohabitacional' })),
+    ];
+    all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    State.surveys = all;
+
+    const bodyEl = document.getElementById('listBody');
+    const countEl = document.getElementById('listCount');
+    if (!bodyEl) return;
+
+    if (all.length === 0) {
+      bodyEl.innerHTML = `<p class="hint center">Todavía no hay relevamientos guardados.</p>`;
+    } else {
+      bodyEl.innerHTML = all.map((r, i) => {
+        const firstQ = PREGUNTAS[r.type]?.[0];
+        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
+        return `
+          <div class="survey-card" onclick="openDetail(${i})">
+            <div class="card-icon">${typeIcon(r.type)}</div>
+            <div class="card-body">
+              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-preview">${String(preview).slice(0, 60)}</div>
+              <div class="card-date">${formatDate(r.savedAt)}</div>
+              ${r.location ? `<div class="card-loc">📍 ${Geo.format(r.location)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+    if (countEl) countEl.textContent = all.length;
+  } catch (err) {
+    const bodyEl = document.getElementById('listBody');
+    if (bodyEl) bodyEl.innerHTML = `<p class="hint center">Error al cargar el historial: ${err.message}</p>`;
+  }
 }
 
-function openDetail(id, type) {
-  const items = SheetsDB.getAll(type);
-  const record = items.find((r) => r.id === id);
-  if (record) go('detail', { detailRecord: { ...record, type } });
+function openDetail(idx) {
+  const record = (State.surveys || [])[idx];
+  if (record) go('detail', { detailRecord: record });
 }
 
 function renderDetail() {

@@ -17,8 +17,8 @@ const PREGUNTAS = {
       padronField: 'apellido',
     },
     {
-      id: 'nombre',
-      label: 'Nombre',
+      id: 'apodo',
+      label: 'Apodo',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
@@ -158,8 +158,8 @@ const PREGUNTAS = {
       padronField: 'apellido',
     },
     {
-      id: 'nombre',
-      label: 'Nombre',
+      id: 'apodo',
+      label: 'Apodo',
       type: 'text',
       required: false,
       placeholder: 'Opcional',
