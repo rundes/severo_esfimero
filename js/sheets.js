@@ -79,6 +79,7 @@ const SheetsDB = {
       const createRes = await this._createSheet(CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
       console.log('[SheetsDB] createSheet status:', createRes.status);
       await new Promise((r) => setTimeout(r, 800));
+      await this._writeHeaders(type, CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
       res = await doAppend();
       console.log('[SheetsDB] retry status:', res.status);
     }
@@ -100,6 +101,35 @@ const SheetsDB = {
         body: JSON.stringify({
           requests: [{ addSheet: { properties: { title: sheetName } } }],
         }),
+      }
+    );
+  },
+
+  _toHeaders(type) {
+    const base = ['ID', 'Fecha', 'Email operador', 'Nombre operador', 'Latitud', 'Longitud', 'Precisión (m)'];
+    if (type === 'ciudadano') {
+      return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Edad', 'Residencia',
+        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios'];
+    }
+    if (type === 'sociohabitacional') {
+      return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio',
+        'Personas total', 'Menores de 18', 'Mayores de 65', 'Familias', 'Tenencia',
+        'Escritura', 'Cuotas adeudadas', 'Tipo vivienda', 'Material paredes', 'Ambientes dormir',
+        'Desagüe', 'Agua potable', 'Electricidad', 'Gas', 'Discapacidad', 'Tipo discapacidad',
+        'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
+        'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
+    }
+    return [...base, 'Categoría', 'Dirección', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones'];
+  },
+
+  async _writeHeaders(type, spreadsheetId, sheet, token) {
+    const headers = this._toHeaders(type);
+    return fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheet)}!A1?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [headers] }),
       }
     );
   },
@@ -166,7 +196,7 @@ const SheetsDB = {
   },
 
   _fromRows(type, rows) {
-    return rows.filter(row => row.length > 0).map((row) => {
+    return rows.slice(1).filter(row => row.length > 0).map((row) => {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
