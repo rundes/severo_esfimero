@@ -134,24 +134,27 @@ const SheetsDB = {
 const Padron = {
   _cache: {},  // In-session cache: { [sheetName]: rows[] }
 
+  _hasToken() {
+    return !!localStorage.getItem('severo_access_token');
+  },
+
   searchByDNI(dni) {
-    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
-    return null;
+    return this._mockSearch(dni);  // sync: only mock available
   },
 
   async searchByDNIAsync(dni) {
-    if (CONFIG.USE_MOCK) return this._mockSearch(dni);
+    if (!this._hasToken()) return this._mockSearch(dni);
     return this._apiSearch(dni);
   },
 
   // Búsqueda por apellido parcial (mínimo 4 chars) — devuelve array de coincidencias
   async searchByApellidoAsync(query) {
-    if (CONFIG.USE_MOCK) return this._mockSearchByApellido(query);
+    if (!this._hasToken()) return this._mockSearchByApellido(query);
     return this._apiSearchByApellido(query);
   },
 
   async updateLatLng(meta, lat, lng) {
-    if (CONFIG.USE_MOCK) return this._mockUpdateLatLng(meta, lat, lng);
+    if (!this._hasToken()) return this._mockUpdateLatLng(meta, lat, lng);
     return this._apiUpdateLatLng(meta, lat, lng);
   },
 

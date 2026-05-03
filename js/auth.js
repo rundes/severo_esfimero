@@ -11,6 +11,18 @@ const Auth = {
   getUser() { return this._user; },
   isLoggedIn() { return !!this._user; },
 
+  // Called after OAuth2 token flow + userinfo fetch
+  handleGoogleToken(accessToken, userInfo) {
+    this._user = {
+      name: userInfo.name,
+      email: userInfo.email,
+      picture: userInfo.picture || null,
+    };
+    localStorage.setItem('severo_user', JSON.stringify(this._user));
+    localStorage.setItem('severo_access_token', accessToken);
+    return this._user;
+  },
+
   mockLogin() {
     this._user = {
       name: 'Operador Prueba',
@@ -22,26 +34,14 @@ const Auth = {
     return this._user;
   },
 
-  // Llamado por el callback de Google Identity Services
-  handleCredential(response) {
-    try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      this._user = {
-        name: payload.name,
-        email: payload.email,
-        picture: payload.picture || null,
-      };
-      localStorage.setItem('severo_user', JSON.stringify(this._user));
-      return this._user;
-    } catch (e) {
-      console.error('Error al procesar credencial de Google:', e);
-      return null;
-    }
-  },
-
   logout() {
+    const token = localStorage.getItem('severo_access_token');
     this._user = null;
     localStorage.removeItem('severo_user');
+    localStorage.removeItem('severo_access_token');
+    if (token && window.google?.accounts?.oauth2) {
+      try { google.accounts.oauth2.revoke(token); } catch {}
+    }
     if (window.google?.accounts?.id) {
       google.accounts.id.disableAutoSelect();
     }

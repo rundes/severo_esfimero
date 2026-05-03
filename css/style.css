@@ -640,3 +640,18 @@ html, body {
   text-align: center;
   padding: 4px 0 0;
 }
+
+.btn-google {
+  background: #fff;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  font-size: .95rem;
+  font-weight: 500;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.btn-google:hover { background: #f8f9fa; border-color: #c6c6c6; }

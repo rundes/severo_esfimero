@@ -3,6 +3,39 @@
 let _map = null;
 let _marker = null;
 let _searchDebounce = null;
+let _tokenClient = null;
+
+// Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
+function initGoogleTokenClient() {
+  if (!window.google?.accounts?.oauth2) return;
+  const id = CONFIG.GOOGLE_CLIENT_ID;
+  if (!id || id === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') return;
+
+  _tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: id,
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
+    callback: async (tokenResponse) => {
+      if (tokenResponse.error) return;
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
+          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } });
+        if (res.ok) {
+          const info = await res.json();
+          const user = Auth.handleGoogleToken(tokenResponse.access_token, info);
+          go('home', { user });
+        }
+      } catch (e) {
+        console.error('Error al obtener datos del usuario:', e);
+      }
+    },
+  });
+}
+
+function googleLogin() {
+  if (_tokenClient) {
+    _tokenClient.requestAccessToken({ prompt: '' });
+  }
+}
 
 // ── Estado global ────────────────────────────────────────────────────────────
 
@@ -37,11 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Callback registrado por Google Identity Services
-window.gsiCallback = (response) => {
-  const user = Auth.handleCredential(response);
-  if (user) go('home', { user });
-};
+// Compatibilidad: si GSI carga antes que initGoogleTokenClient se llame
+window.addEventListener('load', () => {
+  if (!_tokenClient) initGoogleTokenClient();
+});
 
 // ── Navegación ───────────────────────────────────────────────────────────────
 
@@ -146,23 +178,17 @@ function renderAuth() {
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>
       <div class="auth-card">
-        <div id="g_id_onload"
-          data-client_id="${CONFIG.GOOGLE_CLIENT_ID}"
-          data-callback="gsiCallback"
-          data-auto_prompt="false"></div>
-        <div class="google-login-wrap">
-          <div class="g_id_signin"
-            data-type="standard" data-size="large"
-            data-theme="outline" data-text="sign_in_with"
-            data-shape="rectangular" data-logo_alignment="left">
-          </div>
-        </div>
-        ${!isConfigured ? `<p class="google-not-configured">⚠ Configurar GOOGLE_CLIENT_ID para habilitar el acceso con Google</p>` : ''}
+        ${isConfigured
+          ? `<button class="btn btn-google btn-block" onclick="googleLogin()">
+               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="">
+               Ingresar con Google
+             </button>`
+          : `<p class="google-not-configured">⚠ Configurar GOOGLE_CLIENT_ID para habilitar el acceso con Google</p>`}
         <div class="divider"><span>o</span></div>
         <button class="btn btn-ghost btn-block" onclick="mockLogin()" style="font-size:.9rem;border:1px solid var(--border)">
           Entrar como operador de prueba
         </button>
-        ${CONFIG.USE_MOCK ? `<p class="hint" style="margin-top:0">Modo prototipo — datos en localStorage</p>` : ''}
+        ${CONFIG.USE_MOCK ? `<p class="hint" style="margin-top:0">Modo prototipo — surveys en localStorage · padrón desde Google Sheets</p>` : ''}
       </div>
     </div>`;
 }
