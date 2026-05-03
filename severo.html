@@ -1243,16 +1243,41 @@ const SheetsDB = {
     const token = this._getToken();
     const row = this._toRow(type, record);
 
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${sheet}!A1:append?valueInputOption=USER_ENTERED`,
+    const doAppend = () => fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ values: [row] }),
       }
     );
-    if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+
+    let res = await doAppend();
+
+    if (res.status === 400) {
+      // La pestaña probablemente no existe — crearla y reintentar
+      await this._createSheet(CONFIG.SURVEY_SPREADSHEET_ID, sheet, token);
+      res = await doAppend();
+    }
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(`Sheets API ${res.status}: ${errBody.error?.message || 'error desconocido'}`);
+    }
     return record;
+  },
+
+  async _createSheet(spreadsheetId, sheetName, token) {
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{ addSheet: { properties: { title: sheetName } } }],
+        }),
+      }
+    );
   },
 
   async _apiGetAll(type) {
