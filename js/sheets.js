@@ -108,7 +108,7 @@ const SheetsDB = {
   _toHeaders(type) {
     const base = ['ID', 'Fecha', 'Email operador', 'Nombre operador', 'Latitud', 'Longitud', 'Precisión (m)'];
     if (type === 'ciudadano') {
-      return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Edad', 'Residencia',
+      return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio', 'Edad', 'Residencia',
         'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios'];
     }
     if (type === 'sociohabitacional') {
@@ -119,7 +119,7 @@ const SheetsDB = {
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
         'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
     }
-    return [...base, 'Categoría', 'Dirección', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones'];
+    return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones'];
   },
 
   async _writeHeaders(type, spreadsheetId, sheet, token) {
@@ -172,7 +172,7 @@ const SheetsDB = {
     ];
     if (type === 'ciudadano') {
       const a = r.answers || {};
-      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio),
+      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio), a.barrio || '',
         a.edad || '', a.residencia || '', a.calidad_vida || '',
         (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios)];
     }
@@ -191,7 +191,7 @@ const SheetsDB = {
     }
     // problematica
     const a = r.answers || {};
-    return [...base, a.categoria || '', sc(a.direccion), sc(a.descripcion),
+    return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
       a.urgencia || '', a.afecta_transito || '', sc(a.observaciones)];
   },
 
@@ -201,9 +201,9 @@ const SheetsDB = {
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
         return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
-          domicilio: row[10], edad: row[11], residencia: row[12],
-          calidad_vida: row[13], problemas: row[14] ? row[14].split(', ') : [],
-          mejoras: row[15], comentarios: row[16] } };
+          domicilio: row[10], barrio: row[11], edad: row[12], residencia: row[13],
+          calidad_vida: row[14], problemas: row[15] ? row[15].split(', ') : [],
+          mejoras: row[16], comentarios: row[17] } };
       }
       if (type === 'sociohabitacional') {
         return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
@@ -219,8 +219,8 @@ const SheetsDB = {
           mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
           voto: row[35] } };
       }
-      return { ...base, answers: { categoria: row[7], direccion: row[8], descripcion: row[9],
-        urgencia: row[10], afecta_transito: row[11], observaciones: row[12] } };
+      return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
+        descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13] } };
     });
   },
 };
