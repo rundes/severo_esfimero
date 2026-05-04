@@ -182,6 +182,8 @@ const PREGUNTAS = {
         { value: 'Belgrano',      label: 'Belgrano' },
         { value: 'Unión',         label: 'Unión' },
         { value: 'Centro',        label: 'Centro' },
+        { value: 'Las Armas',     label: 'Las Armas' },
+        { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
       ],
