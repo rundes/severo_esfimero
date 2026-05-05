@@ -229,13 +229,9 @@ const SheetsDB = {
 // Acceso de LECTURA via API Key de Google (planilla debe permitir "ver con vínculo")
 // Acceso de ESCRITURA (lat/lng/domicilio real) via token OAuth del relevador
 //
-// Pestaña "nativos":
-//   A=TIPO_DOC, B=DOCUMENTO, D=APELLIDO Y NOMBRE, F=DOMICILIO,
-//   G=LATITUD, H=LONGITUD, I=DOMICILIO REAL  ← col I nueva, no modifica PADRON INICIAL
-//
-// Pestaña "extranjeros":
-//   A=DOCUMENTO, C=APELLIDO Y NOMBRE, E=DOMICILIO,
-//   F=LATITUD, G=LONGITUD, H=DOMICILIO REAL  ← col H nueva, no modifica PADRON INICIAL
+// Pestaña única "Padron integrado":
+//   A=PADRON, B=TIPO_DNI, C=DOCUMENTO, D=SEXO, E=APELLIDO Y NOMBRE,
+//   F=CLASE,  G=DOMICILIO, H=LATITUD,  I=LONGITUD, J=DOMICILIO REAL
 
 const Padron = {
   _cache: {},
@@ -350,83 +346,45 @@ const Padron = {
 
   async _apiSearch(dni) {
     const dniStr = String(dni).trim();
-
-    const nRows = await this._fetchSheet(CONFIG.SHEET_PADRON_NATIVOS);
-    const iN = nRows.findIndex((r, idx) => idx > 0 && String(r[1] || '').trim() === dniStr);
-    if (iN > 0) {
-      return {
-        apellido:  this._titleCase(nRows[iN][3] || ''),
-        domicilio: this._titleCase(nRows[iN][5] || ''),
-        dni:       dniStr,
-        lat:       nRows[iN][6] || '',
-        lng:       nRows[iN][7] || '',
-        _meta: {
-          coordRange:     `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:H${iN + 1}`,
-          coordRangeFull: `${CONFIG.SHEET_PADRON_NATIVOS}!G${iN + 1}:I${iN + 1}`,
-        },
-      };
-    }
-
-    const eRows = await this._fetchSheet(CONFIG.SHEET_PADRON_EXTRANJEROS);
-    const iE = eRows.findIndex((r, idx) => idx > 0 && String(r[0] || '').trim() === dniStr);
-    if (iE > 0) {
-      return {
-        apellido:  this._titleCase(eRows[iE][2] || ''),
-        domicilio: this._titleCase(eRows[iE][4] || ''),
-        dni:       dniStr,
-        lat:       eRows[iE][5] || '',
-        lng:       eRows[iE][6] || '',
-        _meta: {
-          coordRange:     `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:G${iE + 1}`,
-          coordRangeFull: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${iE + 1}:H${iE + 1}`,
-        },
-      };
-    }
-
-    return null;
+    const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
+    // fila 0 = encabezados; C=col 2 = DOCUMENTO
+    const i = rows.findIndex((r, idx) => idx > 0 && String(r[2] || '').trim() === dniStr);
+    if (i <= 0) return null;
+    return {
+      apellido:  this._titleCase(rows[i][4] || ''),
+      domicilio: this._titleCase(rows[i][6] || ''),
+      dni:       dniStr,
+      lat:       rows[i][7] || '',
+      lng:       rows[i][8] || '',
+      _meta: {
+        coordRange:     `${CONFIG.SHEET_PADRON}!H${i + 1}:I${i + 1}`,
+        coordRangeFull: `${CONFIG.SHEET_PADRON}!H${i + 1}:J${i + 1}`,
+      },
+    };
   },
 
   async _apiSearchByApellido(query) {
     if (!query || query.length < 4) return [];
     const q = query.toLowerCase();
+    const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
     const results = [];
-
-    const nRows = await this._fetchSheet(CONFIG.SHEET_PADRON_NATIVOS);
-    nRows.slice(1).forEach((row, i) => {
-      const apellido = this._titleCase(row[3] || '');
+    // fila 0 = encabezados; E=col 4 = APELLIDO Y NOMBRE
+    rows.slice(1).forEach((row, i) => {
+      const apellido = this._titleCase(row[4] || '');
       if (apellido.toLowerCase().includes(q)) {
         results.push({
           apellido,
-          domicilio: this._titleCase(row[5] || ''),
-          dni: String(row[1] || '').trim(),
-          lat: row[6] || '',
-          lng: row[7] || '',
+          domicilio: this._titleCase(row[6] || ''),
+          dni:       String(row[2] || '').trim(),
+          lat:       row[7] || '',
+          lng:       row[8] || '',
           _meta: {
-            coordRange:     `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:H${i + 2}`,
-            coordRangeFull: `${CONFIG.SHEET_PADRON_NATIVOS}!G${i + 2}:I${i + 2}`,
+            coordRange:     `${CONFIG.SHEET_PADRON}!H${i + 2}:I${i + 2}`,
+            coordRangeFull: `${CONFIG.SHEET_PADRON}!H${i + 2}:J${i + 2}`,
           },
         });
       }
     });
-
-    const eRows = await this._fetchSheet(CONFIG.SHEET_PADRON_EXTRANJEROS);
-    eRows.slice(1).forEach((row, i) => {
-      const apellido = this._titleCase(row[2] || '');
-      if (apellido.toLowerCase().includes(q)) {
-        results.push({
-          apellido,
-          domicilio: this._titleCase(row[4] || ''),
-          dni: String(row[0] || '').trim(),
-          lat: row[5] || '',
-          lng: row[6] || '',
-          _meta: {
-            coordRange:     `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:G${i + 2}`,
-            coordRangeFull: `${CONFIG.SHEET_PADRON_EXTRANJEROS}!F${i + 2}:H${i + 2}`,
-          },
-        });
-      }
-    });
-
     return results.slice(0, 15);
   },
 

@@ -13,12 +13,9 @@ const CONFIG = {
   SHEET_PROBLEMATICAS:    'Problematicas',
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
-  // Padrón electoral — planilla separada, pestañas nativos / extranjeros
-  // Columnas nativos:     A=TIPO_DOC, B=DOCUMENTO, D=APELLIDO Y NOMBRE, F=DOMICILIO,
-  //                       G=LATITUD, H=LONGITUD, I=DOMICILIO REAL
-  // Columnas extranjeros: A=DOCUMENTO, C=APELLIDO Y NOMBRE, E=DOMICILIO,
-  //                       F=LATITUD, G=LONGITUD, H=DOMICILIO REAL
-  SPREADSHEET_ID:          '1CcxJyZOhfOS7ZxMbyZLZ1apjmMrpkAuMMsuqdtmlHUs',
-  SHEET_PADRON_NATIVOS:    'nativos',
-  SHEET_PADRON_EXTRANJEROS:'extranjeros',
+  // Padrón electoral — planilla separada, pestaña única "Padron integrado"
+  // Columnas: A=PADRON, B=TIPO_DNI, C=DOCUMENTO, D=SEXO, E=APELLIDO Y NOMBRE,
+  //           F=CLASE, G=DOMICILIO, H=LATITUD, I=LONGITUD, J=DOMICILIO REAL
+  SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
+  SHEET_PADRON:   'Padron integrado',
 };
