@@ -4,6 +4,8 @@ let _map = null;
 let _marker = null;
 let _searchDebounce = null;
 let _geocodeDebounce = null;
+let _homeSearchDebounce = null;
+let _familiaSearchDebounce = null;
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
@@ -90,12 +92,24 @@ const State = {
   padronMeta:   null,
   padronDomicilio: null,  // domicilio registrado en el padrón
   padronLocation:  null,  // { lat, lng } guardados previamente en el padrón
-  // citizen search
+  // citizen search (survey flow)
   citizenSearchQuery: '',
   citizenDNIQuery: '',
   citizenSearchResults: [],
   citizenSearching: false,
   citizenSearchError: null,
+  // home padron search
+  homeSearchQuery: '',
+  homeSearchResults: [],
+  homeSearching: false,
+  homeSearchError: null,
+  // padron detail
+  padronDetailRecord: null,
+  familiaSearchQuery: '',
+  familiaSearchResults: [],
+  familiaSearching: false,
+  // preselected citizen from detail → new survey
+  _preselectedCitizen: null,
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
@@ -142,6 +156,7 @@ function render() {
     done:          renderDone,
     list:          renderList,
     detail:        renderDetail,
+    padronDetail:  renderPadronDetail,
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
@@ -260,6 +275,15 @@ function renderHome() {
           Ver historial
         </button>
       </div>
+      <div class="home-search-section">
+        <div class="home-search-label">Buscar ciudadano en el padrón</div>
+        <input type="text" class="input" id="homeSearchInput"
+          placeholder="Apellido (4+ letras) o DNI (6+ dígitos)…"
+          value="${esc(State.homeSearchQuery || '')}"
+          oninput="onHomeSearchInput(this.value)"
+          autocomplete="off">
+        <div id="homeSearchResults">${renderHomeSearchResults()}</div>
+      </div>
       ${CONFIG.USE_MOCK ? `<p class="hint center">Modo prototipo — datos en localStorage</p>` : ''}
     </div>`;
 }
@@ -269,12 +293,293 @@ function logout() {
   go('auth', { user: null });
 }
 
+// ── Home padron search ───────────────────────────────────────────────────────
+
+function onHomeSearchInput(value) {
+  State.homeSearchQuery = value;
+  clearTimeout(_homeSearchDebounce);
+  const isNumeric = /^\d+$/.test(value.trim());
+  const minLen = isNumeric ? 6 : 4;
+  if (value.length >= minLen) {
+    State.homeSearching = true;
+    State.homeSearchResults = [];
+    State.homeSearchError = null;
+    updateHomeSearchUI();
+    _homeSearchDebounce = setTimeout(() => doHomeSearch(value, isNumeric), 450);
+  } else {
+    State.homeSearchResults = [];
+    State.homeSearching = false;
+    State.homeSearchError = null;
+    updateHomeSearchUI();
+  }
+}
+
+function updateHomeSearchUI() {
+  const el = document.getElementById('homeSearchResults');
+  if (el) el.innerHTML = renderHomeSearchResults();
+}
+
+async function doHomeSearch(value, isNumeric) {
+  try {
+    let results;
+    if (isNumeric) {
+      const record = await Padron.searchByDNIAsync(value);
+      results = record ? [record] : [];
+    } else {
+      results = await Padron.searchByApellidoAsync(value);
+    }
+    State.homeSearchResults = results || [];
+    State.homeSearchError = null;
+    State.homeSearching = false;
+  } catch (err) {
+    console.error('[homeSearch] error:', err);
+    State.homeSearchError = err.message;
+    State.homeSearchResults = [];
+    State.homeSearching = false;
+  }
+  updateHomeSearchUI();
+}
+
+function renderHomeSearchResults() {
+  if (State.homeSearching) {
+    return `<div class="search-status"><div class="geo-spinner"></div> Buscando en el padrón…</div>`;
+  }
+  if (State.homeSearchError) {
+    return `<div class="search-status search-error">⚠ ${esc(State.homeSearchError)}</div>`;
+  }
+  const results = State.homeSearchResults || [];
+  if (!results.length) {
+    const hasQuery = (State.homeSearchQuery?.length >= 4);
+    return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
+  }
+  return `<div class="citizen-results">
+    ${results.map((r, i) => `
+      <div class="citizen-result" onclick="openPadronDetail(${i})">
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-info">DNI ${esc(r.dni)} · ${esc(r.domicilio) || 'Sin domicilio'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function openPadronDetail(idx) {
+  const record = (State.homeSearchResults || [])[idx];
+  if (record) {
+    go('padronDetail', { padronDetailRecord: record,
+      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false });
+  }
+}
+
+// ── Padron detail screen ─────────────────────────────────────────────────────
+
+function getFamiliaGroup(dni) {
+  if (!dni) return [];
+  const grupos = JSON.parse(localStorage.getItem('severo_grupos_familiares') || '{}');
+  return grupos[String(dni)] || [];
+}
+
+function saveFamiliaGroup(dni, group) {
+  const grupos = JSON.parse(localStorage.getItem('severo_grupos_familiares') || '{}');
+  grupos[String(dni)] = group;
+  localStorage.setItem('severo_grupos_familiares', JSON.stringify(grupos));
+}
+
+function addFamiliaMember(idx) {
+  const member = (State.familiaSearchResults || [])[idx];
+  const r = State.padronDetailRecord;
+  if (!member || !r?.dni) return;
+  const group = getFamiliaGroup(r.dni);
+  if (!group.find((m) => m.dni === member.dni)) {
+    group.push({ dni: member.dni, apellido: member.apellido, domicilio: member.domicilio });
+    saveFamiliaGroup(r.dni, group);
+    const reverseGroup = getFamiliaGroup(member.dni);
+    if (!reverseGroup.find((m) => m.dni === r.dni)) {
+      reverseGroup.push({ dni: r.dni, apellido: r.apellido, domicilio: r.domicilio });
+      saveFamiliaGroup(member.dni, reverseGroup);
+    }
+  }
+  State.familiaSearchResults = [];
+  State.familiaSearchQuery = '';
+  const input = document.getElementById('familiaSearchInput');
+  if (input) input.value = '';
+  const el = document.getElementById('familiaSection');
+  if (el) el.innerHTML = renderFamiliaSection();
+}
+
+function removeFamiliaMember(mainDni, idx) {
+  const group = getFamiliaGroup(mainDni);
+  const removed = group[idx];
+  group.splice(idx, 1);
+  saveFamiliaGroup(mainDni, group);
+  if (removed) {
+    const rev = getFamiliaGroup(removed.dni).filter((m) => m.dni !== mainDni);
+    saveFamiliaGroup(removed.dni, rev);
+  }
+  const el = document.getElementById('familiaSection');
+  if (el) el.innerHTML = renderFamiliaSection();
+}
+
+function renderFamiliaSection() {
+  const r = State.padronDetailRecord;
+  if (!r) return '';
+  const familia = getFamiliaGroup(r.dni);
+  return `
+    ${familia.length > 0
+      ? `<div class="familia-list">
+          ${familia.map((m, i) => `
+            <div class="familia-member">
+              <div class="familia-member-info">
+                <div class="familia-member-name">${esc(m.apellido) || '—'}</div>
+                <div class="familia-member-sub">DNI ${esc(m.dni)}${m.domicilio ? ' · ' + esc(m.domicilio) : ''}</div>
+              </div>
+              <button class="btn-icon btn-remove" onclick="removeFamiliaMember('${esc(r.dni)}',${i})" title="Quitar">✕</button>
+            </div>`).join('')}
+        </div>`
+      : '<p class="hint" style="text-align:left;padding:4px 0 8px;color:var(--text-2)">Sin miembros registrados</p>'}
+    <div class="familia-add-row">
+      <input type="text" class="input" id="familiaSearchInput"
+        placeholder="Buscar por apellido o DNI para agregar…"
+        oninput="onFamiliaSearchInput(this.value)"
+        autocomplete="off">
+    </div>
+    <div id="familiaSearchResults"></div>`;
+}
+
+function onFamiliaSearchInput(value) {
+  State.familiaSearchQuery = value;
+  clearTimeout(_familiaSearchDebounce);
+  const isNumeric = /^\d+$/.test(value.trim());
+  const minLen = isNumeric ? 6 : 4;
+  if (value.length >= minLen) {
+    State.familiaSearching = true;
+    State.familiaSearchResults = [];
+    const el = document.getElementById('familiaSearchResults');
+    if (el) el.innerHTML = `<div class="search-status"><div class="geo-spinner"></div> Buscando…</div>`;
+    _familiaSearchDebounce = setTimeout(() => doFamiliaSearch(value, isNumeric), 450);
+  } else {
+    State.familiaSearchResults = [];
+    State.familiaSearching = false;
+    const el = document.getElementById('familiaSearchResults');
+    if (el) el.innerHTML = '';
+  }
+}
+
+async function doFamiliaSearch(value, isNumeric) {
+  try {
+    let results;
+    if (isNumeric) {
+      const record = await Padron.searchByDNIAsync(value);
+      results = record ? [record] : [];
+    } else {
+      results = await Padron.searchByApellidoAsync(value);
+    }
+    const mainDni = State.padronDetailRecord?.dni;
+    const existingDnis = new Set([mainDni, ...getFamiliaGroup(mainDni).map((m) => m.dni)]);
+    State.familiaSearchResults = (results || []).filter((r) => !existingDnis.has(r.dni));
+    State.familiaSearching = false;
+  } catch (err) {
+    State.familiaSearchResults = [];
+    State.familiaSearching = false;
+  }
+  const el = document.getElementById('familiaSearchResults');
+  if (el) el.innerHTML = renderFamiliaAddResults();
+}
+
+function renderFamiliaAddResults() {
+  const results = State.familiaSearchResults || [];
+  if (!results.length) return '';
+  return `<div class="familia-search-results">
+    ${results.map((r, i) => `
+      <div class="familia-search-result">
+        <div class="familia-member-info">
+          <div class="familia-member-name">${esc(r.apellido) || '—'}</div>
+          <div class="familia-member-sub">DNI ${esc(r.dni)}${r.domicilio ? ' · ' + esc(r.domicilio) : ''}</div>
+        </div>
+        <button class="btn btn-ghost familia-add-btn" onclick="addFamiliaMember(${i})">+ Agregar</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderPadronDetail() {
+  const r = State.padronDetailRecord;
+  if (!r) { go('home'); return ''; }
+
+  const hasCoords = r.lat && r.lng && String(r.lat).trim() !== '' && String(r.lng).trim() !== '';
+  const mapsUrl = hasCoords
+    ? `https://www.google.com/maps?q=${encodeURIComponent(r.lat + ',' + r.lng)}`
+    : null;
+
+  const field = (label, val) => val
+    ? `<div class="padron-row">
+         <span class="padron-key">${esc(label)}</span>
+         <span class="padron-val">${esc(val)}</span>
+       </div>`
+    : '';
+
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('home')">←</button>
+        <span class="header-title">Perfil del ciudadano</span>
+      </header>
+      <div class="padron-detail-body">
+
+        <div class="padron-detail-hero">
+          <div class="padron-detail-name">${esc(r.apellido) || '—'}</div>
+          <div class="padron-detail-sub">DNI ${esc(r.dni)}${r.sexo ? ' · ' + esc(r.sexo) : ''}</div>
+        </div>
+
+        <div class="padron-section">
+          <div class="padron-section-title">Datos del padrón</div>
+          ${field('N° de padrón', r.padron)}
+          ${field('Tipo de DNI', r.tipo_dni)}
+          ${field('Clase / Año', r.clase)}
+        </div>
+
+        <div class="padron-section">
+          <div class="padron-section-title">Domicilio</div>
+          ${field('Electoral', r.domicilio)}
+          ${field('Real', r.domicilio_real)}
+          ${hasCoords ? `<div class="padron-row">
+            <span class="padron-key">Ubicación</span>
+            <span class="padron-val">
+              <a href="${mapsUrl}" target="_blank" class="loc-link">
+                📍 ${parseFloat(r.lat).toFixed(5)}, ${parseFloat(r.lng).toFixed(5)}
+              </a>
+            </span>
+          </div>` : ''}
+        </div>
+
+        <div class="padron-section">
+          <div class="padron-section-title">Grupo familiar</div>
+          <div id="familiaSection">${renderFamiliaSection()}</div>
+        </div>
+
+        <div class="padron-actions">
+          <button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">
+            + Nuevo relevamiento
+          </button>
+        </div>
+
+      </div>
+    </div>`;
+}
+
+function startSurveyFromPadron() {
+  go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
+    surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
+    padronDomicilio: null, padronLocation: null,
+    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
+    citizenSearching: false, citizenSearchError: null,
+    _preselectedCitizen: State.padronDetailRecord || null });
+}
+
 function startNewSurvey() {
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
     citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
-    citizenSearching: false, citizenSearchError: null });
+    citizenSearching: false, citizenSearchError: null,
+    _preselectedCitizen: null });
 }
 
 function renderGeo() {
@@ -471,13 +776,19 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
+  const preselected = State._preselectedCitizen;
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
-    padronMeta: null, padronDomicilio: null, padronLocation: null, location: null };
+    padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
+    _preselectedCitizen: null };
   if (type === 'ciudadano' || type === 'sociohabitacional') {
-    go('citizenSearch', { ...base, citizenSearchQuery: '', citizenDNIQuery: '',
-      citizenSearchResults: [], citizenSearching: false, citizenSearchError: null });
+    go('citizenSearch', { ...base,
+      citizenSearchQuery: preselected?.apellido || '',
+      citizenDNIQuery: '',
+      citizenSearchResults: preselected ? [preselected] : [],
+      citizenSearching: false, citizenSearchError: null });
   } else {
-    go('geo', base);
+    go('geo', { ...base, citizenSearchQuery: '', citizenDNIQuery: '',
+      citizenSearchResults: [], citizenSearching: false, citizenSearchError: null });
   }
 }
 

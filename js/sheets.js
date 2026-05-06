@@ -344,23 +344,34 @@ const Padron = {
 
   // ── Google Sheets API ────────────────────────────────────────────────────
 
+  _rowToPadronRecord(row, rowIdx) {
+    // A=PADRON(0) B=TIPO_DNI(1) C=DOCUMENTO(2) D=SEXO(3) E=APELLIDO Y NOMBRE(4)
+    // F=CLASE(5)  G=DOMICILIO(6) H=LATITUD(7) I=LONGITUD(8) J=DOMICILIO REAL(9)
+    return {
+      padron:         String(row[0]  || '').trim(),
+      tipo_dni:       String(row[1]  || '').trim(),
+      dni:            String(row[2]  || '').trim(),
+      sexo:           row[3]  || '',
+      apellido:       this._titleCase(row[4] || ''),
+      clase:          row[5]  || '',
+      domicilio:      this._titleCase(row[6] || ''),
+      lat:            row[7]  || '',
+      lng:            row[8]  || '',
+      domicilio_real: this._titleCase(row[9] || ''),
+      _meta: {
+        coordRange:     `${CONFIG.SHEET_PADRON}!H${rowIdx}:I${rowIdx}`,
+        coordRangeFull: `${CONFIG.SHEET_PADRON}!H${rowIdx}:J${rowIdx}`,
+      },
+    };
+  },
+
   async _apiSearch(dni) {
     const dniStr = String(dni).trim();
     const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
     // fila 0 = encabezados; C=col 2 = DOCUMENTO
     const i = rows.findIndex((r, idx) => idx > 0 && String(r[2] || '').trim() === dniStr);
     if (i <= 0) return null;
-    return {
-      apellido:  this._titleCase(rows[i][4] || ''),
-      domicilio: this._titleCase(rows[i][6] || ''),
-      dni:       dniStr,
-      lat:       rows[i][7] || '',
-      lng:       rows[i][8] || '',
-      _meta: {
-        coordRange:     `${CONFIG.SHEET_PADRON}!H${i + 1}:I${i + 1}`,
-        coordRangeFull: `${CONFIG.SHEET_PADRON}!H${i + 1}:J${i + 1}`,
-      },
-    };
+    return this._rowToPadronRecord(rows[i], i + 1);
   },
 
   async _apiSearchByApellido(query) {
@@ -370,19 +381,8 @@ const Padron = {
     const results = [];
     // fila 0 = encabezados; E=col 4 = APELLIDO Y NOMBRE
     rows.slice(1).forEach((row, i) => {
-      const apellido = this._titleCase(row[4] || '');
-      if (apellido.toLowerCase().includes(q)) {
-        results.push({
-          apellido,
-          domicilio: this._titleCase(row[6] || ''),
-          dni:       String(row[2] || '').trim(),
-          lat:       row[7] || '',
-          lng:       row[8] || '',
-          _meta: {
-            coordRange:     `${CONFIG.SHEET_PADRON}!H${i + 2}:I${i + 2}`,
-            coordRangeFull: `${CONFIG.SHEET_PADRON}!H${i + 2}:J${i + 2}`,
-          },
-        });
+      if ((row[4] || '').toLowerCase().includes(q)) {
+        results.push(this._rowToPadronRecord(row, i + 2));
       }
     });
     return results.slice(0, 15);
