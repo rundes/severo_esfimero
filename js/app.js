@@ -6,6 +6,7 @@ let _searchDebounce = null;
 let _geocodeDebounce = null;
 let _homeSearchDebounce = null;
 let _familiaSearchDebounce = null;
+let _pendingGeoResult = null;   // geocode result waiting for map to init
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
@@ -110,6 +111,8 @@ const State = {
   familiaSearching: false,
   // preselected citizen from detail → new survey
   _preselectedCitizen: null,
+  // current DNI context for familia group operations
+  familiaDni: '',
 };
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
