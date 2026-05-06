@@ -1755,7 +1755,7 @@ const SheetsDB = {
     const a = r.answers || {};
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
       a.urgencia || '', a.afecta_transito || '', sc(a.observaciones),
-      sc(a.foto_url || ''), r.estado || ''];
+      sc(a.foto_url || ''), sc(r.estado || '')];
   },
 
   _fromRows(type, rows) {
@@ -3264,6 +3264,7 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
+    URL.revokeObjectURL(localUrl);
     const imgFinal = document.getElementById(`photoImg_${questionId}`);
     if (imgFinal) imgFinal.src = gcsUrl;
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
@@ -3585,6 +3586,7 @@ function renderDetail() {
 }
 
 async function updateEstado(recordId, estado) {
+  if (!['resuelto', 'persiste'].includes(estado)) return;
   const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
   if (idx < 0) return;
   const prev = State.surveys[idx].estado;

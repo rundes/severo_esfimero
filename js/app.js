@@ -6,7 +6,6 @@ let _searchDebounce = null;
 let _geocodeDebounce = null;
 let _homeSearchDebounce = null;
 let _familiaSearchDebounce = null;
-let _pendingGeoResult = null;   // geocode result waiting for map to init
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
@@ -1210,12 +1209,13 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
+    URL.revokeObjectURL(localUrl);
     const imgFinal = document.getElementById(`photoImg_${questionId}`);
     if (imgFinal) imgFinal.src = gcsUrl;
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
   } catch (err) {
     console.error('[GCS]', err);
-    State.answers[questionId] = localUrl;
+    State.answers[questionId] = localUrl; // mantener blob URL como fallback
     if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'}</span>`;
   }
 }
@@ -1531,10 +1531,10 @@ function renderDetail() {
 }
 
 async function updateEstado(recordId, estado) {
+  if (!['resuelto', 'persiste'].includes(estado)) return;
   const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
   if (idx < 0) return;
   const prev = State.surveys[idx].estado;
-  // Toggle: if already that estado, reset to ''
   const next = prev === estado ? '' : estado;
   State.surveys[idx] = { ...State.surveys[idx], estado: next };
   State.detailRecord = { ...State.detailRecord, estado: next };
