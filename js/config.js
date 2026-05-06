@@ -23,4 +23,7 @@ const CONFIG = {
   // AI–AJ=CELULARES, AK–AL=EMAILS, AM=AUH, AN=IFE, AO=TWITTER
   SPREADSHEET_ID: '1rN-b37nqFm9ymiIf8YwmutUAYz_6ukwZXRPzFtsayxQ',
   SHEET_PADRON:   'padron_maipu_completo.csv',
+
+  // Google Cloud Storage — fotos de problemáticas
+  GCS_BUCKET: 'maipu-pba',
 };

@@ -910,6 +910,36 @@ html, body {
 .elec-absent { color: var(--error); }
 .elec-neutral { color: var(--text-2); }
 
+/* ── Photo input ─────────────────────────────────────────────────────────────── */
+.photo-wrap { display: flex; flex-direction: column; gap: 10px; }
+.photo-preview { width: 100%; max-height: 260px; object-fit: cover; border-radius: var(--radius); border: 2px solid var(--border); display: block; }
+.photo-empty { width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: .9rem; background: var(--bg); }
+.photo-btn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.photo-status { display: flex; align-items: center; gap: 8px; font-size: .82rem; min-height: 20px; }
+.photo-ok   { color: var(--success); font-weight: 600; }
+.photo-warn { color: var(--warn); }
+
+/* ── Summary / detail photo ──────────────────────────────────────────────────── */
+.summary-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--radius); display: block; }
+.detail-photo { width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--radius); display: block; cursor: zoom-in; transition: max-height .3s ease; }
+.detail-photo.detail-photo-expand { max-height: 80vh; cursor: zoom-out; }
+
+/* ── Estado badge ────────────────────────────────────────────────────────────── */
+.estado-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: .72rem; font-weight: 700; letter-spacing: .3px; vertical-align: middle; flex-shrink: 0; }
+.estado-pendiente { background: #F3F4F6; color: var(--text-2); border: 1px solid var(--border); }
+.estado-persiste  { background: #FFF3E0; color: var(--warn);   border: 1px solid #FFCC80; }
+.estado-resuelto  { background: #E8F5E9; color: var(--success); border: 1px solid #A5D6A7; }
+
+/* ── Estado actions ──────────────────────────────────────────────────────────── */
+.estado-section { padding: 16px 0 4px; border-top: 1px solid var(--border); margin-top: 8px; }
+.estado-section-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--text-2); margin-bottom: 10px; }
+.estado-actions { display: flex; gap: 10px; }
+.btn-estado { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text-2); font-size: .9rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-estado:hover { border-color: var(--warn); color: var(--warn); background: #FFF8F0; }
+.btn-estado-ok:hover { border-color: var(--success); color: var(--success); background: #F1F8F1; }
+.btn-estado-active { border-color: var(--warn); color: var(--warn); background: #FFF3E0; }
+.btn-estado-ok.btn-estado-active { border-color: var(--success); color: var(--success); background: #E8F5E9; }
+
   </style>
 </head>
 <body>
@@ -941,6 +971,9 @@ const CONFIG = {
   // AI–AJ=CELULARES, AK–AL=EMAILS, AM=AUH, AN=IFE, AO=TWITTER
   SPREADSHEET_ID: '1rN-b37nqFm9ymiIf8YwmutUAYz_6ukwZXRPzFtsayxQ',
   SHEET_PADRON:   'padron_maipu_completo.csv',
+
+  // Google Cloud Storage — fotos de problemáticas
+  GCS_BUCKET: 'maipu-pba',
 };
 
   </script>
@@ -1112,6 +1145,13 @@ const PREGUNTAS = {
       type: 'textarea',
       required: false,
       placeholder: 'Información adicional relevante…',
+    },
+    {
+      id: 'foto_url',
+      label: 'Foto de la problemática',
+      type: 'photo',
+      required: false,
+      hint: 'Tomá o seleccioná una foto para documentar el problema.',
     },
   ],
 
@@ -1474,6 +1514,53 @@ const Geo = {
 
   </script>
   <script>
+// ── Google Cloud Storage ─────────────────────────────────────────────────────
+const GCS = {
+  async compress(file, maxPx = 1200, quality = 0.78) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = Math.min(maxPx / Math.max(img.width, img.height), 1);
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(resolve, 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  async upload(blob, filename) {
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) throw new Error('401');
+    const bucket = (typeof CONFIG !== 'undefined' && CONFIG.GCS_BUCKET) || 'maipu-pba';
+    const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(filename)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/jpeg' },
+      body: blob,
+    });
+    if (res.status === 401) throw new Error('401');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`GCS ${res.status}: ${body.error?.message || 'Error al subir la foto'}`);
+    }
+    return `https://storage.googleapis.com/${bucket}/${encodeURIComponent(filename)}`;
+  },
+
+  filename(prefix = 'fotos') {
+    const ts  = Date.now();
+    const rnd = Math.random().toString(36).slice(2, 8);
+    return `${prefix}/${ts}-${rnd}.jpg`;
+  },
+};
+  </script>
+  <script>
 const SheetsDB = {
   _hasToken() {
     return !!localStorage.getItem('severo_access_token');
@@ -1494,7 +1581,8 @@ const SheetsDB = {
   },
 
   async update(type, id, updates) {
-    return this._mockUpdate(type, id, updates);
+    this._mockUpdate(type, id, updates);
+    if (this._hasToken()) return this._apiUpdate(type, id, updates);
   },
 
   // ── Mock (localStorage) ──────────────────────────────────────────────────
@@ -1595,7 +1683,7 @@ const SheetsDB = {
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
         'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
     }
-    return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones'];
+    return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
 
   async _writeHeaders(type, spreadsheetId, sheet, token) {
@@ -1666,7 +1754,8 @@ const SheetsDB = {
     }
     const a = r.answers || {};
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
-      a.urgencia || '', a.afecta_transito || '', sc(a.observaciones)];
+      a.urgencia || '', a.afecta_transito || '', sc(a.observaciones),
+      sc(a.foto_url || ''), r.estado || ''];
   },
 
   _fromRows(type, rows) {
@@ -1694,8 +1783,32 @@ const SheetsDB = {
           voto: row[35] } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
-        descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13] } };
+        descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
+        foto_url: row[14] || '' }, estado: row[15] || '' };
     });
+  },
+
+  async _apiUpdate(type, id, updates) {
+    const sheet = this._sheetForType(type);
+    const token = this._getToken();
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const rows = (await res.json()).values || [];
+    const rowIdx = rows.findIndex((r, i) => i > 0 && String(r[0]).trim() === String(id).trim());
+    if (rowIdx < 0) return;
+    const sheetRow = rowIdx + 1;
+    if (type === 'problematica' && updates.estado !== undefined) {
+      const range = `${encodeURIComponent(sheet)}!P${sheetRow}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[updates.estado]] }),
+        }
+      );
+    }
   },
 };
 
@@ -1970,7 +2083,7 @@ function initGoogleTokenClient() {
 
   _tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: id,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/devstorage.read_write',
     callback: async (tokenResponse) => {
       if (_silentRefreshResolve) {
         const resolve = _silentRefreshResolve;
@@ -3078,6 +3191,22 @@ function renderInput(q, val) {
           </label>`).join('')}
       </div>`;
 
+    case 'photo': {
+      const url = State.answers[q.id];
+      return `
+        <div class="photo-wrap">
+          ${url
+            ? `<img src="${url}" class="photo-preview" alt="Foto" id="photoImg_${q.id}">`
+            : `<div class="photo-empty" id="photoEmpty_${q.id}">Sin foto adjunta</div>`}
+          <div class="photo-status" id="photoStatus_${q.id}"></div>
+          <label class="btn btn-outline photo-btn">
+            📷 ${url ? 'Cambiar foto' : 'Tomar / seleccionar foto'}
+            <input type="file" accept="image/*" capture="environment" style="display:none"
+              onchange="onPhotoSelected(this,'${q.id}')">
+          </label>
+        </div>`;
+    }
+
     default:
       return '';
   }
@@ -3094,6 +3223,55 @@ function toggleChip(id, option) {
   else current.push(option);
   State.answers[id] = [...current];
   render();
+}
+
+async function onPhotoSelected(input, questionId) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const imgEl    = document.getElementById(`photoImg_${questionId}`);
+  const emptyEl  = document.getElementById(`photoEmpty_${questionId}`);
+  const statusEl = document.getElementById(`photoStatus_${questionId}`);
+
+  const localUrl = URL.createObjectURL(file);
+  if (imgEl) {
+    imgEl.src = localUrl;
+  } else if (emptyEl) {
+    const img = document.createElement('img');
+    img.src = localUrl; img.className = 'photo-preview';
+    img.id = `photoImg_${questionId}`; img.alt = 'Foto';
+    emptyEl.replaceWith(img);
+  }
+  if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Comprimiendo…';
+
+  try {
+    const blob = await GCS.compress(file);
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) {
+      const reader = new FileReader();
+      reader.onload = (e) => { State.answers[questionId] = e.target.result; };
+      reader.readAsDataURL(blob);
+      if (statusEl) statusEl.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
+      return;
+    }
+    if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
+    const filename = GCS.filename('problematicas');
+    let gcsUrl;
+    try {
+      gcsUrl = await GCS.upload(blob, filename);
+    } catch (err) {
+      if (err.message === '401') { await ensureFreshToken(); gcsUrl = await GCS.upload(blob, filename); }
+      else throw err;
+    }
+    State.answers[questionId] = gcsUrl;
+    const imgFinal = document.getElementById(`photoImg_${questionId}`);
+    if (imgFinal) imgFinal.src = gcsUrl;
+    if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
+  } catch (err) {
+    console.error('[GCS]', err);
+    State.answers[questionId] = localUrl;
+    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'}</span>`;
+  }
 }
 
 function surveyBack() {
@@ -3168,7 +3346,8 @@ async function doPadronLookup(dniQuestion, questions) {
 
 function renderSummary() {
   const questions = PREGUNTAS[State.surveyType] || [];
-  const rows = questions.map((q) => {
+  const fotoUrl = State.answers['foto_url'];
+  const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = State.answers[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
@@ -3187,6 +3366,7 @@ function renderSummary() {
         <span class="header-title">Resumen</span>
       </header>
       <div class="summary-body">
+        ${fotoUrl ? `<img src="${fotoUrl}" class="summary-photo" alt="Foto de la problemática">` : ''}
         <div class="summary-meta">
           <span>${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
           ${State.location ? `<a href="${Geo.mapsUrl(State.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>📍 Sin ubicación</span>'}
@@ -3273,7 +3453,7 @@ function renderList() {
           <div class="survey-card" onclick="openDetail(${i})">
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
               <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
               ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
@@ -3331,7 +3511,7 @@ async function loadList() {
           <div class="survey-card" onclick="openDetail(${i})">
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
               <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
               ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
@@ -3351,12 +3531,19 @@ function openDetail(idx) {
   if (record) go('detail', { detailRecord: record });
 }
 
+function renderEstadoBadge(estado) {
+  if (estado === 'resuelto') return `<span class="estado-badge estado-resuelto">✓ Resuelto</span>`;
+  if (estado === 'persiste') return `<span class="estado-badge estado-persiste">↩ Persiste</span>`;
+  return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
   const questions = PREGUNTAS[r.type] || [];
+  const fotoUrl = r.answers?.foto_url;
 
-  const rows = questions.map((q) => {
+  const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = r.answers?.[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
@@ -3375,14 +3562,42 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
+        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>
+          ${r.type === 'problematica' ? renderEstadoBadge(r.estado) : ''}
           ${r.location ? `<a href="${Geo.mapsUrl(r.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>Sin ubicación</span>'}
         </div>
         <table class="summary-table">${rows}</table>
+        ${r.type === 'problematica' ? `
+        <div class="estado-section">
+          <div class="estado-section-title">Actualizar estado</div>
+          <div class="estado-actions">
+            <button class="btn btn-estado ${r.estado === 'persiste' ? 'btn-estado-active' : ''}"
+              onclick="updateEstado('${r.id}', 'persiste')">↩ Persiste</button>
+            <button class="btn btn-estado btn-estado-ok ${r.estado === 'resuelto' ? 'btn-estado-active' : ''}"
+              onclick="updateEstado('${r.id}', 'resuelto')">✓ Resuelto</button>
+          </div>
+        </div>` : ''}
       </div>
     </div>`;
+}
+
+async function updateEstado(recordId, estado) {
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
+  if (idx < 0) return;
+  const prev = State.surveys[idx].estado;
+  const next = prev === estado ? '' : estado;
+  State.surveys[idx] = { ...State.surveys[idx], estado: next };
+  State.detailRecord = { ...State.detailRecord, estado: next };
+  render();
+  try {
+    await SheetsDB.update('problematica', recordId, { estado: next });
+    showToast(next === 'resuelto' ? '✓ Marcado como resuelto' : next === 'persiste' ? 'Marcado como persiste' : 'Estado reiniciado');
+  } catch (err) {
+    showToast('Error al guardar estado: ' + err.message);
+  }
 }
 
 // ── Eventos y utilidades ─────────────────────────────────────────────────────

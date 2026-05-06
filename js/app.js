@@ -19,7 +19,7 @@ function initGoogleTokenClient() {
 
   _tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: id,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/devstorage.read_write',
     callback: async (tokenResponse) => {
       // Refresh silencioso iniciado por ensureFreshToken()
       if (_silentRefreshResolve) {
@@ -1134,6 +1134,22 @@ function renderInput(q, val) {
           </label>`).join('')}
       </div>`;
 
+    case 'photo': {
+      const url = State.answers[q.id];
+      return `
+        <div class="photo-wrap">
+          ${url
+            ? `<img src="${url}" class="photo-preview" alt="Foto" id="photoImg_${q.id}">`
+            : `<div class="photo-empty" id="photoEmpty_${q.id}">Sin foto adjunta</div>`}
+          <div class="photo-status" id="photoStatus_${q.id}"></div>
+          <label class="btn btn-outline photo-btn">
+            📷 ${url ? 'Cambiar foto' : 'Tomar / seleccionar foto'}
+            <input type="file" accept="image/*" capture="environment" style="display:none"
+              onchange="onPhotoSelected(this,'${q.id}')">
+          </label>
+        </div>`;
+    }
+
     default:
       return '';
   }
@@ -1150,6 +1166,58 @@ function toggleChip(id, option) {
   else current.push(option);
   State.answers[id] = [...current];
   render();
+}
+
+async function onPhotoSelected(input, questionId) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const imgEl    = document.getElementById(`photoImg_${questionId}`);
+  const emptyEl  = document.getElementById(`photoEmpty_${questionId}`);
+  const statusEl = document.getElementById(`photoStatus_${questionId}`);
+
+  // Mostrar preview local inmediatamente
+  const localUrl = URL.createObjectURL(file);
+  if (imgEl) {
+    imgEl.src = localUrl;
+  } else if (emptyEl) {
+    const img = document.createElement('img');
+    img.src = localUrl; img.className = 'photo-preview';
+    img.id = `photoImg_${questionId}`; img.alt = 'Foto';
+    emptyEl.replaceWith(img);
+  }
+  if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Comprimiendo…';
+
+  try {
+    const blob = await GCS.compress(file);
+
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) {
+      const reader = new FileReader();
+      reader.onload = (e) => { State.answers[questionId] = e.target.result; };
+      reader.readAsDataURL(blob);
+      if (statusEl) statusEl.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
+      return;
+    }
+
+    if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
+    const filename = GCS.filename('problematicas');
+    let gcsUrl;
+    try {
+      gcsUrl = await GCS.upload(blob, filename);
+    } catch (err) {
+      if (err.message === '401') { await ensureFreshToken(); gcsUrl = await GCS.upload(blob, filename); }
+      else throw err;
+    }
+    State.answers[questionId] = gcsUrl;
+    const imgFinal = document.getElementById(`photoImg_${questionId}`);
+    if (imgFinal) imgFinal.src = gcsUrl;
+    if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
+  } catch (err) {
+    console.error('[GCS]', err);
+    State.answers[questionId] = localUrl;
+    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'}</span>`;
+  }
 }
 
 function surveyBack() {
@@ -1224,7 +1292,8 @@ async function doPadronLookup(dniQuestion, questions) {
 
 function renderSummary() {
   const questions = PREGUNTAS[State.surveyType] || [];
-  const rows = questions.map((q) => {
+  const fotoUrl = State.answers['foto_url'];
+  const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = State.answers[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
@@ -1243,6 +1312,7 @@ function renderSummary() {
         <span class="header-title">Resumen</span>
       </header>
       <div class="summary-body">
+        ${fotoUrl ? `<img src="${fotoUrl}" class="summary-photo" alt="Foto de la problemática">` : ''}
         <div class="summary-meta">
           <span>${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
           ${State.location ? `<a href="${Geo.mapsUrl(State.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>📍 Sin ubicación</span>'}
@@ -1329,7 +1399,7 @@ function renderList() {
           <div class="survey-card" onclick="openDetail(${i})">
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
               <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
               ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
@@ -1387,7 +1457,7 @@ async function loadList() {
           <div class="survey-card" onclick="openDetail(${i})">
             <div class="card-icon">${typeIcon(r.type)}</div>
             <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}</div>
+              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
               <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
               <div class="card-date">${formatDate(r.savedAt)}</div>
               ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
@@ -1407,12 +1477,19 @@ function openDetail(idx) {
   if (record) go('detail', { detailRecord: record });
 }
 
+function renderEstadoBadge(estado) {
+  if (estado === 'resuelto') return `<span class="estado-badge estado-resuelto">✓ Resuelto</span>`;
+  if (estado === 'persiste') return `<span class="estado-badge estado-persiste">↩ Persiste</span>`;
+  return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
   const questions = PREGUNTAS[r.type] || [];
+  const fotoUrl = r.answers?.foto_url;
 
-  const rows = questions.map((q) => {
+  const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = r.answers?.[q.id];
     let display = '—';
     if (val !== undefined && val !== null && val !== '') {
@@ -1431,14 +1508,43 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
+        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>
+          ${r.type === 'problematica' ? renderEstadoBadge(r.estado) : ''}
           ${r.location ? `<a href="${Geo.mapsUrl(r.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>Sin ubicación</span>'}
         </div>
         <table class="summary-table">${rows}</table>
+        ${r.type === 'problematica' ? `
+        <div class="estado-section">
+          <div class="estado-section-title">Actualizar estado</div>
+          <div class="estado-actions">
+            <button class="btn btn-estado ${r.estado === 'persiste' ? 'btn-estado-active' : ''}"
+              onclick="updateEstado('${r.id}', 'persiste')">↩ Persiste</button>
+            <button class="btn btn-estado btn-estado-ok ${r.estado === 'resuelto' ? 'btn-estado-active' : ''}"
+              onclick="updateEstado('${r.id}', 'resuelto')">✓ Resuelto</button>
+          </div>
+        </div>` : ''}
       </div>
     </div>`;
+}
+
+async function updateEstado(recordId, estado) {
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
+  if (idx < 0) return;
+  const prev = State.surveys[idx].estado;
+  // Toggle: if already that estado, reset to ''
+  const next = prev === estado ? '' : estado;
+  State.surveys[idx] = { ...State.surveys[idx], estado: next };
+  State.detailRecord = { ...State.detailRecord, estado: next };
+  render();
+  try {
+    await SheetsDB.update('problematica', recordId, { estado: next });
+    showToast(next === 'resuelto' ? '✓ Marcado como resuelto' : next === 'persiste' ? 'Marcado como persiste' : 'Estado reiniciado');
+  } catch (err) {
+    showToast('Error al guardar estado: ' + err.message);
+  }
 }
 
 // ── Eventos y utilidades ─────────────────────────────────────────────────────

@@ -18,7 +18,8 @@ const SheetsDB = {
   },
 
   async update(type, id, updates) {
-    return this._mockUpdate(type, id, updates);
+    this._mockUpdate(type, id, updates);
+    if (this._hasToken()) return this._apiUpdate(type, id, updates);
   },
 
   // ── Mock (localStorage) ──────────────────────────────────────────────────
@@ -119,7 +120,7 @@ const SheetsDB = {
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
         'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
     }
-    return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones'];
+    return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
 
   async _writeHeaders(type, spreadsheetId, sheet, token) {
@@ -192,7 +193,8 @@ const SheetsDB = {
     // problematica
     const a = r.answers || {};
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
-      a.urgencia || '', a.afecta_transito || '', sc(a.observaciones)];
+      a.urgencia || '', a.afecta_transito || '', sc(a.observaciones),
+      sc(a.foto_url || ''), r.estado || ''];
   },
 
   _fromRows(type, rows) {
@@ -220,7 +222,8 @@ const SheetsDB = {
           voto: row[35] } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
-        descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13] } };
+        descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
+        foto_url: row[14] || '' }, estado: row[15] || '' };
     });
   },
 };
@@ -425,6 +428,32 @@ const Padron = {
       }
     });
     return results.slice(0, 15);
+  },
+
+  async _apiUpdate(type, id, updates) {
+    const sheet = this._sheetForType(type);
+    const token = this._getToken();
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const rows = (await res.json()).values || [];
+    // Find row by ID (col A = index 0); row 0 is headers
+    const rowIdx = rows.findIndex((r, i) => i > 0 && String(r[0]).trim() === String(id).trim());
+    if (rowIdx < 0) return;
+    const sheetRow = rowIdx + 1; // 1-based
+
+    // For problematica: Estado = column P (index 15)
+    if (type === 'problematica' && updates.estado !== undefined) {
+      const range = `${encodeURIComponent(sheet)}!P${sheetRow}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[updates.estado]] }),
+        }
+      );
+    }
   },
 
   async _apiUpdateLatLng(meta, lat, lng, domicilioReal) {

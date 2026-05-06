@@ -166,6 +166,13 @@ const PREGUNTAS = {
       required: false,
       placeholder: 'Información adicional relevante…',
     },
+    {
+      id: 'foto_url',
+      label: 'Foto de la problemática',
+      type: 'photo',
+      required: false,
+      hint: 'Tomá o seleccioná una foto para documentar el problema.',
+    },
   ],
 
   // ── Encuesta Socio-Habitacional Maipú 2026 ──────────────────────────────────
