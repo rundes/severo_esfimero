@@ -870,6 +870,46 @@ html, body {
   white-space: nowrap;
 }
 
+/* ── Electoral participation grid ───────────────────────────────────────────── */
+.elec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.elec-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  flex: 1;
+  min-width: 72px;
+  max-width: 90px;
+}
+
+.elec-label {
+  font-size: .62rem;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.elec-value {
+  font-size: .72rem;
+  font-weight: 700;
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.elec-voted  { color: var(--success); }
+.elec-absent { color: var(--error); }
+.elec-neutral { color: var(--text-2); }
+
   </style>
 </head>
 <body>
@@ -891,11 +931,16 @@ const CONFIG = {
   SHEET_PROBLEMATICAS:    'Problematicas',
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
-  // Padrón electoral — planilla separada, pestaña única "Padron integrado"
-  // Columnas: A=PADRON, B=TIPO_DNI, C=DOCUMENTO, D=SEXO, E=APELLIDO Y NOMBRE,
-  //           F=CLASE,  G=DOMICILIO, H=LATITUD,  I=LONGITUD, J=DOMICILIO REAL
-  SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
-  SHEET_PADRON:   'Padron integrado',
+  // Padrón electoral — fuente única de datos personales
+  // A=DNI, B=SEXO, C=TIPO, D–L=participación elecciones,
+  // M=PADRON, N=TIPO_DNI, O=APELLIDO Y NOMBRE, P=CLASE,
+  // Q=DOMICILIO, R=LATITUD, S=LONGITUD, T=DOMICILIO REAL,
+  // U=PROFESION, V=CIRCUITO, W=NRO_MESA, X=ORDEN, Y=ESTABLECIMIENTO,
+  // Z=ocupacion, AA=nivel_educativo, AB=ESTADO CIVIL, AC=AFILIACION,
+  // AD=LOCALIDAD, AE–AG=EMPLEADORES, AH=REGIMEN_IMP,
+  // AI–AJ=CELULARES, AK–AL=EMAILS, AM=AUH, AN=IFE, AO=TWITTER
+  SPREADSHEET_ID: '1rN-b37nqFm9ymiIf8YwmutUAYz_6ukwZXRPzFtsayxQ',
+  SHEET_PADRON:   'padron_maipu_completo.csv',
 };
 
   </script>
@@ -1656,11 +1701,9 @@ const SheetsDB = {
 
 // ── Padrón electoral ─────────────────────────────────────────────────────────
 // LECTURA: API Key de Google (no requiere token del relevador)
-// ESCRITURA: token OAuth del relevador (debe tener acceso de edición al padrón)
+// ESCRITURA (lat/lng/domicilio real): token OAuth del relevador
 //
-// Pestaña única "Padron integrado":
-//   A=PADRON, B=TIPO_DNI, C=DOCUMENTO, D=SEXO, E=APELLIDO Y NOMBRE,
-//   F=CLASE,  G=DOMICILIO, H=LATITUD,  I=LONGITUD, J=DOMICILIO REAL
+// padron_maipu_completo.csv — ver CONFIG para mapa completo de columnas
 
 const Padron = {
   _cache: {},
@@ -1754,22 +1797,61 @@ const Padron = {
   },
 
   _rowToPadronRecord(row, rowIdx) {
-    // A=PADRON(0) B=TIPO_DNI(1) C=DOCUMENTO(2) D=SEXO(3) E=APELLIDO Y NOMBRE(4)
-    // F=CLASE(5)  G=DOMICILIO(6) H=LATITUD(7) I=LONGITUD(8) J=DOMICILIO REAL(9)
+    // A=DNI(0)  B=SEXO(1)  C=TIPO(2)
+    // D–L = participación electoral (3–11)
+    // M=PADRON(12)  N=TIPO_DNI(13)  O=APELLIDO Y NOMBRE(14)  P=CLASE(15)
+    // Q=DOMICILIO(16)  R=LATITUD(17)  S=LONGITUD(18)  T=DOMICILIO REAL(19)
+    // U=PROFESION(20)  V=CIRCUITO(21)  W=NRO_MESA(22)  X=ORDEN(23)
+    // Y=ESTABLECIMIENTO(24)  Z=ocupacion(25)  AA=nivel_educativo(26)
+    // AB=ESTADO CIVIL(27)  AC=AFILIACION(28)  AD=LOCALIDAD(29)
+    // AE=EMPLEADOR1(30)  AF=EMPLEADOR2(31)  AG=EMPLEADOR3(32)
+    // AH=REGIMEN_IMP(33)  AI=CELULAR1(34)  AJ=CELULAR2(35)
+    // AK=EMAIL1(36)  AL=EMAIL2(37)  AM=AUH(38)  AN=IFE(39)  AO=TWITTER(40)
     return {
-      padron:         String(row[0]  || '').trim(),
-      tipo_dni:       String(row[1]  || '').trim(),
-      dni:            String(row[2]  || '').trim(),
-      sexo:           row[3]  || '',
-      apellido:       this._titleCase(row[4] || ''),
-      clase:          row[5]  || '',
-      domicilio:      this._titleCase(row[6] || ''),
-      lat:            row[7]  || '',
-      lng:            row[8]  || '',
-      domicilio_real: this._titleCase(row[9] || ''),
+      dni:            String(row[0]  || '').trim(),
+      sexo:           row[1]  || '',
+      tipo:           row[2]  || '',
+      elec_2025_sep:  row[3]  || '',
+      elec_2025_oct:  row[4]  || '',
+      elec_2023_paso: row[5]  || '',
+      elec_2023_gen:  row[6]  || '',
+      elec_2023_bal:  row[7]  || '',
+      elec_2021_paso: row[8]  || '',
+      elec_2021_gen:  row[9]  || '',
+      elec_2019_paso: row[10] || '',
+      elec_2019_gen:  row[11] || '',
+      padron:         String(row[12] || '').trim(),
+      tipo_dni:       row[13] || '',
+      apellido:       this._titleCase(row[14] || ''),
+      clase:          row[15] || '',
+      domicilio:      this._titleCase(row[16] || ''),
+      lat:            row[17] || '',
+      lng:            row[18] || '',
+      domicilio_real: this._titleCase(row[19] || ''),
+      profesion:      this._titleCase(row[20] || ''),
+      circuito:       row[21] || '',
+      nro_mesa:       row[22] || '',
+      orden:          row[23] || '',
+      establecimiento:this._titleCase(row[24] || ''),
+      ocupacion:      this._titleCase(row[25] || ''),
+      nivel_educativo:row[26] || '',
+      estado_civil:   row[27] || '',
+      afiliacion:     row[28] || '',
+      localidad:      row[29] || '',
+      empleador1:     this._titleCase(row[30] || ''),
+      empleador2:     this._titleCase(row[31] || ''),
+      empleador3:     this._titleCase(row[32] || ''),
+      regimen_imp:    row[33] || '',
+      celular1:       row[34] || '',
+      celular2:       row[35] || '',
+      email1:         String(row[36] || '').toLowerCase(),
+      email2:         String(row[37] || '').toLowerCase(),
+      beneficiario_auh: row[38] || '',
+      beneficiario_ife: row[39] || '',
+      twitter:        row[40] || '',
       _meta: {
-        coordRange:     `${CONFIG.SHEET_PADRON}!H${rowIdx}:I${rowIdx}`,
-        coordRangeFull: `${CONFIG.SHEET_PADRON}!H${rowIdx}:J${rowIdx}`,
+        coordRange:     `${CONFIG.SHEET_PADRON}!R${rowIdx}:S${rowIdx}`,
+        coordRangeFull: `${CONFIG.SHEET_PADRON}!R${rowIdx}:T${rowIdx}`,
       },
     };
   },
@@ -1777,8 +1859,8 @@ const Padron = {
   async _apiSearch(dni) {
     const dniStr = String(dni).trim();
     const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
-    // fila 0 = encabezados; C=col 2 = DOCUMENTO
-    const i = rows.findIndex((r, idx) => idx > 0 && String(r[2] || '').trim() === dniStr);
+    // fila 0 = encabezados; A=col 0 = DNI
+    const i = rows.findIndex((r, idx) => idx > 0 && String(r[0] || '').trim() === dniStr);
     if (i <= 0) return null;
     return this._rowToPadronRecord(rows[i], i + 1);
   },
@@ -1788,9 +1870,9 @@ const Padron = {
     const q = query.toLowerCase();
     const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
     const results = [];
-    // fila 0 = encabezados; E=col 4 = APELLIDO Y NOMBRE
+    // fila 0 = encabezados; O=col 14 = APELLIDO Y NOMBRE
     rows.slice(1).forEach((row, i) => {
-      if ((row[4] || '').toLowerCase().includes(q)) {
+      if ((row[14] || '').toLowerCase().includes(q)) {
         results.push(this._rowToPadronRecord(row, i + 2));
       }
     });
@@ -2363,13 +2445,20 @@ function renderFamiliaAddResults() {
   </div>`;
 }
 
+function _parseCoord(v) {
+  return parseFloat(String(v || '').replace(/,/g, '.'));
+}
+
 function renderPadronDetail() {
   const r = State.padronDetailRecord;
   if (!r) { go('home'); return ''; }
 
-  const hasCoords = r.lat && r.lng && String(r.lat).trim() !== '' && String(r.lng).trim() !== '';
+  const lat = _parseCoord(r.lat);
+  const lng = _parseCoord(r.lng);
+  const hasCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
+    && Math.abs(lat) < 90 && Math.abs(lng) < 180;
   const mapsUrl = hasCoords
-    ? `https://www.google.com/maps?q=${encodeURIComponent(r.lat + ',' + r.lng)}`
+    ? `https://www.google.com/maps?q=${encodeURIComponent(lat + ',' + lng)}`
     : null;
 
   const field = (label, val) => val
@@ -2378,6 +2467,26 @@ function renderPadronDetail() {
          <span class="padron-val">${esc(val)}</span>
        </div>`
     : '';
+
+  const elections = [
+    { label: '2019 PASO',  val: r.elec_2019_paso },
+    { label: '2019 Gral',  val: r.elec_2019_gen },
+    { label: '2021 PASO',  val: r.elec_2021_paso },
+    { label: '2021 Gral',  val: r.elec_2021_gen },
+    { label: '2023 PASO',  val: r.elec_2023_paso },
+    { label: '2023 Gral',  val: r.elec_2023_gen },
+    { label: '2023 Bal.',  val: r.elec_2023_bal },
+    { label: '2025 Sep',   val: r.elec_2025_sep },
+    { label: '2025 Oct',   val: r.elec_2025_oct },
+  ].filter((e) => e.val && e.val !== '');
+
+  const elecClass = (v) => {
+    if (!v) return '';
+    const u = v.toUpperCase();
+    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
+    if (u.includes('NO')) return 'elec-absent';
+    return 'elec-neutral';
+  };
 
   return `
     <div class="screen">
@@ -2389,15 +2498,34 @@ function renderPadronDetail() {
 
         <div class="padron-detail-hero">
           <div class="padron-detail-name">${esc(r.apellido) || '—'}</div>
-          <div class="padron-detail-sub">DNI ${esc(r.dni)}${r.sexo ? ' · ' + esc(r.sexo) : ''}</div>
+          <div class="padron-detail-sub">
+            DNI ${esc(r.dni)}${r.sexo ? ' · ' + esc(r.sexo) : ''}${r.tipo ? ' · ' + esc(r.tipo) : ''}
+          </div>
         </div>
 
         <div class="padron-section">
-          <div class="padron-section-title">Datos del padrón</div>
-          ${field('N° de padrón', r.padron)}
-          ${field('Tipo de DNI', r.tipo_dni)}
+          <div class="padron-section-title">Datos personales</div>
           ${field('Clase / Año', r.clase)}
+          ${field('Estado civil', r.estado_civil)}
+          ${field('Localidad', r.localidad)}
+          ${field('Profesión', r.profesion)}
+          ${field('Ocupación', r.ocupacion)}
+          ${field('Nivel educativo', r.nivel_educativo)}
+          ${field('Régimen impositivo', r.regimen_imp)}
+          ${field('Afiliación política', r.afiliacion)}
         </div>
+
+        ${(r.celular1 || r.celular2 || r.email1 || r.email2 || r.twitter) ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Contacto</div>
+          ${field('Celular 1', r.celular1)}
+          ${field('Celular 2', r.celular2)}
+          ${field('Email 1', r.email1)}
+          ${field('Email 2', r.email2)}
+          ${field('Twitter', r.twitter)}
+          ${field('Benef. AUH', r.beneficiario_auh)}
+          ${field('Benef. IFE', r.beneficiario_ife)}
+        </div>` : ''}
 
         <div class="padron-section">
           <div class="padron-section-title">Domicilio</div>
@@ -2407,11 +2535,41 @@ function renderPadronDetail() {
             <span class="padron-key">Ubicación</span>
             <span class="padron-val">
               <a href="${mapsUrl}" target="_blank" class="loc-link">
-                📍 ${parseFloat(r.lat).toFixed(5)}, ${parseFloat(r.lng).toFixed(5)}
+                📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}
               </a>
             </span>
           </div>` : ''}
         </div>
+
+        ${(r.empleador1 || r.empleador2 || r.empleador3) ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Empleadores</div>
+          ${field('Empleador 1', r.empleador1)}
+          ${field('Empleador 2', r.empleador2)}
+          ${field('Empleador 3', r.empleador3)}
+        </div>` : ''}
+
+        <div class="padron-section">
+          <div class="padron-section-title">Datos electorales</div>
+          ${field('N° padrón', r.padron)}
+          ${field('Tipo DNI', r.tipo_dni)}
+          ${field('Circuito', r.circuito)}
+          ${field('Mesa', r.nro_mesa)}
+          ${field('Orden en mesa', r.orden)}
+          ${field('Establecimiento', r.establecimiento)}
+        </div>
+
+        ${elections.length > 0 ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Participación electoral</div>
+          <div class="elec-grid">
+            ${elections.map((e) => `
+              <div class="elec-cell">
+                <div class="elec-label">${esc(e.label)}</div>
+                <div class="elec-value ${elecClass(e.val)}">${esc(e.val)}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
 
         <div class="padron-section">
           <div class="padron-section-title">Grupo familiar</div>
@@ -2787,8 +2945,8 @@ function selectCitizen(idx) {
     });
   }
 
-  const padLat = record ? parseFloat(String(record.lat).replace(',', '.')) : NaN;
-  const padLng = record ? parseFloat(String(record.lng).replace(',', '.')) : NaN;
+  const padLat = record ? _parseCoord(record.lat) : NaN;
+  const padLng = record ? _parseCoord(record.lng) : NaN;
   const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
     ? { lat: padLat, lng: padLng } : null;
 

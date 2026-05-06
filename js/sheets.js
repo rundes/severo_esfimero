@@ -345,22 +345,61 @@ const Padron = {
   // ── Google Sheets API ────────────────────────────────────────────────────
 
   _rowToPadronRecord(row, rowIdx) {
-    // A=PADRON(0) B=TIPO_DNI(1) C=DOCUMENTO(2) D=SEXO(3) E=APELLIDO Y NOMBRE(4)
-    // F=CLASE(5)  G=DOMICILIO(6) H=LATITUD(7) I=LONGITUD(8) J=DOMICILIO REAL(9)
+    // A=DNI(0)  B=SEXO(1)  C=TIPO(2)
+    // D–L = participación electoral (3–11)
+    // M=PADRON(12)  N=TIPO_DNI(13)  O=APELLIDO Y NOMBRE(14)  P=CLASE(15)
+    // Q=DOMICILIO(16)  R=LATITUD(17)  S=LONGITUD(18)  T=DOMICILIO REAL(19)
+    // U=PROFESION(20)  V=CIRCUITO(21)  W=NRO_MESA(22)  X=ORDEN(23)
+    // Y=ESTABLECIMIENTO(24)  Z=ocupacion(25)  AA=nivel_educativo(26)
+    // AB=ESTADO CIVIL(27)  AC=AFILIACION(28)  AD=LOCALIDAD(29)
+    // AE=EMPLEADOR1(30)  AF=EMPLEADOR2(31)  AG=EMPLEADOR3(32)
+    // AH=REGIMEN_IMP(33)  AI=CELULAR1(34)  AJ=CELULAR2(35)
+    // AK=EMAIL1(36)  AL=EMAIL2(37)  AM=AUH(38)  AN=IFE(39)  AO=TWITTER(40)
     return {
-      padron:         String(row[0]  || '').trim(),
-      tipo_dni:       String(row[1]  || '').trim(),
-      dni:            String(row[2]  || '').trim(),
-      sexo:           row[3]  || '',
-      apellido:       this._titleCase(row[4] || ''),
-      clase:          row[5]  || '',
-      domicilio:      this._titleCase(row[6] || ''),
-      lat:            row[7]  || '',
-      lng:            row[8]  || '',
-      domicilio_real: this._titleCase(row[9] || ''),
+      dni:            String(row[0]  || '').trim(),
+      sexo:           row[1]  || '',
+      tipo:           row[2]  || '',
+      elec_2025_sep:  row[3]  || '',
+      elec_2025_oct:  row[4]  || '',
+      elec_2023_paso: row[5]  || '',
+      elec_2023_gen:  row[6]  || '',
+      elec_2023_bal:  row[7]  || '',
+      elec_2021_paso: row[8]  || '',
+      elec_2021_gen:  row[9]  || '',
+      elec_2019_paso: row[10] || '',
+      elec_2019_gen:  row[11] || '',
+      padron:         String(row[12] || '').trim(),
+      tipo_dni:       row[13] || '',
+      apellido:       this._titleCase(row[14] || ''),
+      clase:          row[15] || '',
+      domicilio:      this._titleCase(row[16] || ''),
+      lat:            row[17] || '',
+      lng:            row[18] || '',
+      domicilio_real: this._titleCase(row[19] || ''),
+      profesion:      this._titleCase(row[20] || ''),
+      circuito:       row[21] || '',
+      nro_mesa:       row[22] || '',
+      orden:          row[23] || '',
+      establecimiento:this._titleCase(row[24] || ''),
+      ocupacion:      this._titleCase(row[25] || ''),
+      nivel_educativo:row[26] || '',
+      estado_civil:   row[27] || '',
+      afiliacion:     row[28] || '',
+      localidad:      row[29] || '',
+      empleador1:     this._titleCase(row[30] || ''),
+      empleador2:     this._titleCase(row[31] || ''),
+      empleador3:     this._titleCase(row[32] || ''),
+      regimen_imp:    row[33] || '',
+      celular1:       row[34] || '',
+      celular2:       row[35] || '',
+      email1:         String(row[36] || '').toLowerCase(),
+      email2:         String(row[37] || '').toLowerCase(),
+      beneficiario_auh: row[38] || '',
+      beneficiario_ife: row[39] || '',
+      twitter:        row[40] || '',
       _meta: {
-        coordRange:     `${CONFIG.SHEET_PADRON}!H${rowIdx}:I${rowIdx}`,
-        coordRangeFull: `${CONFIG.SHEET_PADRON}!H${rowIdx}:J${rowIdx}`,
+        coordRange:     `${CONFIG.SHEET_PADRON}!R${rowIdx}:S${rowIdx}`,
+        coordRangeFull: `${CONFIG.SHEET_PADRON}!R${rowIdx}:T${rowIdx}`,
       },
     };
   },
@@ -368,8 +407,8 @@ const Padron = {
   async _apiSearch(dni) {
     const dniStr = String(dni).trim();
     const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
-    // fila 0 = encabezados; C=col 2 = DOCUMENTO
-    const i = rows.findIndex((r, idx) => idx > 0 && String(r[2] || '').trim() === dniStr);
+    // fila 0 = encabezados; A=col 0 = DNI
+    const i = rows.findIndex((r, idx) => idx > 0 && String(r[0] || '').trim() === dniStr);
     if (i <= 0) return null;
     return this._rowToPadronRecord(rows[i], i + 1);
   },
@@ -379,9 +418,9 @@ const Padron = {
     const q = query.toLowerCase();
     const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
     const results = [];
-    // fila 0 = encabezados; E=col 4 = APELLIDO Y NOMBRE
+    // fila 0 = encabezados; O=col 14 = APELLIDO Y NOMBRE
     rows.slice(1).forEach((row, i) => {
-      if ((row[4] || '').toLowerCase().includes(q)) {
+      if ((row[14] || '').toLowerCase().includes(q)) {
         results.push(this._rowToPadronRecord(row, i + 2));
       }
     });

@@ -856,3 +856,43 @@ html, body {
   border-radius: 8px;
   white-space: nowrap;
 }
+
+/* ── Electoral participation grid ───────────────────────────────────────────── */
+.elec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.elec-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  flex: 1;
+  min-width: 72px;
+  max-width: 90px;
+}
+
+.elec-label {
+  font-size: .62rem;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.elec-value {
+  font-size: .72rem;
+  font-weight: 700;
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.elec-voted  { color: var(--success); }
+.elec-absent { color: var(--error); }
+.elec-neutral { color: var(--text-2); }

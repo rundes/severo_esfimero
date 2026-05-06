@@ -499,13 +499,20 @@ function renderFamiliaAddResults() {
   </div>`;
 }
 
+function _parseCoord(v) {
+  return parseFloat(String(v || '').replace(/,/g, '.'));
+}
+
 function renderPadronDetail() {
   const r = State.padronDetailRecord;
   if (!r) { go('home'); return ''; }
 
-  const hasCoords = r.lat && r.lng && String(r.lat).trim() !== '' && String(r.lng).trim() !== '';
+  const lat = _parseCoord(r.lat);
+  const lng = _parseCoord(r.lng);
+  const hasCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
+    && Math.abs(lat) < 90 && Math.abs(lng) < 180;
   const mapsUrl = hasCoords
-    ? `https://www.google.com/maps?q=${encodeURIComponent(r.lat + ',' + r.lng)}`
+    ? `https://www.google.com/maps?q=${encodeURIComponent(lat + ',' + lng)}`
     : null;
 
   const field = (label, val) => val
@@ -514,6 +521,26 @@ function renderPadronDetail() {
          <span class="padron-val">${esc(val)}</span>
        </div>`
     : '';
+
+  const elections = [
+    { label: '2019 PASO',  val: r.elec_2019_paso },
+    { label: '2019 Gral',  val: r.elec_2019_gen },
+    { label: '2021 PASO',  val: r.elec_2021_paso },
+    { label: '2021 Gral',  val: r.elec_2021_gen },
+    { label: '2023 PASO',  val: r.elec_2023_paso },
+    { label: '2023 Gral',  val: r.elec_2023_gen },
+    { label: '2023 Bal.',  val: r.elec_2023_bal },
+    { label: '2025 Sep',   val: r.elec_2025_sep },
+    { label: '2025 Oct',   val: r.elec_2025_oct },
+  ].filter((e) => e.val && e.val !== '');
+
+  const elecClass = (v) => {
+    if (!v) return '';
+    const u = v.toUpperCase();
+    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
+    if (u.includes('NO')) return 'elec-absent';
+    return 'elec-neutral';
+  };
 
   return `
     <div class="screen">
@@ -525,15 +552,34 @@ function renderPadronDetail() {
 
         <div class="padron-detail-hero">
           <div class="padron-detail-name">${esc(r.apellido) || '—'}</div>
-          <div class="padron-detail-sub">DNI ${esc(r.dni)}${r.sexo ? ' · ' + esc(r.sexo) : ''}</div>
+          <div class="padron-detail-sub">
+            DNI ${esc(r.dni)}${r.sexo ? ' · ' + esc(r.sexo) : ''}${r.tipo ? ' · ' + esc(r.tipo) : ''}
+          </div>
         </div>
 
         <div class="padron-section">
-          <div class="padron-section-title">Datos del padrón</div>
-          ${field('N° de padrón', r.padron)}
-          ${field('Tipo de DNI', r.tipo_dni)}
+          <div class="padron-section-title">Datos personales</div>
           ${field('Clase / Año', r.clase)}
+          ${field('Estado civil', r.estado_civil)}
+          ${field('Localidad', r.localidad)}
+          ${field('Profesión', r.profesion)}
+          ${field('Ocupación', r.ocupacion)}
+          ${field('Nivel educativo', r.nivel_educativo)}
+          ${field('Régimen impositivo', r.regimen_imp)}
+          ${field('Afiliación política', r.afiliacion)}
         </div>
+
+        ${(r.celular1 || r.celular2 || r.email1 || r.email2 || r.twitter) ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Contacto</div>
+          ${field('Celular 1', r.celular1)}
+          ${field('Celular 2', r.celular2)}
+          ${field('Email 1', r.email1)}
+          ${field('Email 2', r.email2)}
+          ${field('Twitter', r.twitter)}
+          ${field('Benef. AUH', r.beneficiario_auh)}
+          ${field('Benef. IFE', r.beneficiario_ife)}
+        </div>` : ''}
 
         <div class="padron-section">
           <div class="padron-section-title">Domicilio</div>
@@ -543,11 +589,41 @@ function renderPadronDetail() {
             <span class="padron-key">Ubicación</span>
             <span class="padron-val">
               <a href="${mapsUrl}" target="_blank" class="loc-link">
-                📍 ${parseFloat(r.lat).toFixed(5)}, ${parseFloat(r.lng).toFixed(5)}
+                📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}
               </a>
             </span>
           </div>` : ''}
         </div>
+
+        ${(r.empleador1 || r.empleador2 || r.empleador3) ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Empleadores</div>
+          ${field('Empleador 1', r.empleador1)}
+          ${field('Empleador 2', r.empleador2)}
+          ${field('Empleador 3', r.empleador3)}
+        </div>` : ''}
+
+        <div class="padron-section">
+          <div class="padron-section-title">Datos electorales</div>
+          ${field('N° padrón', r.padron)}
+          ${field('Tipo DNI', r.tipo_dni)}
+          ${field('Circuito', r.circuito)}
+          ${field('Mesa', r.nro_mesa)}
+          ${field('Orden en mesa', r.orden)}
+          ${field('Establecimiento', r.establecimiento)}
+        </div>
+
+        ${elections.length > 0 ? `
+        <div class="padron-section">
+          <div class="padron-section-title">Participación electoral</div>
+          <div class="elec-grid">
+            ${elections.map((e) => `
+              <div class="elec-cell">
+                <div class="elec-label">${esc(e.label)}</div>
+                <div class="elec-value ${elecClass(e.val)}">${esc(e.val)}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
 
         <div class="padron-section">
           <div class="padron-section-title">Grupo familiar</div>
@@ -922,8 +998,8 @@ function selectCitizen(idx) {
     });
   }
 
-  const padLat = record ? parseFloat(String(record.lat).replace(',', '.')) : NaN;
-  const padLng = record ? parseFloat(String(record.lng).replace(',', '.')) : NaN;
+  const padLat = record ? _parseCoord(record.lat) : NaN;
+  const padLng = record ? _parseCoord(record.lng) : NaN;
   const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
     ? { lat: padLat, lng: padLng } : null;
 

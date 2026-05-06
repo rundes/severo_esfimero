@@ -13,9 +13,14 @@ const CONFIG = {
   SHEET_PROBLEMATICAS:    'Problematicas',
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
-  // Padrón electoral — planilla separada, pestaña única "Padron integrado"
-  // Columnas: A=PADRON, B=TIPO_DNI, C=DOCUMENTO, D=SEXO, E=APELLIDO Y NOMBRE,
-  //           F=CLASE, G=DOMICILIO, H=LATITUD, I=LONGITUD, J=DOMICILIO REAL
-  SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
-  SHEET_PADRON:   'Padron integrado',
+  // Padrón electoral — fuente única de datos personales
+  // A=DNI, B=SEXO, C=TIPO, D–L=participación elecciones,
+  // M=PADRON, N=TIPO_DNI, O=APELLIDO Y NOMBRE, P=CLASE,
+  // Q=DOMICILIO, R=LATITUD, S=LONGITUD, T=DOMICILIO REAL,
+  // U=PROFESION, V=CIRCUITO, W=NRO_MESA, X=ORDEN, Y=ESTABLECIMIENTO,
+  // Z=ocupacion, AA=nivel_educativo, AB=ESTADO CIVIL, AC=AFILIACION,
+  // AD=LOCALIDAD, AE–AG=EMPLEADORES, AH=REGIMEN_IMP,
+  // AI–AJ=CELULARES, AK–AL=EMAILS, AM=AUH, AN=IFE, AO=TWITTER
+  SPREADSHEET_ID: '1rN-b37nqFm9ymiIf8YwmutUAYz_6ukwZXRPzFtsayxQ',
+  SHEET_PADRON:   'padron_maipu_completo.csv',
 };
