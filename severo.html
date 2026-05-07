@@ -570,26 +570,162 @@ html, body {
 .done-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 16px; }
 
 /* ── List ───────────────────────────────────────────────────────────────────── */
-.list-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+/* ── List filter bar ─────────────────────────────────────────────────────── */
+.list-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.list-filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.filter-tab:hover { border-color: var(--primary); color: var(--primary); }
+.filter-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.filter-tab-count {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.filter-tab:not(.active) .filter-tab-count {
+  background: var(--border);
+  color: var(--text-2);
+}
+
+/* ── Survey list ─────────────────────────────────────────────────────────── */
+.list-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--text-2);
+  font-size: .9rem;
+}
+.list-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
 
 .survey-card {
   display: flex;
-  gap: 14px;
+  align-items: stretch;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  overflow: hidden;
   cursor: pointer;
   transition: var(--transition);
 }
 .survey-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+.survey-card:active { opacity: .85; }
 
-.card-icon  { font-size: 1.8rem; }
-.card-body  { flex: 1; min-width: 0; }
-.card-type  { font-weight: 700; font-size: .85rem; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; }
-.card-preview { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-date  { font-size: .8rem; color: var(--text-2); margin-top: 4px; }
-.card-loc   { font-size: .75rem; color: var(--text-2); font-family: monospace; }
+.card-accent {
+  width: 4px;
+  flex-shrink: 0;
+  background: var(--border);
+}
+.survey-card--ciudadano        .card-accent { background: #3b82f6; }
+.survey-card--problematica     .card-accent { background: #f59e0b; }
+.survey-card--sociohabitacional .card-accent { background: #10b981; }
+
+.card-body  { flex: 1; min-width: 0; padding: 12px 10px 12px 14px; }
+
+.card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.card-type-label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.card-barrio {
+  font-size: .72rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  color: var(--text-2);
+}
+.card-title {
+  font-size: .97rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.card-subtitle {
+  font-size: .82rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+.card-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.card-date { font-size: .76rem; color: var(--text-2); }
+.card-loc  { font-size: .72rem; color: var(--text-2); font-family: monospace; }
+
+.card-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 6px;
+  font-size: 1.3rem;
+  color: var(--border);
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.survey-card:hover .card-arrow { color: var(--primary); }
 
 /* ── Toast ──────────────────────────────────────────────────────────────────── */
 .toast {
@@ -2086,6 +2222,7 @@ let _familiaSearchDebounce = null;
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
+let _listFilter = 'todos';
 
 function initGoogleTokenClient() {
   if (!window.google?.accounts?.oauth2) return;
@@ -3451,34 +3588,90 @@ function renderDone() {
     </div>`;
 }
 
-function renderList() {
-  const all = (State.surveys || []).slice().sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+function renderSurveyCard(r, idx) {
+  const isProb = r.type === 'problematica';
+  let title, subtitle;
+  if (isProb) {
+    title = r.answers?.categoria || '—';
+    subtitle = r.answers?.descripcion
+      ? String(r.answers.descripcion).slice(0, 80)
+      : (r.answers?.direccion || '');
+  } else {
+    title = r.answers?.apellido || (r.answers?.dni ? `DNI ${r.answers.dni}` : '—');
+    subtitle = r.answers?.domicilio || '';
+  }
+  const barrio = r.answers?.barrio
+    ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';
+  const estadoBadge = isProb ? renderEstadoBadge(r.estado) : '';
+  return `
+    <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="card-type-label">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
+          ${barrio}
+          ${estadoBadge}
+        </div>
+        <div class="card-title">${esc(title)}</div>
+        ${subtitle ? `<div class="card-subtitle">${esc(subtitle)}</div>` : ''}
+        <div class="card-bottom-row">
+          <span class="card-date">${formatDate(r.savedAt)}</span>
+          ${r.location ? `<span class="card-loc">📍 ${r.location.lat.toFixed(4)}, ${r.location.lng.toFixed(4)}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>`;
+}
 
-  const cards = all.length === 0
-    ? `<div id="listLoading"><p class="hint center">Cargando historial…</p></div>`
-    : all.map((r, i) => {
-        const firstQ = PREGUNTAS[r.type]?.[0];
-        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
-        return `
-          <div class="survey-card" onclick="openDetail(${i})">
-            <div class="card-icon">${typeIcon(r.type)}</div>
-            <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
-              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
-              <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
+function _listFilterTabs(all) {
+  const counts = { todos: all.length, ciudadano: 0, problematica: 0, sociohabitacional: 0 };
+  all.forEach((r) => { if (counts[r.type] !== undefined) counts[r.type]++; });
+  return [
+    { key: 'todos',            label: 'Todos' },
+    { key: 'ciudadano',        label: 'Ciudadanos' },
+    { key: 'problematica',     label: 'Problemáticas' },
+    { key: 'sociohabitacional',label: 'Socio-hab.' },
+  ].map((t) => `
+    <button class="filter-tab${_listFilter === t.key ? ' active' : ''}" onclick="setListFilter('${t.key}')">
+      ${t.label}${counts[t.key] ? ` <span class="filter-tab-count">${counts[t.key]}</span>` : ''}
+    </button>`).join('');
+}
+
+function setListFilter(f) {
+  _listFilter = f;
+  render();
+}
+
+function renderList() {
+  const myEmail = State.user?.email;
+  const all = (State.surveys || [])
+    .filter((r) => r.operador?.email && r.operador.email === myEmail)
+    .slice()
+    .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  const paired = all
+    .map((r, idx) => ({ r, idx }))
+    .filter(({ r }) => _listFilter === 'todos' || r.type === _listFilter);
+
+  const emptyMsg = !State.surveys
+    ? `<div class="list-empty"><div class="list-spinner"></div><p>Cargando historial…</p></div>`
+    : paired.length === 0 && all.length > 0
+      ? `<div class="list-empty"><p>No hay relevamientos de este tipo.</p></div>`
+      : `<div class="list-empty"><p>Todavía no hay relevamientos propios.</p></div>`;
+
+  const cardsHtml = paired.length > 0
+    ? paired.map(({ r, idx }) => renderSurveyCard(r, idx)).join('')
+    : emptyMsg;
 
   return `
     <div class="screen">
       <header class="app-header">
         <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Historial</span>
+        <span class="header-title">Mis relevamientos</span>
         <span class="header-count" id="listCount">${all.length}</span>
       </header>
-      <div class="list-body" id="listBody">${cards}</div>
+      <div class="list-filter-bar">${_listFilterTabs(all)}</div>
+      <div class="list-body" id="listBody">${cardsHtml}</div>
     </div>`;
 }
 
@@ -3499,40 +3692,32 @@ async function loadList() {
       result = await fetchAll();
     }
     const [ciudadanos, problemas, sociohabit] = result;
+    const myEmail = State.user?.email;
     const all = [
       ...ciudadanos.map((r) => ({ ...r, type: 'ciudadano' })),
       ...problemas.map((r) => ({ ...r, type: 'problematica' })),
       ...sociohabit.map((r) => ({ ...r, type: 'sociohabitacional' })),
-    ];
+    ].filter((r) => r.operador?.email && r.operador.email === myEmail);
     all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
     State.surveys = all;
 
     const bodyEl = document.getElementById('listBody');
     const countEl = document.getElementById('listCount');
+    const filterEl = document.querySelector('.list-filter-bar');
     if (!bodyEl) return;
 
-    if (all.length === 0) {
-      bodyEl.innerHTML = `<p class="hint center">Todavía no hay relevamientos guardados.</p>`;
-    } else {
-      bodyEl.innerHTML = all.map((r, i) => {
-        const firstQ = PREGUNTAS[r.type]?.[0];
-        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
-        return `
-          <div class="survey-card" onclick="openDetail(${i})">
-            <div class="card-icon">${typeIcon(r.type)}</div>
-            <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
-              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
-              <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
-    }
+    const paired = all.map((r, idx) => ({ r, idx }))
+      .filter(({ r }) => _listFilter === 'todos' || r.type === _listFilter);
+
+    bodyEl.innerHTML = paired.length > 0
+      ? paired.map(({ r, idx }) => renderSurveyCard(r, idx)).join('')
+      : `<div class="list-empty"><p>${all.length === 0 ? 'Todavía no hay relevamientos propios.' : 'No hay relevamientos de este tipo.'}</p></div>`;
+
     if (countEl) countEl.textContent = all.length;
+    if (filterEl) filterEl.innerHTML = _listFilterTabs(all);
   } catch (err) {
     const bodyEl = document.getElementById('listBody');
-    if (bodyEl) bodyEl.innerHTML = `<p class="hint center">Error al cargar el historial: ${err.message}</p>`;
+    if (bodyEl) bodyEl.innerHTML = `<div class="list-empty"><p>Error al cargar: ${esc(err.message)}</p></div>`;
   }
 }
 
