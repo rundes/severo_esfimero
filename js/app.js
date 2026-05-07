@@ -166,6 +166,9 @@ function render() {
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
+  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
+    loadDetailPhoto(State.detailRecord.answers.foto_url);
+  }
   if (State.toast) showToast(State.toast);
 }
 
@@ -1543,6 +1546,26 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
+async function loadDetailPhoto(url) {
+  if (!url) return;
+  const imgEl = document.getElementById('detailPhoto');
+  if (!imgEl) return;
+  const token = localStorage.getItem('severo_access_token');
+  try {
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
+    imgEl.src = blobUrl;
+    imgEl.style.display = '';
+  } catch (_) {
+    imgEl.remove();
+    const fallback = document.getElementById('detailPhotoFallback');
+    if (fallback) fallback.style.display = '';
+  }
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
@@ -1568,7 +1591,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
+        ${fotoUrl ? `
+          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
+            onclick="this.classList.toggle('detail-photo-expand')">
+          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
+            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+          </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>

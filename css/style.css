@@ -1092,6 +1092,18 @@ html, body {
   max-height: 80vh;
   cursor: zoom-out;
 }
+.detail-photo-fallback {
+  padding: .75rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: .875rem;
+}
+.detail-photo-fallback a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
 
 /* ── Estado badge ────────────────────────────────────────────────────────────── */
 .estado-badge {

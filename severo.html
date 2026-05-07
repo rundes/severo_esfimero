@@ -1048,6 +1048,8 @@ html, body {
 .summary-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--radius); display: block; }
 .detail-photo { width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--radius); display: block; cursor: zoom-in; transition: max-height .3s ease; }
 .detail-photo.detail-photo-expand { max-height: 80vh; cursor: zoom-out; }
+.detail-photo-fallback { padding: .75rem; background: var(--surface); border-radius: var(--radius); text-align: center; font-size: .875rem; }
+.detail-photo-fallback a { color: var(--primary); font-weight: 600; text-decoration: none; }
 
 /* ── Estado badge ────────────────────────────────────────────────────────────── */
 .estado-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: .72rem; font-weight: 700; letter-spacing: .3px; vertical-align: middle; flex-shrink: 0; }
@@ -1973,7 +1975,7 @@ const SheetsDB = {
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
-        foto_url: row[14] || '' }, estado: row[15] || '' };
+        foto_url: (row[14] || '').replace(/%2F/gi, '/') }, estado: row[15] || '' };
     });
   },
 
@@ -2412,6 +2414,9 @@ function render() {
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
+  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
+    loadDetailPhoto(State.detailRecord.answers.foto_url);
+  }
   if (State.toast) showToast(State.toast);
 }
 
@@ -3783,6 +3788,26 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
+async function loadDetailPhoto(url) {
+  if (!url) return;
+  const imgEl = document.getElementById('detailPhoto');
+  if (!imgEl) return;
+  const token = localStorage.getItem('severo_access_token');
+  try {
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
+    imgEl.src = blobUrl;
+    imgEl.style.display = '';
+  } catch (_) {
+    imgEl.remove();
+    const fallback = document.getElementById('detailPhotoFallback');
+    if (fallback) fallback.style.display = '';
+  }
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
@@ -3808,7 +3833,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
+        ${fotoUrl ? `
+          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
+            onclick="this.classList.toggle('detail-photo-expand')">
+          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
+            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+          </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>
