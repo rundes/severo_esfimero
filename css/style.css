@@ -264,6 +264,12 @@ html, body {
 }
 
 /* ── Geo screen ─────────────────────────────────────────────────────────────── */
+.screen-geo {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .geo-status-bar {
   display: flex;
   align-items: center;
@@ -325,22 +331,6 @@ html, body {
   padding: 6px 12px;
 }
 
-.geo-address-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.geo-address-input {
-  flex: 1;
-  font-size: .85rem;
-  padding: 6px 10px;
-}
-.geo-spinner-sm {
-  width: 14px;
-  height: 14px;
-  border-width: 2px;
-  flex-shrink: 0;
-}
 
 .geo-actions {
   display: flex;

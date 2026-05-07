@@ -277,6 +277,12 @@ html, body {
 }
 
 /* ── Geo screen ─────────────────────────────────────────────────────────────── */
+.screen-geo {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .geo-status-bar {
   display: flex;
   align-items: center;
@@ -336,23 +342,6 @@ html, body {
   flex-shrink: 0;
   font-size: .85rem;
   padding: 6px 12px;
-}
-
-.geo-address-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.geo-address-input {
-  flex: 1;
-  font-size: .85rem;
-  padding: 6px 10px;
-}
-.geo-spinner-sm {
-  width: 14px;
-  height: 14px;
-  border-width: 2px;
-  flex-shrink: 0;
 }
 
 .geo-actions {
@@ -1481,31 +1470,54 @@ const Geo = {
   },
 
   async reverseGeocode(lat, lng) {
-    if (!CONFIG.GOOGLE_API_KEY) return null;
+    if (CONFIG.GOOGLE_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CONFIG.GOOGLE_API_KEY}&language=es&result_type=street_address`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'OK' && data.results?.[0]) return data.results[0].formatted_address;
+        }
+      } catch {}
+    }
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CONFIG.GOOGLE_API_KEY}&language=es&result_type=street_address`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`,
+        { headers: { 'User-Agent': 'SeveroMaipu/1.0' } }
       );
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === 'OK' && data.results?.[0]) {
-        return data.results[0].formatted_address;
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.display_name) return data.display_name;
       }
     } catch {}
     return null;
   },
 
   async geocode(query) {
-    if (!CONFIG.GOOGLE_API_KEY || !query) return null;
+    if (!query) return null;
+    if (CONFIG.GOOGLE_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${CONFIG.GOOGLE_API_KEY}&language=es&region=ar`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'OK' && data.results?.[0]) {
+            const r = data.results[0];
+            return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, address: r.formatted_address };
+          }
+        }
+      } catch {}
+    }
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${CONFIG.GOOGLE_API_KEY}&language=es&region=ar`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ar&accept-language=es`,
+        { headers: { 'User-Agent': 'SeveroMaipu/1.0' } }
       );
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === 'OK' && data.results?.[0]) {
-        const r = data.results[0];
-        return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, address: r.formatted_address };
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), address: data[0].display_name };
       }
     } catch {}
     return null;
@@ -2726,7 +2738,7 @@ function renderGeo() {
   const title = geoTitles[State.surveyType] || 'Ubicación';
   const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
   return `
-    <div class="screen">
+    <div class="screen screen-geo">
       <header class="app-header">
         <button class="btn-icon" onclick="go('${backTarget}')">←</button>
         <span class="header-title">📍 ${title}</span>
@@ -2734,6 +2746,7 @@ function renderGeo() {
       <div class="geo-search-row">
         <input type="text" class="input geo-search-input" id="geoSearchInput"
           placeholder="Buscar dirección…" autocomplete="off"
+          value="${esc(State.padronDomicilio || '')}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
         <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
       </div>
@@ -2744,12 +2757,6 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
-        <div class="geo-address-row">
-          <div class="geo-spinner geo-spinner-sm" id="geoAddrSpinner" style="display:none"></div>
-          <input type="text" class="input geo-address-input" id="geoAddress"
-            placeholder="Dirección…" autocomplete="off"
-            value="${esc(State.padronDomicilio || '')}">
-        </div>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -2768,13 +2775,14 @@ async function startGeoCapture() {
   const DEFAULT = { lat: -32.9817, lng: -68.7946 };
 
   async function updateAddress(lat, lng) {
-    const addrEl = document.getElementById('geoAddress');
-    const addrSpinner = document.getElementById('geoAddrSpinner');
-    if (!addrEl) return;
-    if (addrSpinner) addrSpinner.style.display = 'inline-block';
+    const searchEl = document.getElementById('geoSearchInput');
+    if (!searchEl) return;
+    spinnerEl.style.display = 'inline-block';
+    statusEl.textContent = 'Obteniendo dirección…';
     const addr = await Geo.reverseGeocode(lat, lng);
-    if (addrSpinner) addrSpinner.style.display = 'none';
-    if (addr && addrEl) addrEl.value = addr;
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+    if (addr) searchEl.value = addr;
   }
 
   function scheduleGeocode(lat, lng) {
@@ -2844,8 +2852,8 @@ function confirmGeo() {
   if (_marker) {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
-    const addrEl = document.getElementById('geoAddress');
-    const addr = addrEl?.value?.trim() || null;
+    const searchEl = document.getElementById('geoSearchInput');
+    const addr = searchEl?.value?.trim() || null;
     State.domicilioReal = addr;
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
@@ -2859,21 +2867,23 @@ async function doGeoSearch() {
   const query = input?.value?.trim();
   if (!query) return;
   const statusEl = document.getElementById('geoStatus');
+  const spinnerEl = document.getElementById('geoSpinner');
   if (statusEl) statusEl.textContent = 'Buscando…';
+  if (spinnerEl) spinnerEl.style.display = 'inline-block';
   const result = await Geo.geocode(query);
+  if (spinnerEl) spinnerEl.style.display = 'none';
   if (!result) {
     if (statusEl) statusEl.textContent = 'No se encontró la dirección';
     return;
   }
   if (statusEl) statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+  if (input && result.address) input.value = result.address;
   if (_map && _marker) {
     const ll = L.latLng(result.lat, result.lng);
     _marker.setLatLng(ll);
     _map.setView(ll, 17);
     const coordsEl = document.getElementById('geoCoords');
     if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
-    const addrEl = document.getElementById('geoAddress');
-    if (addrEl && result.address) addrEl.value = result.address;
   }
 }
 

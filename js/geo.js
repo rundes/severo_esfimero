@@ -35,31 +35,54 @@ const Geo = {
   },
 
   async reverseGeocode(lat, lng) {
-    if (!CONFIG.GOOGLE_API_KEY) return null;
+    if (CONFIG.GOOGLE_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CONFIG.GOOGLE_API_KEY}&language=es&result_type=street_address`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'OK' && data.results?.[0]) return data.results[0].formatted_address;
+        }
+      } catch {}
+    }
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CONFIG.GOOGLE_API_KEY}&language=es&result_type=street_address`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`,
+        { headers: { 'User-Agent': 'SeveroMaipu/1.0' } }
       );
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === 'OK' && data.results?.[0]) {
-        return data.results[0].formatted_address;
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.display_name) return data.display_name;
       }
     } catch {}
     return null;
   },
 
   async geocode(query) {
-    if (!CONFIG.GOOGLE_API_KEY || !query) return null;
+    if (!query) return null;
+    if (CONFIG.GOOGLE_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${CONFIG.GOOGLE_API_KEY}&language=es&region=ar`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'OK' && data.results?.[0]) {
+            const r = data.results[0];
+            return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, address: r.formatted_address };
+          }
+        }
+      } catch {}
+    }
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${CONFIG.GOOGLE_API_KEY}&language=es&region=ar`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ar&accept-language=es`,
+        { headers: { 'User-Agent': 'SeveroMaipu/1.0' } }
       );
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === 'OK' && data.results?.[0]) {
-        const r = data.results[0];
-        return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, address: r.formatted_address };
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), address: data[0].display_name };
       }
     } catch {}
     return null;
