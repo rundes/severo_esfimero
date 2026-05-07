@@ -41,7 +41,7 @@ const SheetsDB = {
   _mockUpdate(type, id, updates) {
     const key = `severo_${type}`;
     const items = JSON.parse(localStorage.getItem(key) || '[]');
-    const idx = items.findIndex((i) => i.id === id);
+    const idx = items.findIndex((i) => String(i.id) === String(id));
     if (idx >= 0) {
       items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
       localStorage.setItem(key, JSON.stringify(items));
