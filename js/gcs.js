@@ -41,7 +41,9 @@ const GCS = {
       const body = await res.json().catch(() => ({}));
       throw new Error(`GCS ${res.status}: ${body.error?.message || 'Error al subir la foto'}`);
     }
-    return `https://storage.googleapis.com/${bucket}/${encodeURIComponent(filename)}`;
+    // Los slashes del nombre deben quedar sin codificar en la URL pública
+    const publicName = filename.split('/').map(encodeURIComponent).join('/');
+    return `https://storage.googleapis.com/${bucket}/${publicName}`;
   },
 
   filename(prefix = 'fotos') {
