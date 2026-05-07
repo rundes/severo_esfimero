@@ -664,6 +664,15 @@ function startNewSurvey() {
     _preselectedCitizen: null });
 }
 
+function _updateGeoBarrio(lat, lng) {
+  const el = document.getElementById('geoBarrio');
+  const nameEl = document.getElementById('geoBarrioName');
+  if (!el || !nameEl) return;
+  const b = typeof barrioFromPoint === 'function' ? barrioFromPoint(lat, lng) : null;
+  if (b) { nameEl.textContent = b; el.style.display = ''; }
+  else { el.style.display = 'none'; }
+}
+
 function renderGeo() {
   const geoTitles = {
     ciudadano:        'Ubicación del domicilio',
@@ -692,6 +701,7 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
+        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -733,10 +743,15 @@ async function startGeoCapture() {
       attribution: 'Mapa del <a href="https://www.ign.gob.ar">Instituto Geográfico Nacional</a> · &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(_map);
 
+    if (typeof BARRIOS_GEOJSON !== 'undefined') {
+      L.geoJSON(BARRIOS_GEOJSON, BARRIOS_LAYER_OPTIONS).addTo(_map);
+    }
+
     _marker = L.marker([lat, lng], { draggable: true }).addTo(_map);
 
     const updateCoords = (latlng) => {
       coordsEl.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+      _updateGeoBarrio(latlng.lat, latlng.lng);
     };
 
     _marker.on('drag', (e) => updateCoords(e.latlng));
@@ -798,6 +813,11 @@ function confirmGeo() {
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
     }
+    // Auto-detectar barrio desde la posición del pin
+    if (!State.answers.barrio && typeof barrioFromPoint === 'function') {
+      const detected = barrioFromPoint(pos.lat, pos.lng);
+      if (detected) State.answers.barrio = detected;
+    }
   }
   go('survey');
 }
@@ -824,6 +844,7 @@ async function doGeoSearch() {
     _map.setView(ll, 17);
     const coordsEl = document.getElementById('geoCoords');
     if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
+    _updateGeoBarrio(result.lat, result.lng);
   }
 }
 
