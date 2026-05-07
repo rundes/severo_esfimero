@@ -9,6 +9,7 @@ let _familiaSearchDebounce = null;
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
+let _listFilter = 'todos';
 
 // Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
 function initGoogleTokenClient() {
@@ -1385,34 +1386,90 @@ function renderDone() {
     </div>`;
 }
 
-function renderList() {
-  const all = (State.surveys || []).slice().sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+function renderSurveyCard(r, idx) {
+  const isProb = r.type === 'problematica';
+  let title, subtitle;
+  if (isProb) {
+    title = r.answers?.categoria || '—';
+    subtitle = r.answers?.descripcion
+      ? String(r.answers.descripcion).slice(0, 80)
+      : (r.answers?.direccion || '');
+  } else {
+    title = r.answers?.apellido || (r.answers?.dni ? `DNI ${r.answers.dni}` : '—');
+    subtitle = r.answers?.domicilio || '';
+  }
+  const barrio = r.answers?.barrio
+    ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';
+  const estadoBadge = isProb ? renderEstadoBadge(r.estado) : '';
+  return `
+    <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
+      <div class="card-accent"></div>
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="card-type-label">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
+          ${barrio}
+          ${estadoBadge}
+        </div>
+        <div class="card-title">${esc(title)}</div>
+        ${subtitle ? `<div class="card-subtitle">${esc(subtitle)}</div>` : ''}
+        <div class="card-bottom-row">
+          <span class="card-date">${formatDate(r.savedAt)}</span>
+          ${r.location ? `<span class="card-loc">📍 ${r.location.lat.toFixed(4)}, ${r.location.lng.toFixed(4)}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>`;
+}
 
-  const cards = all.length === 0
-    ? `<div id="listLoading"><p class="hint center">Cargando historial…</p></div>`
-    : all.map((r, i) => {
-        const firstQ = PREGUNTAS[r.type]?.[0];
-        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
-        return `
-          <div class="survey-card" onclick="openDetail(${i})">
-            <div class="card-icon">${typeIcon(r.type)}</div>
-            <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
-              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
-              <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
+function _listFilterTabs(all) {
+  const counts = { todos: all.length, ciudadano: 0, problematica: 0, sociohabitacional: 0 };
+  all.forEach((r) => { if (counts[r.type] !== undefined) counts[r.type]++; });
+  return [
+    { key: 'todos',            label: 'Todos' },
+    { key: 'ciudadano',        label: 'Ciudadanos' },
+    { key: 'problematica',     label: 'Problemáticas' },
+    { key: 'sociohabitacional',label: 'Socio-hab.' },
+  ].map((t) => `
+    <button class="filter-tab${_listFilter === t.key ? ' active' : ''}" onclick="setListFilter('${t.key}')">
+      ${t.label}${counts[t.key] ? ` <span class="filter-tab-count">${counts[t.key]}</span>` : ''}
+    </button>`).join('');
+}
+
+function setListFilter(f) {
+  _listFilter = f;
+  render();
+}
+
+function renderList() {
+  const myEmail = State.user?.email;
+  const all = (State.surveys || [])
+    .filter((r) => r.operador?.email && r.operador.email === myEmail)
+    .slice()
+    .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  const paired = all
+    .map((r, idx) => ({ r, idx }))
+    .filter(({ r }) => _listFilter === 'todos' || r.type === _listFilter);
+
+  const emptyMsg = !State.surveys
+    ? `<div class="list-empty"><div class="list-spinner"></div><p>Cargando historial…</p></div>`
+    : paired.length === 0 && all.length > 0
+      ? `<div class="list-empty"><p>No hay relevamientos de este tipo.</p></div>`
+      : `<div class="list-empty"><p>Todavía no hay relevamientos propios.</p></div>`;
+
+  const cardsHtml = paired.length > 0
+    ? paired.map(({ r, idx }) => renderSurveyCard(r, idx)).join('')
+    : emptyMsg;
 
   return `
     <div class="screen">
       <header class="app-header">
         <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Historial</span>
+        <span class="header-title">Mis relevamientos</span>
         <span class="header-count" id="listCount">${all.length}</span>
       </header>
-      <div class="list-body" id="listBody">${cards}</div>
+      <div class="list-filter-bar">${_listFilterTabs(all)}</div>
+      <div class="list-body" id="listBody">${cardsHtml}</div>
     </div>`;
 }
 
@@ -1433,40 +1490,33 @@ async function loadList() {
       result = await fetchAll();
     }
     const [ciudadanos, problemas, sociohabit] = result;
+    const myEmail = State.user?.email;
     const all = [
       ...ciudadanos.map((r) => ({ ...r, type: 'ciudadano' })),
       ...problemas.map((r) => ({ ...r, type: 'problematica' })),
       ...sociohabit.map((r) => ({ ...r, type: 'sociohabitacional' })),
-    ];
+    ].filter((r) => r.operador?.email && r.operador.email === myEmail);
     all.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
     State.surveys = all;
 
     const bodyEl = document.getElementById('listBody');
     const countEl = document.getElementById('listCount');
+    const filterEl = document.querySelector('.list-filter-bar');
     if (!bodyEl) return;
 
-    if (all.length === 0) {
-      bodyEl.innerHTML = `<p class="hint center">Todavía no hay relevamientos guardados.</p>`;
-    } else {
-      bodyEl.innerHTML = all.map((r, i) => {
-        const firstQ = PREGUNTAS[r.type]?.[0];
-        const preview = firstQ ? (r.answers?.[firstQ.id] || '—') : '';
-        return `
-          <div class="survey-card" onclick="openDetail(${i})">
-            <div class="card-icon">${typeIcon(r.type)}</div>
-            <div class="card-body">
-              <div class="card-type">${typeLabel(r.type)}${r.type === 'problematica' ? ' ' + renderEstadoBadge(r.estado) : ''}</div>
-              <div class="card-preview">${esc(String(preview).slice(0, 60))}</div>
-              <div class="card-date">${formatDate(r.savedAt)}</div>
-              ${r.location ? `<div class="card-loc">📍 ${esc(Geo.format(r.location))}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
-    }
+    const visible = _listFilter === 'todos' ? all : all.filter((r) => r.type === _listFilter);
+    const paired = all.map((r, idx) => ({ r, idx }))
+      .filter(({ r }) => _listFilter === 'todos' || r.type === _listFilter);
+
+    bodyEl.innerHTML = paired.length > 0
+      ? paired.map(({ r, idx }) => renderSurveyCard(r, idx)).join('')
+      : `<div class="list-empty"><p>${all.length === 0 ? 'Todavía no hay relevamientos propios.' : 'No hay relevamientos de este tipo.'}</p></div>`;
+
     if (countEl) countEl.textContent = all.length;
+    if (filterEl) filterEl.innerHTML = _listFilterTabs(all);
   } catch (err) {
     const bodyEl = document.getElementById('listBody');
-    if (bodyEl) bodyEl.innerHTML = `<p class="hint center">Error al cargar el historial: ${err.message}</p>`;
+    if (bodyEl) bodyEl.innerHTML = `<div class="list-empty"><p>Error al cargar: ${esc(err.message)}</p></div>`;
   }
 }
 
