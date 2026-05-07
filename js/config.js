@@ -13,16 +13,16 @@ const CONFIG = {
   SHEET_PROBLEMATICAS:    'Problematicas',
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
-  // Padrón electoral — fuente única de datos personales
+  // Padrón electoral — fuente única de datos personales ("Padron integrado")
   // A=DNI, B=SEXO, C=TIPO, D–L=participación elecciones,
-  // M=PADRON, N=TIPO_DNI, O=APELLIDO Y NOMBRE, P=CLASE,
-  // Q=DOMICILIO, R=LATITUD, S=LONGITUD, T=DOMICILIO REAL,
-  // U=PROFESION, V=CIRCUITO, W=NRO_MESA, X=ORDEN, Y=ESTABLECIMIENTO,
-  // Z=ocupacion, AA=nivel_educativo, AB=ESTADO CIVIL, AC=AFILIACION,
-  // AD=LOCALIDAD, AE–AG=EMPLEADORES, AH=REGIMEN_IMP,
-  // AI–AJ=CELULARES, AK–AL=EMAILS, AM=AUH, AN=IFE, AO=TWITTER
-  SPREADSHEET_ID: '1rN-b37nqFm9ymiIf8YwmutUAYz_6ukwZXRPzFtsayxQ',
-  SHEET_PADRON:   'padron_maipu_completo.csv',
+  // M=TIPO_DNI, N=APELLIDO Y NOMBRE, O=CLASE, P=DOMICILIO,
+  // Q=LATITUD, R=LONGITUD, S=DOMICILIO REAL, T=PROFESION,
+  // U=CIRCUITO, V=NRO_MESA, W=ORDEN, X=ESTABLECIMIENTO,
+  // Y=ocupacion, Z=nivel_educativo, AA=ESTADO CIVIL, AB=AFILIACION,
+  // AC=LOCALIDAD, AD–AF=EMPLEADORES, AG=REGIMEN_IMP,
+  // AH–AI=CELULARES, AJ–AK=EMAILS, AL=AUH, AM=IFE, AN=TWITTER
+  SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
+  SHEET_PADRON:   'Padron integrado',
 
   // Google Cloud Storage — fotos de problemáticas
   GCS_BUCKET: 'maipu-pba',
