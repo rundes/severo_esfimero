@@ -1208,14 +1208,20 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
-    URL.revokeObjectURL(localUrl);
-    const imgFinal = document.getElementById(`photoImg_${questionId}`);
-    if (imgFinal) imgFinal.src = gcsUrl;
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
+    // Revocar el blob solo después de que la imagen GCS confirme que cargó
+    const imgFinal = document.getElementById(`photoImg_${questionId}`);
+    if (imgFinal) {
+      imgFinal.onload = () => URL.revokeObjectURL(localUrl);
+      imgFinal.onerror = () => { imgFinal.src = localUrl; }; // fallback al blob si GCS falla
+      imgFinal.src = gcsUrl;
+    } else {
+      URL.revokeObjectURL(localUrl);
+    }
   } catch (err) {
-    console.error('[GCS]', err);
-    State.answers[questionId] = localUrl; // mantener blob URL como fallback
-    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'}</span>`;
+    console.error('[GCS] upload error:', err.message, err);
+    // Mantener el blob URL en la preview y en State hasta que se suba correctamente
+    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
   }
 }
 
