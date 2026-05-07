@@ -669,7 +669,7 @@ function renderGeo() {
   const title = geoTitles[State.surveyType] || 'Ubicación';
   const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
   return `
-    <div class="screen">
+    <div class="screen screen-geo">
       <header class="app-header">
         <button class="btn-icon" onclick="go('${backTarget}')">←</button>
         <span class="header-title">📍 ${title}</span>
@@ -677,6 +677,7 @@ function renderGeo() {
       <div class="geo-search-row">
         <input type="text" class="input geo-search-input" id="geoSearchInput"
           placeholder="Buscar dirección…" autocomplete="off"
+          value="${esc(State.padronDomicilio || '')}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
         <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
       </div>
@@ -687,12 +688,6 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
-        <div class="geo-address-row">
-          <div class="geo-spinner geo-spinner-sm" id="geoAddrSpinner" style="display:none"></div>
-          <input type="text" class="input geo-address-input" id="geoAddress"
-            placeholder="Dirección…" autocomplete="off"
-            value="${esc(State.padronDomicilio || '')}">
-        </div>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -710,13 +705,14 @@ async function startGeoCapture() {
   const DEFAULT = { lat: -32.9817, lng: -68.7946 };
 
   async function updateAddress(lat, lng) {
-    const addrEl = document.getElementById('geoAddress');
-    const addrSpinner = document.getElementById('geoAddrSpinner');
-    if (!addrEl) return;
-    if (addrSpinner) addrSpinner.style.display = 'inline-block';
+    const searchEl = document.getElementById('geoSearchInput');
+    if (!searchEl) return;
+    spinnerEl.style.display = 'inline-block';
+    statusEl.textContent = 'Obteniendo dirección…';
     const addr = await Geo.reverseGeocode(lat, lng);
-    if (addrSpinner) addrSpinner.style.display = 'none';
-    if (addr && addrEl) addrEl.value = addr;
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+    if (addr) searchEl.value = addr;
   }
 
   function scheduleGeocode(lat, lng) {
@@ -786,8 +782,8 @@ function confirmGeo() {
   if (_marker) {
     const pos = _marker.getLatLng();
     State.location = { lat: pos.lat, lng: pos.lng, accuracy: 0 };
-    const addrEl = document.getElementById('geoAddress');
-    const addr = addrEl?.value?.trim() || null;
+    const searchEl = document.getElementById('geoSearchInput');
+    const addr = searchEl?.value?.trim() || null;
     State.domicilioReal = addr;
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
@@ -801,21 +797,23 @@ async function doGeoSearch() {
   const query = input?.value?.trim();
   if (!query) return;
   const statusEl = document.getElementById('geoStatus');
+  const spinnerEl = document.getElementById('geoSpinner');
   if (statusEl) statusEl.textContent = 'Buscando…';
+  if (spinnerEl) spinnerEl.style.display = 'inline-block';
   const result = await Geo.geocode(query);
+  if (spinnerEl) spinnerEl.style.display = 'none';
   if (!result) {
     if (statusEl) statusEl.textContent = 'No se encontró la dirección';
     return;
   }
   if (statusEl) statusEl.textContent = 'Arrastrá el pin o tocá el mapa para ajustar';
+  if (input && result.address) input.value = result.address;
   if (_map && _marker) {
     const ll = L.latLng(result.lat, result.lng);
     _marker.setLatLng(ll);
     _map.setView(ll, 17);
     const coordsEl = document.getElementById('geoCoords');
     if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
-    const addrEl = document.getElementById('geoAddress');
-    if (addrEl && result.address) addrEl.value = result.address;
   }
 }
 
