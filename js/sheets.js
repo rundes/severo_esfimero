@@ -118,7 +118,8 @@ const SheetsDB = {
         'Escritura', 'Cuotas adeudadas', 'Tipo vivienda', 'Material paredes', 'Ambientes dormir',
         'Desagüe', 'Agua potable', 'Electricidad', 'Gas', 'Discapacidad', 'Tipo discapacidad',
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
-        'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
+        'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto',
+        'Vivienda terminada', 'Participa menores', 'Participa adultos', 'Participa mayores'];
     }
     return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
@@ -188,7 +189,8 @@ const SheetsDB = {
         a.discapacidad || '', (a.tipo_discapacidad || []).join(', '), a.cud || '',
         (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
         (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
-        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || ''];
+        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || '',
+        a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || ''];
     }
     // problematica
     const a = r.answers || {};
@@ -219,7 +221,8 @@ const SheetsDB = {
           actividades_adultos: row[30] ? row[30].split(', ') : [],
           actividades_mayores: row[31] ? row[31].split(', ') : [],
           mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
-          voto: row[35] } };
+          voto: row[35], vivienda_estado: row[36] || '',
+          participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '' } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],

@@ -786,6 +786,12 @@ function confirmGeo() {
     const searchEl = document.getElementById('geoSearchInput');
     const addr = searchEl?.value?.trim() || null;
     State.domicilioReal = addr;
+    if (addr) {
+      // Sincronizar la dirección confirmada al campo domicilio de la encuesta
+      // (sobreescribe el pre-llenado del padrón si el relevador lo editó en el mapa)
+      State.answers.domicilio = addr;
+      State.padronDomicilio   = addr;
+    }
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
     }

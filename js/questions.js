@@ -93,6 +93,22 @@ const PREGUNTAS = {
 
   problematica: [
     {
+      id: 'barrio',
+      label: 'Barrio / Distrito',
+      type: 'radio',
+      required: true,
+      options: [
+        { value: 'Alvarado',      label: 'Alvarado' },
+        { value: 'Belgrano',      label: 'Belgrano' },
+        { value: 'Unión',         label: 'Unión' },
+        { value: 'Centro',        label: 'Centro' },
+        { value: 'Las Armas',     label: 'Las Armas' },
+        { value: 'Santo Domingo', label: 'Santo Domingo' },
+        { value: 'Villa Vannelli',label: 'Villa Vannelli' },
+        { value: 'Villa Italia',  label: 'Villa Italia' },
+      ],
+    },
+    {
       id: 'categoria',
       label: 'Categoría del problema',
       type: 'select',
@@ -106,29 +122,6 @@ const PREGUNTAS = {
         'Árbol caído o peligroso',
         'Poda necesaria',
         'Otro',
-      ],
-    },
-    {
-      id: 'direccion',
-      label: 'Referencia de ubicación',
-      type: 'text',
-      required: false,
-      placeholder: 'Ej: Av. San Martín 1234, esquina Rivadavia',
-    },
-    {
-      id: 'barrio',
-      label: 'Barrio / Distrito',
-      type: 'radio',
-      required: false,
-      options: [
-        { value: 'Alvarado',      label: 'Alvarado' },
-        { value: 'Belgrano',      label: 'Belgrano' },
-        { value: 'Unión',         label: 'Unión' },
-        { value: 'Centro',        label: 'Centro' },
-        { value: 'Las Armas',     label: 'Las Armas' },
-        { value: 'Santo Domingo', label: 'Santo Domingo' },
-        { value: 'Villa Vannelli',label: 'Villa Vannelli' },
-        { value: 'Villa Italia',  label: 'Villa Italia' },
       ],
     },
     {
@@ -322,6 +315,16 @@ const PREGUNTAS = {
       type: 'number',
       required: false,
     },
+    {
+      id: 'vivienda_estado',
+      label: '¿La vivienda está terminada o en construcción?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Terminada',           label: 'Terminada' },
+        { value: 'En construcción',     label: 'En construcción / ampliación' },
+      ],
+    },
 
     // BLOQUE 4 — Servicios básicos
     {
@@ -403,25 +406,58 @@ const PREGUNTAS = {
 
     // BLOQUE 6 — Participación municipal
     {
-      id: 'actividades_menores',
+      id: 'participa_menores',
       block: 'Participación en actividades municipales',
-      label: '¿Participan de actividades del municipio los menores de 18 años?',
+      label: '¿Los menores de 18 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
+      id: 'actividades_menores',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_menores === 'Si',
       options: ['Deportes', 'Cultura'],
+    },
+    {
+      id: 'participa_adultos',
+      label: '¿Los de entre 18 y 64 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
     },
     {
       id: 'actividades_adultos',
-      label: '¿Participan de actividades del municipio los que tienen entre 15 y 64 años?',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_adultos === 'Si',
       options: ['Deportes', 'Cultura'],
     },
     {
+      id: 'participa_mayores',
+      label: '¿Los mayores de 65 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
       id: 'actividades_mayores',
-      label: '¿Participan de actividades del municipio los mayores de 65 años?',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_mayores === 'Si',
       options: ['Deportes', 'Cultura'],
     },
 

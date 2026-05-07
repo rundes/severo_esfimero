@@ -1198,6 +1198,22 @@ const PREGUNTAS = {
 
   problematica: [
     {
+      id: 'barrio',
+      label: 'Barrio / Distrito',
+      type: 'radio',
+      required: true,
+      options: [
+        { value: 'Alvarado',      label: 'Alvarado' },
+        { value: 'Belgrano',      label: 'Belgrano' },
+        { value: 'Unión',         label: 'Unión' },
+        { value: 'Centro',        label: 'Centro' },
+        { value: 'Las Armas',     label: 'Las Armas' },
+        { value: 'Santo Domingo', label: 'Santo Domingo' },
+        { value: 'Villa Vannelli',label: 'Villa Vannelli' },
+        { value: 'Villa Italia',  label: 'Villa Italia' },
+      ],
+    },
+    {
       id: 'categoria',
       label: 'Categoría del problema',
       type: 'select',
@@ -1211,29 +1227,6 @@ const PREGUNTAS = {
         'Árbol caído o peligroso',
         'Poda necesaria',
         'Otro',
-      ],
-    },
-    {
-      id: 'direccion',
-      label: 'Referencia de ubicación',
-      type: 'text',
-      required: false,
-      placeholder: 'Ej: Av. San Martín 1234, esquina Rivadavia',
-    },
-    {
-      id: 'barrio',
-      label: 'Barrio / Distrito',
-      type: 'radio',
-      required: false,
-      options: [
-        { value: 'Alvarado',      label: 'Alvarado' },
-        { value: 'Belgrano',      label: 'Belgrano' },
-        { value: 'Unión',         label: 'Unión' },
-        { value: 'Centro',        label: 'Centro' },
-        { value: 'Las Armas',     label: 'Las Armas' },
-        { value: 'Santo Domingo', label: 'Santo Domingo' },
-        { value: 'Villa Vannelli',label: 'Villa Vannelli' },
-        { value: 'Villa Italia',  label: 'Villa Italia' },
       ],
     },
     {
@@ -1427,6 +1420,16 @@ const PREGUNTAS = {
       type: 'number',
       required: false,
     },
+    {
+      id: 'vivienda_estado',
+      label: '¿La vivienda está terminada o en construcción?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Terminada',       label: 'Terminada' },
+        { value: 'En construcción', label: 'En construcción / ampliación' },
+      ],
+    },
 
     // BLOQUE 4 — Servicios básicos
     {
@@ -1508,25 +1511,58 @@ const PREGUNTAS = {
 
     // BLOQUE 6 — Participación municipal
     {
-      id: 'actividades_menores',
+      id: 'participa_menores',
       block: 'Participación en actividades municipales',
-      label: '¿Participan de actividades del municipio los menores de 18 años?',
+      label: '¿Los menores de 18 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
+      id: 'actividades_menores',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_menores === 'Si',
       options: ['Deportes', 'Cultura'],
+    },
+    {
+      id: 'participa_adultos',
+      label: '¿Los de entre 18 y 64 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
     },
     {
       id: 'actividades_adultos',
-      label: '¿Participan de actividades del municipio los que tienen entre 15 y 64 años?',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_adultos === 'Si',
       options: ['Deportes', 'Cultura'],
     },
     {
+      id: 'participa_mayores',
+      label: '¿Los mayores de 65 años participan en actividades del municipio?',
+      type: 'radio',
+      required: false,
+      options: [
+        { value: 'Si', label: 'Sí' },
+        { value: 'No', label: 'No' },
+      ],
+    },
+    {
       id: 'actividades_mayores',
-      label: '¿Participan de actividades del municipio los mayores de 65 años?',
+      label: '¿En qué actividades participan?',
       type: 'checkbox',
       required: false,
+      showIf: (a) => a.participa_mayores === 'Si',
       options: ['Deportes', 'Cultura'],
     },
 
@@ -1831,7 +1867,8 @@ const SheetsDB = {
         'Escritura', 'Cuotas adeudadas', 'Tipo vivienda', 'Material paredes', 'Ambientes dormir',
         'Desagüe', 'Agua potable', 'Electricidad', 'Gas', 'Discapacidad', 'Tipo discapacidad',
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
-        'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto'];
+        'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto',
+        'Vivienda terminada', 'Participa menores', 'Participa adultos', 'Participa mayores'];
     }
     return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
@@ -1900,7 +1937,8 @@ const SheetsDB = {
         a.discapacidad || '', (a.tipo_discapacidad || []).join(', '), a.cud || '',
         (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
         (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
-        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || ''];
+        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || '',
+        a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || ''];
     }
     const a = r.answers || {};
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
@@ -1930,7 +1968,8 @@ const SheetsDB = {
           actividades_adultos: row[30] ? row[30].split(', ') : [],
           actividades_mayores: row[31] ? row[31].split(', ') : [],
           mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
-          voto: row[35] } };
+          voto: row[35], vivienda_estado: row[36] || '',
+          participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '' } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
@@ -2993,6 +3032,10 @@ function confirmGeo() {
     const searchEl = document.getElementById('geoSearchInput');
     const addr = searchEl?.value?.trim() || null;
     State.domicilioReal = addr;
+    if (addr) {
+      State.answers.domicilio = addr;
+      State.padronDomicilio   = addr;
+    }
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
     }
