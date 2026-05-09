@@ -10,6 +10,7 @@ let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
 let _listFilter = 'todos';
+let _photoBlobs  = {}; // blob URLs keyed by questionId, in-session preview only
 
 // Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
 function initGoogleTokenClient() {
@@ -647,6 +648,7 @@ function renderPadronDetail() {
 }
 
 function startSurveyFromPadron() {
+  _photoBlobs = {};
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
@@ -883,6 +885,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
+  _photoBlobs = {};
   const preselected = State._preselectedCitizen;
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
     padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
@@ -1163,7 +1166,7 @@ function renderInput(q, val) {
       </div>`;
 
     case 'photo': {
-      const url = State.answers[q.id];
+      const url = _photoBlobs[q.id] || State.answers[q.id];
       return `
         <div class="photo-wrap">
           ${url
@@ -1238,16 +1241,8 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
+    _photoBlobs[questionId] = localUrl; // mantener blob para preview durante la sesión
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
-    // Revocar el blob solo después de que la imagen GCS confirme que cargó
-    const imgFinal = document.getElementById(`photoImg_${questionId}`);
-    if (imgFinal) {
-      imgFinal.onload = () => URL.revokeObjectURL(localUrl);
-      imgFinal.onerror = () => { imgFinal.src = localUrl; }; // fallback al blob si GCS falla
-      imgFinal.src = gcsUrl;
-    } else {
-      URL.revokeObjectURL(localUrl);
-    }
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
     // Mantener el blob URL en la preview y en State hasta que se suba correctamente
