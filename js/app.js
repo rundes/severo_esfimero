@@ -10,6 +10,7 @@ let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
 let _listFilter = 'todos';
+let _photoBlobs  = {}; // blob URLs keyed by questionId, in-session preview only
 
 // Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
 function initGoogleTokenClient() {
@@ -166,6 +167,9 @@ function render() {
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
+  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
+    loadDetailPhoto(State.detailRecord.answers.foto_url);
+  }
   if (State.toast) showToast(State.toast);
 }
 
@@ -644,6 +648,7 @@ function renderPadronDetail() {
 }
 
 function startSurveyFromPadron() {
+  _photoBlobs = {};
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
@@ -659,6 +664,15 @@ function startNewSurvey() {
     citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
     citizenSearching: false, citizenSearchError: null,
     _preselectedCitizen: null });
+}
+
+function _updateGeoBarrio(lat, lng) {
+  const el = document.getElementById('geoBarrio');
+  const nameEl = document.getElementById('geoBarrioName');
+  if (!el || !nameEl) return;
+  const b = typeof barrioFromPoint === 'function' ? barrioFromPoint(lat, lng) : null;
+  if (b) { nameEl.textContent = b; el.style.display = ''; }
+  else { el.style.display = 'none'; }
 }
 
 function renderGeo() {
@@ -689,6 +703,7 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
+        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -730,10 +745,15 @@ async function startGeoCapture() {
       attribution: 'Mapa del <a href="https://www.ign.gob.ar">Instituto Geográfico Nacional</a> · &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(_map);
 
+    if (typeof BARRIOS_GEOJSON !== 'undefined') {
+      L.geoJSON(BARRIOS_GEOJSON, BARRIOS_LAYER_OPTIONS).addTo(_map);
+    }
+
     _marker = L.marker([lat, lng], { draggable: true }).addTo(_map);
 
     const updateCoords = (latlng) => {
       coordsEl.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+      _updateGeoBarrio(latlng.lat, latlng.lng);
     };
 
     _marker.on('drag', (e) => updateCoords(e.latlng));
@@ -795,6 +815,11 @@ function confirmGeo() {
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
     }
+    // Auto-detectar barrio desde la posición del pin
+    if (!State.answers.barrio && typeof barrioFromPoint === 'function') {
+      const detected = barrioFromPoint(pos.lat, pos.lng);
+      if (detected) State.answers.barrio = detected;
+    }
   }
   go('survey');
 }
@@ -821,6 +846,7 @@ async function doGeoSearch() {
     _map.setView(ll, 17);
     const coordsEl = document.getElementById('geoCoords');
     if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
+    _updateGeoBarrio(result.lat, result.lng);
   }
 }
 
@@ -859,6 +885,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
+  _photoBlobs = {};
   const preselected = State._preselectedCitizen;
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
     padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
@@ -1139,7 +1166,7 @@ function renderInput(q, val) {
       </div>`;
 
     case 'photo': {
-      const url = State.answers[q.id];
+      const url = _photoBlobs[q.id] || State.answers[q.id];
       return `
         <div class="photo-wrap">
           ${url
@@ -1214,16 +1241,8 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
+    _photoBlobs[questionId] = localUrl; // mantener blob para preview durante la sesión
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
-    // Revocar el blob solo después de que la imagen GCS confirme que cargó
-    const imgFinal = document.getElementById(`photoImg_${questionId}`);
-    if (imgFinal) {
-      imgFinal.onload = () => URL.revokeObjectURL(localUrl);
-      imgFinal.onerror = () => { imgFinal.src = localUrl; }; // fallback al blob si GCS falla
-      imgFinal.src = gcsUrl;
-    } else {
-      URL.revokeObjectURL(localUrl);
-    }
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
     // Mantener el blob URL en la preview y en State hasta que se suba correctamente
@@ -1543,6 +1562,26 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
+async function loadDetailPhoto(url) {
+  if (!url) return;
+  const imgEl = document.getElementById('detailPhoto');
+  if (!imgEl) return;
+  const token = localStorage.getItem('severo_access_token');
+  try {
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
+    imgEl.src = blobUrl;
+    imgEl.style.display = '';
+  } catch (_) {
+    imgEl.remove();
+    const fallback = document.getElementById('detailPhotoFallback');
+    if (fallback) fallback.style.display = '';
+  }
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
@@ -1568,7 +1607,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
+        ${fotoUrl ? `
+          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
+            onclick="this.classList.toggle('detail-photo-expand')">
+          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
+            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+          </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>
