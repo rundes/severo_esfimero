@@ -314,6 +314,23 @@ html, body {
   text-align: center;
   min-height: 1.2em;
 }
+.geo-barrio {
+  font-size: .82rem;
+  color: var(--text-2);
+  text-align: center;
+  margin: 0;
+}
+.geo-barrio strong { color: var(--primary); }
+.barrio-tooltip {
+  background: rgba(255,255,255,.92);
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.18);
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  color: #1e293b;
+}
 
 .geo-search-row {
   display: flex;
@@ -1091,6 +1108,18 @@ html, body {
 .detail-photo.detail-photo-expand {
   max-height: 80vh;
   cursor: zoom-out;
+}
+.detail-photo-fallback {
+  padding: .75rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: .875rem;
+}
+.detail-photo-fallback a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 /* ── Estado badge ────────────────────────────────────────────────────────────── */

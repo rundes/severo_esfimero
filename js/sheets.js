@@ -226,7 +226,7 @@ const SheetsDB = {
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
-        foto_url: row[14] || '' }, estado: row[15] || '' };
+        foto_url: (row[14] || '').replace(/%2F/gi, '/') }, estado: row[15] || '' };
     });
   },
 
