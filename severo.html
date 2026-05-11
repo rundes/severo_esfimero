@@ -327,6 +327,23 @@ html, body {
   text-align: center;
   min-height: 1.2em;
 }
+.geo-barrio {
+  font-size: .82rem;
+  color: var(--text-2);
+  text-align: center;
+  margin: 0;
+}
+.geo-barrio strong { color: var(--primary); }
+.barrio-tooltip {
+  background: rgba(255,255,255,.92);
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.18);
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  color: #1e293b;
+}
 
 .geo-search-row {
   display: flex;
@@ -1048,6 +1065,8 @@ html, body {
 .summary-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--radius); display: block; }
 .detail-photo { width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--radius); display: block; cursor: zoom-in; transition: max-height .3s ease; }
 .detail-photo.detail-photo-expand { max-height: 80vh; cursor: zoom-out; }
+.detail-photo-fallback { padding: .75rem; background: var(--surface); border-radius: var(--radius); text-align: center; font-size: .875rem; }
+.detail-photo-fallback a { color: var(--primary); font-weight: 600; text-decoration: none; }
 
 /* ── Estado badge ────────────────────────────────────────────────────────────── */
 .estado-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: .72rem; font-weight: 700; letter-spacing: .3px; vertical-align: middle; flex-shrink: 0; }
@@ -1973,7 +1992,7 @@ const SheetsDB = {
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
-        foto_url: row[14] || '' }, estado: row[15] || '' };
+        foto_url: (row[14] || '').replace(/%2F/gi, '/') }, estado: row[15] || '' };
     });
   },
 
@@ -2252,6 +2271,96 @@ const Auth = {
 
   </script>
   <script>
+// ── Límites de barrios (barrios.js inline) ───────────────────────────────────
+const BARRIOS_GEOJSON = {
+  type: 'FeatureCollection',
+  features: [
+    { type: 'Feature', properties: { name: 'Villa Italia' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.884581,-36.8618707],[-57.877865,-36.8561197],[-57.882843,-36.8519477],
+      [-57.896276,-36.8635187],[-57.89104,-36.8672617],[-57.884581,-36.8618707]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Villa Vanelli' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.883101,-36.879689],[-57.874689,-36.87224],[-57.883294,-36.865528],
+      [-57.884302,-36.866352],[-57.887135,-36.864154],[-57.890954,-36.867433],
+      [-57.889087,-36.868961],[-57.892714,-36.871828],[-57.883101,-36.879689]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Belgrano' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.871041,-36.854969],[-57.870097,-36.850196],[-57.870719,-36.850299],
+      [-57.87132,-36.850694],[-57.87411,-36.85296],[-57.877736,-36.856171],
+      [-57.878616,-36.856995],[-57.879581,-36.857682],[-57.876792,-36.859794],
+      [-57.873788,-36.857304],[-57.871041,-36.854969]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Centro' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.8794958,-36.8577854],[-57.887135,-36.864154],[-57.884302,-36.866352],
+      [-57.8765777,-36.859862],[-57.8794958,-36.8577854]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Alvarado' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.8713098,-36.8553724],[-57.8795068,-36.8623604],[-57.8765668,-36.8645754],
+      [-57.8719318,-36.8605064],[-57.8713098,-36.8553724]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Unión' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.883036,-36.865528],[-57.87456,-36.872154],[-57.873895,-36.871587],
+      [-57.872071,-36.860927],[-57.876556,-36.864704],[-57.879646,-36.86242],
+      [-57.883036,-36.865528]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Santo Domigo' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.59016,-36.703522],[-57.592478,-36.714463],[-57.578144,-36.719004],
+      [-57.573338,-36.705449],[-57.59016,-36.703522]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Segurola' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.463989,-36.827837],[-57.467937,-36.834294],[-57.455921,-36.839927],
+      [-57.450428,-36.831478],[-57.463989,-36.827837]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Barrio Monsalvo' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.36434,-36.876977],[-57.366786,-36.880959],[-57.356358,-36.887207],
+      [-57.352667,-36.881577],[-57.36434,-36.876977]
+    ]] } },
+    { type: 'Feature', properties: { name: 'Las Armas' }, geometry: { type: 'Polygon', coordinates: [[
+      [-57.826202,-37.076203],[-57.83869,-37.077675],[-57.835,-37.09024],
+      [-57.821352,-37.088391],[-57.826202,-37.076203]
+    ]] } },
+  ],
+};
+const _barrioNameMap = {
+  'Villa Italia':'Villa Italia','Villa Vanelli':'Villa Vannelli',
+  'Barrio Belgrano':'Belgrano','Barrio Centro':'Centro','Barrio Alvarado':'Alvarado',
+  'Barrio Unión':'Unión','Barrio Santo Domigo':'Santo Domingo',
+  'Barrio Segurola':'Segurola','Barrio Monsalvo':'Monsalvo','Las Armas':'Las Armas',
+};
+const _barrioColorMap = {
+  'Villa Italia':'#3949AB','Villa Vanelli':'#7B1FA2','Barrio Belgrano':'#00838F',
+  'Barrio Centro':'#388E3C','Barrio Alvarado':'#E64A19','Barrio Unión':'#5E35B1',
+  'Barrio Santo Domigo':'#C62828','Barrio Segurola':'#1565C0','Barrio Monsalvo':'#2E7D32',
+  'Las Armas':'#F57F17',
+};
+function _pointInRing(lat, lng, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]; const [xj, yj] = ring[j];
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function barrioFromPoint(lat, lng) {
+  for (const f of BARRIOS_GEOJSON.features) {
+    if (_pointInRing(lat, lng, f.geometry.coordinates[0])) return _barrioNameMap[f.properties.name] || null;
+  }
+  return null;
+}
+const BARRIOS_LAYER_OPTIONS = {
+  style(feature) {
+    const c = _barrioColorMap[feature.properties.name] || '#546E7A';
+    return { color: c, weight: 2, opacity: 0.75, fillColor: c, fillOpacity: 0.12 };
+  },
+  onEachFeature(feature, layer) {
+    const label = (feature.properties.name || '').replace(/^Barrio /, '');
+    layer.bindTooltip(label, { sticky: true, className: 'barrio-tooltip' });
+    layer.on({ mouseover: (e) => e.target.setStyle({ fillOpacity: 0.3 }),
+                mouseout:  (e) => e.target.setStyle({ fillOpacity: 0.12 }) });
+  },
+};
+  </script>
+  <script>
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
 let _map = null;
@@ -2264,6 +2373,7 @@ let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
 let _listFilter = 'todos';
+let _photoBlobs  = {};
 
 function initGoogleTokenClient() {
   if (!window.google?.accounts?.oauth2) return;
@@ -2412,6 +2522,9 @@ function render() {
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
+  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
+    loadDetailPhoto(State.detailRecord.answers.foto_url);
+  }
   if (State.toast) showToast(State.toast);
 }
 
@@ -2889,6 +3002,7 @@ function renderPadronDetail() {
 }
 
 function startSurveyFromPadron() {
+  _photoBlobs = {};
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
@@ -2904,6 +3018,15 @@ function startNewSurvey() {
     citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
     citizenSearching: false, citizenSearchError: null,
     _preselectedCitizen: null });
+}
+
+function _updateGeoBarrio(lat, lng) {
+  const el = document.getElementById('geoBarrio');
+  const nameEl = document.getElementById('geoBarrioName');
+  if (!el || !nameEl) return;
+  const b = typeof barrioFromPoint === 'function' ? barrioFromPoint(lat, lng) : null;
+  if (b) { nameEl.textContent = b; el.style.display = ''; }
+  else { el.style.display = 'none'; }
 }
 
 function renderGeo() {
@@ -2934,6 +3057,7 @@ function renderGeo() {
       <div id="geoMap" class="geo-map"></div>
       <div class="geo-footer" id="geoFooter" style="display:none">
         <p class="geo-coords" id="geoCoords"></p>
+        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
         <div class="geo-actions">
           <button class="btn btn-ghost" onclick="skipGeo()">Sin ubicación</button>
           <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
@@ -2976,10 +3100,15 @@ async function startGeoCapture() {
       attribution: 'Mapa del <a href="https://www.ign.gob.ar">Instituto Geográfico Nacional</a> · &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(_map);
 
+    if (typeof BARRIOS_GEOJSON !== 'undefined') {
+      L.geoJSON(BARRIOS_GEOJSON, BARRIOS_LAYER_OPTIONS).addTo(_map);
+    }
+
     _marker = L.marker([lat, lng], { draggable: true }).addTo(_map);
 
     const updateCoords = (latlng) => {
       coordsEl.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+      _updateGeoBarrio(latlng.lat, latlng.lng);
     };
 
     _marker.on('drag', (e) => updateCoords(e.latlng));
@@ -3039,6 +3168,10 @@ function confirmGeo() {
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
     }
+    if (!State.answers.barrio && typeof barrioFromPoint === 'function') {
+      const detected = barrioFromPoint(pos.lat, pos.lng);
+      if (detected) State.answers.barrio = detected;
+    }
   }
   go('survey');
 }
@@ -3065,6 +3198,7 @@ async function doGeoSearch() {
     _map.setView(ll, 17);
     const coordsEl = document.getElementById('geoCoords');
     if (coordsEl) coordsEl.textContent = `${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}`;
+    _updateGeoBarrio(result.lat, result.lng);
   }
 }
 
@@ -3103,6 +3237,7 @@ function renderTypeSelect() {
 }
 
 function selectType(type) {
+  _photoBlobs = {};
   const preselected = State._preselectedCitizen;
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
     padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
@@ -3383,7 +3518,7 @@ function renderInput(q, val) {
       </div>`;
 
     case 'photo': {
-      const url = State.answers[q.id];
+      const url = _photoBlobs[q.id] || State.answers[q.id];
       return `
         <div class="photo-wrap">
           ${url
@@ -3455,16 +3590,8 @@ async function onPhotoSelected(input, questionId) {
       else throw err;
     }
     State.answers[questionId] = gcsUrl;
+    _photoBlobs[questionId] = localUrl;
     if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
-    // Revocar el blob solo después de que la imagen GCS confirme que cargó
-    const imgFinal = document.getElementById(`photoImg_${questionId}`);
-    if (imgFinal) {
-      imgFinal.onload = () => URL.revokeObjectURL(localUrl);
-      imgFinal.onerror = () => { imgFinal.src = localUrl; }; // fallback al blob si GCS falla
-      imgFinal.src = gcsUrl;
-    } else {
-      URL.revokeObjectURL(localUrl);
-    }
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
     // Mantener el blob URL en la preview y en State hasta que se suba correctamente
@@ -3783,6 +3910,26 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
+async function loadDetailPhoto(url) {
+  if (!url) return;
+  const imgEl = document.getElementById('detailPhoto');
+  if (!imgEl) return;
+  const token = localStorage.getItem('severo_access_token');
+  try {
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
+    imgEl.src = blobUrl;
+    imgEl.style.display = '';
+  } catch (_) {
+    imgEl.remove();
+    const fallback = document.getElementById('detailPhotoFallback');
+    if (fallback) fallback.style.display = '';
+  }
+}
+
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
@@ -3808,7 +3955,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="detail-photo" alt="Foto" onclick="this.classList.toggle('detail-photo-expand')">` : ''}
+        ${fotoUrl ? `
+          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
+            onclick="this.classList.toggle('detail-photo-expand')">
+          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
+            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+          </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
           <span>${r.operador?.name || ''}</span>
