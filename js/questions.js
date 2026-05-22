@@ -45,6 +45,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
     {
@@ -106,6 +108,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
     {
@@ -218,6 +222,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
 
