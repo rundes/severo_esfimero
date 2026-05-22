@@ -1095,6 +1095,63 @@ html, body {
 .btn-estado-active { border-color: var(--warn); color: var(--warn); background: #FFF3E0; }
 .btn-estado-ok.btn-estado-active { border-color: var(--success); color: var(--success); background: #E8F5E9; }
 
+/* ── Fallecido ───────────────────────────────────────────────────────────────── */
+.fallecido-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: .72rem;
+  font-weight: 700;
+  background: #1a1a2e;
+  color: #fff;
+  border: 1px solid #555;
+  flex-shrink: 0;
+}
+
+.fallecido-badge-lg {
+  font-size: .85rem;
+  padding: 4px 12px;
+}
+
+.btn-fallecido {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #555;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-fallecido:hover { border-color: var(--text); background: rgba(26,26,46,.08); }
+
+.fallecido-active-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fallecido-anio-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: .9rem;
+}
+
+.btn-fallecido-quitar {
+  flex-shrink: 0;
+  font-size: .8rem;
+  padding: 8px 12px;
+  min-height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
 /* ── Datos Personales screen ─────────────────────────────────────────────────── */
 .dp-body {
   flex: 1;
@@ -1979,7 +2036,7 @@ const SheetsDB = {
     const base = ['ID', 'Fecha', 'Email operador', 'Nombre operador', 'Latitud', 'Longitud', 'Precisión (m)'];
     if (type === 'ciudadano') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio', 'Edad', 'Residencia',
-        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios'];
+        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios', 'Fallecido'];
     }
     if (type === 'sociohabitacional') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio',
@@ -2045,7 +2102,7 @@ const SheetsDB = {
       const a = r.answers || {};
       return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio), a.barrio || '',
         a.edad || '', a.residencia || '', a.calidad_vida || '',
-        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios)];
+        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios), r.fallecido || ''];
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
@@ -2076,7 +2133,7 @@ const SheetsDB = {
         return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
           domicilio: row[10], barrio: row[11], edad: row[12], residencia: row[13],
           calidad_vida: row[14], problemas: row[15] ? row[15].split(', ') : [],
-          mejoras: row[16], comentarios: row[17] } };
+          mejoras: row[16], comentarios: row[17] }, fallecido: row[18] || '' };
       }
       if (type === 'sociohabitacional') {
         return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
@@ -2118,6 +2175,17 @@ const SheetsDB = {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ values: [[updates.estado]] }),
+        }
+      );
+    }
+    if (type === 'ciudadano' && updates.fallecido !== undefined) {
+      const range = `${encodeURIComponent(sheet)}!S${sheetRow}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[updates.fallecido]] }),
         }
       );
     }
@@ -4087,6 +4155,8 @@ function renderSurveyCard(r, idx) {
   const barrio = r.answers?.barrio
     ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';
   const estadoBadge = isProb ? renderEstadoBadge(r.estado) : '';
+  const fallecidoBadge = r.type === 'ciudadano' && r.fallecido
+    ? `<span class="fallecido-badge">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>` : '';
   return `
     <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
       <div class="card-accent"></div>
@@ -4095,6 +4165,7 @@ function renderSurveyCard(r, idx) {
           <span class="card-type-label">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
           ${barrio}
           ${estadoBadge}
+          ${fallecidoBadge}
         </div>
         <div class="card-title">${esc(title)}</div>
         ${subtitle ? `<div class="card-subtitle">${esc(subtitle)}</div>` : ''}
@@ -4284,6 +4355,21 @@ function renderDetail() {
               onclick="updateEstado('${r.id}', 'resuelto')">✓ Resuelto</button>
           </div>
         </div>` : ''}
+        ${r.type === 'ciudadano' ? `
+        <div class="estado-section">
+          <div class="estado-section-title">Estado vital</div>
+          ${r.fallecido ? `
+            <div class="fallecido-active-row">
+              <span class="fallecido-badge fallecido-badge-lg">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>
+              <select class="input fallecido-anio-select" onchange="setFallecido('${r.id}', this.value)">
+                <option value="FALLECIDO" ${r.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map(y =>
+                  `<option value="${y}" ${r.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+              </select>
+              <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecido('${r.id}', '')">Quitar</button>
+            </div>` : `
+            <button class="btn btn-fallecido" onclick="setFallecido('${r.id}', 'FALLECIDO')">† Registrar como fallecido</button>`}
+        </div>` : ''}
       </div>
     </div>`;
 }
@@ -4302,6 +4388,21 @@ async function updateEstado(recordId, estado) {
     showToast(next === 'resuelto' ? '✓ Marcado como resuelto' : next === 'persiste' ? 'Marcado como persiste' : 'Estado reiniciado');
   } catch (err) {
     showToast('Error al guardar estado: ' + err.message);
+  }
+}
+
+async function setFallecido(recordId, value) {
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
+  if (idx < 0) return;
+  State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  State.detailRecord = { ...State.detailRecord, fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', recordId, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch (err) {
+    showToast('Error al guardar: ' + err.message);
   }
 }
 
