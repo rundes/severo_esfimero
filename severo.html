@@ -2656,6 +2656,8 @@ const State = {
   homeSearchError: null,
   // padron detail
   padronDetailRecord: null,
+  padronCiudadanoRecord: null,
+  padronCiudadanoLoading: false,
   familiaSearchQuery: '',
   familiaSearchResults: [],
   familiaSearching: false,
@@ -2913,7 +2915,49 @@ function openPadronDetail(idx) {
   const record = (State.homeSearchResults || [])[idx];
   if (record) {
     go('padronDetail', { padronDetailRecord: record,
-      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false });
+      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false,
+      padronCiudadanoRecord: null, padronCiudadanoLoading: true });
+    loadPadronCiudadanoRecord(record.dni);
+  }
+}
+
+async function loadPadronCiudadanoRecord(dni) {
+  if (!dni) { State.padronCiudadanoLoading = false; render(); return; }
+  try {
+    const fromState = (State.surveys || []).find(
+      (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(dni).trim()
+    );
+    if (fromState) {
+      State.padronCiudadanoRecord = fromState;
+      State.padronCiudadanoLoading = false;
+      if (State.screen === 'padronDetail') render();
+      return;
+    }
+    const all = await SheetsDB.getAllAsync('ciudadano');
+    const found = all.map((r) => ({ ...r, type: 'ciudadano' }))
+      .find((r) => String(r.answers?.dni).trim() === String(dni).trim());
+    State.padronCiudadanoRecord = found || null;
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  } catch {
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  }
+}
+
+async function setFallecidoFromPadron(value) {
+  const cr = State.padronCiudadanoRecord;
+  if (!cr) return;
+  State.padronCiudadanoRecord = { ...cr, fallecido: value };
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(cr.id));
+  if (idx >= 0) State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', cr.id, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch {
+    showToast('Error al guardar');
   }
 }
 
@@ -3176,6 +3220,25 @@ function renderPadronDetail() {
         <div class="padron-section">
           <div class="padron-section-title">Grupo familiar</div>
           <div id="familiaSection">${renderFamiliaSection()}</div>
+        </div>
+
+        <div class="padron-section">
+          <div class="padron-section-title">Estado vital</div>
+          ${State.padronCiudadanoLoading
+            ? `<div class="padron-row" style="color:var(--text-2);font-size:.85rem"><div class="geo-spinner geo-spinner-sm" style="display:inline-block;margin-right:6px"></div>Buscando encuesta…</div>`
+            : State.padronCiudadanoRecord
+              ? (State.padronCiudadanoRecord.fallecido
+                ? `<div class="fallecido-active-row">
+                     <span class="fallecido-badge fallecido-badge-lg">† Fallecido${State.padronCiudadanoRecord.fallecido !== 'FALLECIDO' ? ' ' + State.padronCiudadanoRecord.fallecido : ''}</span>
+                     <select class="input fallecido-anio-select" onchange="setFallecidoFromPadron(this.value)">
+                       <option value="FALLECIDO" ${State.padronCiudadanoRecord.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                       ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map((y) =>
+                         `<option value="${y}" ${State.padronCiudadanoRecord.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+                     </select>
+                     <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecidoFromPadron('')">Quitar</button>
+                   </div>`
+                : `<button class="btn btn-fallecido" onclick="setFallecidoFromPadron('FALLECIDO')">† Registrar como fallecido</button>`)
+              : `<p style="font-size:.85rem;color:var(--text-2)">Sin encuesta ciudadana registrada para este DNI.</p>`}
         </div>
 
         <div class="padron-actions">
