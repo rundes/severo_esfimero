@@ -149,18 +149,19 @@ function render() {
 
   const el = document.getElementById('app');
   const screens = {
-    auth:          renderAuth,
-    home:          renderHome,
-    geo:           renderGeo,
-    typeSelect:    renderTypeSelect,
-    citizenSearch: renderCitizenSearch,
-    survey:        renderSurvey,
-    summary:       renderSummary,
-    saving:        renderSaving,
-    done:          renderDone,
-    list:          renderList,
-    detail:        renderDetail,
-    padronDetail:  renderPadronDetail,
+    auth:            renderAuth,
+    home:            renderHome,
+    geo:             renderGeo,
+    typeSelect:      renderTypeSelect,
+    datosPersonales: renderDatosPersonales,
+    citizenSearch:   renderCitizenSearch,
+    survey:          renderSurvey,
+    summary:         renderSummary,
+    saving:          renderSaving,
+    done:            renderDone,
+    list:            renderList,
+    detail:          renderDetail,
+    padronDetail:    renderPadronDetail,
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
@@ -682,7 +683,9 @@ function renderGeo() {
     problematica:     'Ubicación de la problemática',
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
-  const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
+  const backTarget = State.surveyType === 'sociohabitacional' ? 'datosPersonales'
+    : State.surveyType === 'ciudadano' ? 'citizenSearch'
+    : 'typeSelect';
   return `
     <div class="screen screen-geo">
       <header class="app-header">
@@ -890,7 +893,29 @@ function selectType(type) {
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
     padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
     _preselectedCitizen: null };
-  if (type === 'ciudadano' || type === 'sociohabitacional') {
+  if (type === 'sociohabitacional') {
+    const answers = {};
+    const padronFilled = {};
+    if (preselected) {
+      (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+        if (q.padronKey && preselected.dni) { answers[q.id] = preselected.dni; padronFilled[q.id] = true; }
+        else if (q.padronField && preselected[q.padronField]) { answers[q.id] = preselected[q.padronField]; padronFilled[q.id] = true; }
+      });
+    }
+    const padLat = preselected ? _parseCoord(preselected.lat) : NaN;
+    const padLng = preselected ? _parseCoord(preselected.lng) : NaN;
+    const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
+      ? { lat: padLat, lng: padLng } : null;
+    go('datosPersonales', { ...base,
+      answers, padronFilled,
+      padronMeta: preselected?._meta || null,
+      padronDomicilio: preselected?.domicilio || null,
+      padronLocation,
+      citizenSearchQuery: preselected?.apellido || '',
+      citizenDNIQuery: '',
+      citizenSearchResults: preselected ? [preselected] : [],
+      citizenSearching: false, citizenSearchError: null });
+  } else if (type === 'ciudadano') {
     go('citizenSearch', { ...base,
       citizenSearchQuery: preselected?.apellido || '',
       citizenDNIQuery: '',
@@ -900,6 +925,179 @@ function selectType(type) {
     go('geo', { ...base, citizenSearchQuery: '', citizenDNIQuery: '',
       citizenSearchResults: [], citizenSearching: false, citizenSearchError: null });
   }
+}
+
+// ── Datos Personales screen (sociohabitacional step 1) ───────────────────────
+
+function renderDatosPersonales() {
+  const barrioQ = (PREGUNTAS.sociohabitacional || []).find((q) => q.id === 'barrio');
+  const barrioOpts = barrioQ?.options || [];
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('typeSelect')">←</button>
+        <span class="header-title">🏠 Socio-habitacional</span>
+        <span class="header-count">1/3</span>
+      </header>
+      <div class="block-header">Datos personales</div>
+      <div class="dp-body">
+        <div class="dp-search-section">
+          <div class="dp-section-title">Buscar en el padrón</div>
+          <div class="search-group">
+            <label class="question-label">Apellido y nombre</label>
+            <input type="text" class="input" id="dpSearchApellido"
+              placeholder="Ingresá las primeras 4 letras…"
+              value="${esc(State.citizenSearchQuery || '')}"
+              oninput="onDPSearchInput('apellido', this.value)"
+              autocomplete="off">
+          </div>
+          <div class="search-divider">— o por número de documento —</div>
+          <div class="search-group">
+            <label class="question-label">DNI</label>
+            <input type="text" inputmode="numeric" class="input" id="dpSearchDNI"
+              placeholder="Número de documento"
+              value="${esc(State.citizenDNIQuery || '')}"
+              oninput="onDPSearchInput('dni', this.value)"
+              autocomplete="off">
+          </div>
+          <div id="dpSearchResults">${renderDPResults()}</div>
+        </div>
+        <div class="dp-fields-section">
+          <div class="dp-section-title">Datos del encuestado</div>
+          <div class="dp-field">
+            <label class="dp-field-label">DNI</label>
+            <input type="text" inputmode="numeric" class="input" id="dpFieldDni"
+              placeholder="Número de documento"
+              value="${esc(State.answers.dni || '')}"
+              oninput="saveAnswer('dni', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Apellido y nombre</label>
+            <input type="text" class="input" id="dpFieldApellido"
+              placeholder="Apellido y nombre completo"
+              value="${esc(State.answers.apellido || '')}"
+              oninput="saveAnswer('apellido', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Apodo <span class="dp-optional">(opcional)</span></label>
+            <input type="text" class="input" id="dpFieldApodo"
+              placeholder="Opcional"
+              value="${esc(State.answers.apodo || '')}"
+              oninput="saveAnswer('apodo', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Domicilio <span class="dp-optional">(electoral)</span></label>
+            <input type="text" class="input" id="dpFieldDomicilio"
+              placeholder="Calle y número"
+              value="${esc(State.answers.domicilio || '')}"
+              oninput="saveAnswer('domicilio', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Barrio</label>
+            <div class="chip-group">
+              ${barrioOpts.map((o) => `
+                <button class="chip ${State.answers.barrio === o.value ? 'active' : ''}"
+                  onclick="saveAnswer('barrio', '${esc(o.value)}'); render()">
+                  ${esc(o.label)}
+                </button>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="survey-footer">
+        <button class="btn btn-ghost" onclick="skipDatosPersonales()">Omitir</button>
+        <button class="btn btn-primary" onclick="confirmDatosPersonales()">Continuar →</button>
+      </div>
+    </div>`;
+}
+
+function renderDPResults() {
+  if (State.citizenSearching) {
+    return `<div class="search-status"><div class="geo-spinner"></div> Buscando en el padrón…</div>`;
+  }
+  if (State.citizenSearchError) {
+    return `<div class="search-status search-error">⚠ ${esc(State.citizenSearchError)}</div>`;
+  }
+  const results = State.citizenSearchResults || [];
+  if (!results.length) {
+    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
+    return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
+  }
+  return `<div class="citizen-results">
+    ${results.map((r, i) => `
+      <div class="citizen-result" onclick="selectDPCitizen(${i})">
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function onDPSearchInput(field, value) {
+  if (field === 'apellido') {
+    State.citizenSearchQuery = value;
+    State.citizenDNIQuery = '';
+    const other = document.getElementById('dpSearchDNI');
+    if (other) other.value = '';
+  } else {
+    State.citizenDNIQuery = value;
+    State.citizenSearchQuery = '';
+    const other = document.getElementById('dpSearchApellido');
+    if (other) other.value = '';
+  }
+  clearTimeout(_searchDebounce);
+  const minLen = field === 'apellido' ? 4 : 6;
+  if (value.length >= minLen) {
+    State.citizenSearching = true;
+    State.citizenSearchResults = [];
+    State.citizenSearchError = null;
+    updateCitizenSearchUI();
+    _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
+  } else {
+    State.citizenSearchResults = [];
+    State.citizenSearching = false;
+    State.citizenSearchError = null;
+    updateCitizenSearchUI();
+  }
+}
+
+function selectDPCitizen(idx) {
+  const record = (State.citizenSearchResults || [])[idx];
+  if (!record) return;
+  (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+    if (q.padronKey && record.dni) {
+      State.answers[q.id] = record.dni;
+      State.padronFilled[q.id] = true;
+    } else if (q.padronField && record[q.padronField]) {
+      State.answers[q.id] = record[q.padronField];
+      State.padronFilled[q.id] = true;
+    }
+  });
+  State.padronMeta = record._meta || null;
+  State.padronDomicilio = record.domicilio || null;
+  const padLat = _parseCoord(record.lat);
+  const padLng = _parseCoord(record.lng);
+  State.padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
+    ? { lat: padLat, lng: padLng } : null;
+  State.padronLoaded = true;
+  State.citizenSearchResults = [];
+  State.citizenSearchQuery = '';
+  State.citizenDNIQuery = '';
+  render();
+}
+
+function confirmDatosPersonales() {
+  go('geo', { currentQ: 5 });
+}
+
+function skipDatosPersonales() {
+  ['dni', 'apellido', 'apodo', 'domicilio', 'barrio'].forEach((k) => {
+    delete State.answers[k];
+    delete State.padronFilled[k];
+  });
+  State.padronMeta = null;
+  State.padronDomicilio = null;
+  State.padronLocation = null;
+  go('geo', { currentQ: 5 });
 }
 
 // ── Citizen Search screen ────────────────────────────────────────────────────
@@ -991,6 +1189,8 @@ function onCitizenSearchInput(field, value) {
 function updateCitizenSearchUI() {
   const el = document.getElementById('searchResults');
   if (el) el.innerHTML = renderCitizenResults();
+  const dpEl = document.getElementById('dpSearchResults');
+  if (dpEl) dpEl.innerHTML = renderDPResults();
 }
 
 async function doCitizenSearch(field, value) {
@@ -1252,9 +1452,10 @@ async function onPhotoSelected(input, questionId) {
 
 function surveyBack() {
   const questions = PREGUNTAS[State.surveyType] || [];
+  const personalQCount = State.surveyType === 'sociohabitacional' ? 5 : 0;
   const prev = prevVisibleIdx(State.currentQ, questions);
-  if (prev < 0) {
-    go('geo');
+  if (prev < personalQCount) {
+    go(State.surveyType === 'sociohabitacional' ? 'datosPersonales' : 'geo');
   } else {
     State.currentQ = prev;
     render();
