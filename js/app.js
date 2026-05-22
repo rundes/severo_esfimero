@@ -1634,6 +1634,8 @@ function renderSurveyCard(r, idx) {
   const barrio = r.answers?.barrio
     ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';
   const estadoBadge = isProb ? renderEstadoBadge(r.estado) : '';
+  const fallecidoBadge = r.type === 'ciudadano' && r.fallecido
+    ? `<span class="fallecido-badge">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>` : '';
   return `
     <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
       <div class="card-accent"></div>
@@ -1642,6 +1644,7 @@ function renderSurveyCard(r, idx) {
           <span class="card-type-label">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
           ${barrio}
           ${estadoBadge}
+          ${fallecidoBadge}
         </div>
         <div class="card-title">${esc(title)}</div>
         ${subtitle ? `<div class="card-subtitle">${esc(subtitle)}</div>` : ''}
@@ -1832,6 +1835,21 @@ function renderDetail() {
               onclick="updateEstado('${r.id}', 'resuelto')">✓ Resuelto</button>
           </div>
         </div>` : ''}
+        ${r.type === 'ciudadano' ? `
+        <div class="estado-section">
+          <div class="estado-section-title">Estado vital</div>
+          ${r.fallecido ? `
+            <div class="fallecido-active-row">
+              <span class="fallecido-badge fallecido-badge-lg">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>
+              <select class="input fallecido-anio-select" onchange="setFallecido('${r.id}', this.value)">
+                <option value="FALLECIDO" ${r.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map(y =>
+                  `<option value="${y}" ${r.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+              </select>
+              <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecido('${r.id}', '')">Quitar</button>
+            </div>` : `
+            <button class="btn btn-fallecido" onclick="setFallecido('${r.id}', 'FALLECIDO')">† Registrar como fallecido</button>`}
+        </div>` : ''}
       </div>
     </div>`;
 }
@@ -1850,6 +1868,21 @@ async function updateEstado(recordId, estado) {
     showToast(next === 'resuelto' ? '✓ Marcado como resuelto' : next === 'persiste' ? 'Marcado como persiste' : 'Estado reiniciado');
   } catch (err) {
     showToast('Error al guardar estado: ' + err.message);
+  }
+}
+
+async function setFallecido(recordId, value) {
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
+  if (idx < 0) return;
+  State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  State.detailRecord = { ...State.detailRecord, fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', recordId, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch (err) {
+    showToast('Error al guardar: ' + err.message);
   }
 }
 
