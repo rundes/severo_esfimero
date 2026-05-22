@@ -491,6 +491,13 @@ const PREGUNTAS = {
       placeholder: 'Respuesta libre…',
     },
     {
+      id: 'politicas_municipio',
+      label: '¿Qué políticas/programas del municipio considera importantes?',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Describa libremente…',
+    },
+    {
       id: 'voto',
       label: '¿Nos votaría?',
       type: 'radio',
