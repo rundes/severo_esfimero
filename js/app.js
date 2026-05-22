@@ -1771,20 +1771,13 @@ async function loadDetailPhoto(url) {
   if (!url) return;
   const imgEl = document.getElementById('detailPhoto');
   if (!imgEl) return;
-  const token = localStorage.getItem('severo_access_token');
-  try {
-    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
-    if (!res.ok) throw new Error(`${res.status}`);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
-    imgEl.src = blobUrl;
-    imgEl.style.display = '';
-  } catch (_) {
+  imgEl.onerror = () => {
     imgEl.remove();
     const fallback = document.getElementById('detailPhotoFallback');
     if (fallback) fallback.style.display = '';
-  }
+  };
+  imgEl.src = url;
+  imgEl.style.display = '';
 }
 
 function renderDetail() {
