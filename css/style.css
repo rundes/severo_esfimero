@@ -1176,3 +1176,80 @@ html, body {
 .btn-estado-ok:hover{ border-color: var(--success); color: var(--success); background: #F1F8F1; }
 .btn-estado-active  { border-color: var(--warn); color: var(--warn); background: #FFF3E0; }
 .btn-estado-ok.btn-estado-active { border-color: var(--success); color: var(--success); background: #E8F5E9; }
+
+/* ── Datos Personales screen ─────────────────────────────────────────────────── */
+.dp-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.dp-search-section {
+  padding: 16px 16px 12px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dp-fields-section {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dp-section-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: var(--primary);
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.dp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dp-field-label {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dp-optional {
+  font-weight: 400;
+  color: var(--text-2);
+  font-size: .85rem;
+}
+
+/* ── Mobile-first survey improvements ───────────────────────────────────────── */
+.radio-option {
+  min-height: 52px;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.scale-btn {
+  min-height: 64px;
+  padding: 12px 4px;
+}
+
+.scale-lbl {
+  font-size: .58rem;
+}
+
+@media (max-width: 360px) {
+  .scale-lbl { display: none; }
+  .scale-btn { padding: 14px 2px; }
+}
