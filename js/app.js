@@ -265,7 +265,8 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <span class="header-title">Relevamientos</span>
+        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png" class="header-logo" alt="">
+        <span class="header-title">Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
       <div class="home-user">
