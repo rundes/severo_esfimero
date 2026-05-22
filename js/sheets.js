@@ -110,7 +110,7 @@ const SheetsDB = {
     const base = ['ID', 'Fecha', 'Email operador', 'Nombre operador', 'Latitud', 'Longitud', 'Precisión (m)'];
     if (type === 'ciudadano') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio', 'Edad', 'Residencia',
-        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios'];
+        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios', 'Fallecido'];
     }
     if (type === 'sociohabitacional') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio',
@@ -177,7 +177,7 @@ const SheetsDB = {
       const a = r.answers || {};
       return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio), a.barrio || '',
         a.edad || '', a.residencia || '', a.calidad_vida || '',
-        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios)];
+        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios), r.fallecido || ''];
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
@@ -206,7 +206,7 @@ const SheetsDB = {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
-        return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
+        return { ...base, fallecido: row[18] || '', answers: { dni: row[7], apellido: row[8], apodo: row[9],
           domicilio: row[10], barrio: row[11], edad: row[12], residencia: row[13],
           calidad_vida: row[14], problemas: row[15] ? row[15].split(', ') : [],
           mejoras: row[16], comentarios: row[17] } };
@@ -251,6 +251,17 @@ const SheetsDB = {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ values: [[updates.estado]] }),
+        }
+      );
+    }
+    if (type === 'ciudadano' && updates.fallecido !== undefined) {
+      const range = `${encodeURIComponent(sheet)}!S${sheetRow}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[updates.fallecido]] }),
         }
       );
     }
