@@ -196,9 +196,12 @@ const SheetsDB = {
     }
     // problematica
     const a = r.answers || {};
+    const fotoStr = Array.isArray(a.foto_url)
+      ? a.foto_url.filter(Boolean).join('\n')
+      : (a.foto_url || '');
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
       a.urgencia || '', a.afecta_transito || '', sc(a.observaciones),
-      sc(a.foto_url || ''), sc(r.estado || '')];
+      fotoStr, sc(r.estado || '')];
   },
 
   _fromRows(type, rows) {
@@ -229,7 +232,8 @@ const SheetsDB = {
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
-        foto_url: (row[14] || '').replace(/%2F/gi, '/') }, estado: row[15] || '' };
+        foto_url: (row[14] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) },
+        estado: row[15] || '' };
     });
   },
 

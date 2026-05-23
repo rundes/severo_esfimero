@@ -107,6 +107,8 @@ const State = {
   homeSearchError: null,
   // padron detail
   padronDetailRecord: null,
+  padronCiudadanoRecord: null,   // ciudadano survey record matching padron DNI
+  padronCiudadanoLoading: false,
   familiaSearchQuery: '',
   familiaSearchResults: [],
   familiaSearching: false,
@@ -168,9 +170,7 @@ function render() {
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
-  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
-    loadDetailPhoto(State.detailRecord.answers.foto_url);
-  }
+
   if (State.toast) showToast(State.toast);
 }
 
@@ -374,7 +374,49 @@ function openPadronDetail(idx) {
   const record = (State.homeSearchResults || [])[idx];
   if (record) {
     go('padronDetail', { padronDetailRecord: record,
-      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false });
+      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false,
+      padronCiudadanoRecord: null, padronCiudadanoLoading: true });
+    loadPadronCiudadanoRecord(record.dni);
+  }
+}
+
+async function loadPadronCiudadanoRecord(dni) {
+  if (!dni) { State.padronCiudadanoLoading = false; render(); return; }
+  try {
+    const fromState = (State.surveys || []).find(
+      (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(dni).trim()
+    );
+    if (fromState) {
+      State.padronCiudadanoRecord = fromState;
+      State.padronCiudadanoLoading = false;
+      if (State.screen === 'padronDetail') render();
+      return;
+    }
+    const all = await SheetsDB.getAllAsync('ciudadano');
+    const found = all.map((r) => ({ ...r, type: 'ciudadano' }))
+      .find((r) => String(r.answers?.dni).trim() === String(dni).trim());
+    State.padronCiudadanoRecord = found || null;
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  } catch {
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  }
+}
+
+async function setFallecidoFromPadron(value) {
+  const cr = State.padronCiudadanoRecord;
+  if (!cr) return;
+  State.padronCiudadanoRecord = { ...cr, fallecido: value };
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(cr.id));
+  if (idx >= 0) State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', cr.id, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch {
+    showToast('Error al guardar');
   }
 }
 
@@ -637,6 +679,25 @@ function renderPadronDetail() {
         <div class="padron-section">
           <div class="padron-section-title">Grupo familiar</div>
           <div id="familiaSection">${renderFamiliaSection()}</div>
+        </div>
+
+        <div class="padron-section">
+          <div class="padron-section-title">Estado vital</div>
+          ${State.padronCiudadanoLoading
+            ? `<div class="padron-row" style="color:var(--text-2);font-size:.85rem"><div class="geo-spinner geo-spinner-sm" style="display:inline-block;margin-right:6px"></div>Buscando encuesta…</div>`
+            : State.padronCiudadanoRecord
+              ? (State.padronCiudadanoRecord.fallecido
+                ? `<div class="fallecido-active-row">
+                     <span class="fallecido-badge fallecido-badge-lg">† Fallecido${State.padronCiudadanoRecord.fallecido !== 'FALLECIDO' ? ' ' + State.padronCiudadanoRecord.fallecido : ''}</span>
+                     <select class="input fallecido-anio-select" onchange="setFallecidoFromPadron(this.value)">
+                       <option value="FALLECIDO" ${State.padronCiudadanoRecord.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                       ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map((y) =>
+                         `<option value="${y}" ${State.padronCiudadanoRecord.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+                     </select>
+                     <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecidoFromPadron('')">Quitar</button>
+                   </div>`
+                : `<button class="btn btn-fallecido" onclick="setFallecidoFromPadron('FALLECIDO')">† Registrar como fallecido</button>`)
+              : `<p style="font-size:.85rem;color:var(--text-2)">Sin encuesta ciudadana registrada para este DNI.</p>`}
         </div>
 
         <div class="padron-actions">
@@ -1367,18 +1428,36 @@ function renderInput(q, val) {
       </div>`;
 
     case 'photo': {
-      const url = _photoBlobs[q.id] || State.answers[q.id];
+      const blobs = Array.isArray(_photoBlobs[q.id]) ? _photoBlobs[q.id] : [];
+      const saved = Array.isArray(State.answers[q.id]) ? State.answers[q.id]
+        : (State.answers[q.id] ? [State.answers[q.id]] : []);
+      // Merge: use blob URL for preview when available (same index), else saved URL
+      const urls = saved.map((u, i) => blobs[i] || u);
+      const max = 5;
+      const canAdd = urls.length < max;
       return `
-        <div class="photo-wrap">
-          ${url
-            ? `<img src="${url}" class="photo-preview" alt="Foto" id="photoImg_${q.id}">`
-            : `<div class="photo-empty" id="photoEmpty_${q.id}">Sin foto adjunta</div>`}
+        <div class="photo-wrap" id="photoWrap_${q.id}">
+          ${urls.length > 0 ? `
+            <div class="photo-grid">
+              ${urls.map((url, i) => `
+                <div class="photo-thumb-wrap">
+                  <img class="photo-thumb" src="${esc(url)}" alt="Foto ${i + 1}">
+                  <button class="photo-thumb-remove" onclick="removePhoto('${q.id}',${i})">×</button>
+                </div>`).join('')}
+              ${canAdd ? `
+                <label class="photo-add-btn">
+                  <span class="photo-add-icon">📷</span>
+                  <span>Agregar</span>
+                  <input type="file" accept="image/*" capture="environment" style="display:none"
+                    onchange="onPhotoSelected(this,'${q.id}')">
+                </label>` : ''}
+            </div>` : `
+            <label class="btn btn-outline photo-btn">
+              📷 Tomar / seleccionar foto
+              <input type="file" accept="image/*" capture="environment" style="display:none"
+                onchange="onPhotoSelected(this,'${q.id}')">
+            </label>`}
           <div class="photo-status" id="photoStatus_${q.id}"></div>
-          <label class="btn btn-outline photo-btn">
-            📷 ${url ? 'Cambiar foto' : 'Tomar / seleccionar foto'}
-            <input type="file" accept="image/*" capture="environment" style="display:none"
-              onchange="onPhotoSelected(this,'${q.id}')">
-          </label>
         </div>`;
     }
 
@@ -1404,20 +1483,20 @@ async function onPhotoSelected(input, questionId) {
   const file = input.files[0];
   if (!file) return;
 
-  const imgEl    = document.getElementById(`photoImg_${questionId}`);
-  const emptyEl  = document.getElementById(`photoEmpty_${questionId}`);
-  const statusEl = document.getElementById(`photoStatus_${questionId}`);
-
-  // Mostrar preview local inmediatamente
-  const localUrl = URL.createObjectURL(file);
-  if (imgEl) {
-    imgEl.src = localUrl;
-  } else if (emptyEl) {
-    const img = document.createElement('img');
-    img.src = localUrl; img.className = 'photo-preview';
-    img.id = `photoImg_${questionId}`; img.alt = 'Foto';
-    emptyEl.replaceWith(img);
+  // Init arrays
+  if (!Array.isArray(_photoBlobs[questionId])) _photoBlobs[questionId] = [];
+  if (!Array.isArray(State.answers[questionId])) {
+    State.answers[questionId] = State.answers[questionId] ? [State.answers[questionId]] : [];
   }
+
+  // Append blob URL for immediate preview and re-render
+  const localUrl = URL.createObjectURL(file);
+  const idx = State.answers[questionId].length;
+  _photoBlobs[questionId].push(localUrl);
+  State.answers[questionId].push(localUrl);
+  render();
+
+  const statusEl = document.getElementById(`photoStatus_${questionId}`);
   if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Comprimiendo…';
 
   try {
@@ -1426,13 +1505,15 @@ async function onPhotoSelected(input, questionId) {
     const token = localStorage.getItem('severo_access_token');
     if (!token) {
       const reader = new FileReader();
-      reader.onload = (e) => { State.answers[questionId] = e.target.result; };
+      reader.onload = (e) => { State.answers[questionId][idx] = e.target.result; };
       reader.readAsDataURL(blob);
-      if (statusEl) statusEl.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
+      const st = document.getElementById(`photoStatus_${questionId}`);
+      if (st) st.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
       return;
     }
 
-    if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
+    const st = document.getElementById(`photoStatus_${questionId}`);
+    if (st) st.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
     const filename = GCS.filename('problematicas');
     let gcsUrl;
     try {
@@ -1441,14 +1522,21 @@ async function onPhotoSelected(input, questionId) {
       if (err.message === '401') { await ensureFreshToken(); gcsUrl = await GCS.upload(blob, filename); }
       else throw err;
     }
-    State.answers[questionId] = gcsUrl;
-    _photoBlobs[questionId] = localUrl; // mantener blob para preview durante la sesión
-    if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
+    State.answers[questionId][idx] = gcsUrl;
+    const count = State.answers[questionId].length;
+    const st2 = document.getElementById(`photoStatus_${questionId}`);
+    if (st2) st2.innerHTML = `<span class="photo-ok">✓ ${count} foto${count > 1 ? 's' : ''} subida${count > 1 ? 's' : ''}</span>`;
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
-    // Mantener el blob URL en la preview y en State hasta que se suba correctamente
-    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
+    const st = document.getElementById(`photoStatus_${questionId}`);
+    if (st) st.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
   }
+}
+
+function removePhoto(questionId, idx) {
+  if (Array.isArray(_photoBlobs[questionId])) _photoBlobs[questionId].splice(idx, 1);
+  if (Array.isArray(State.answers[questionId])) State.answers[questionId].splice(idx, 1);
+  render();
 }
 
 function surveyBack() {
@@ -1524,7 +1612,11 @@ async function doPadronLookup(dniQuestion, questions) {
 
 function renderSummary() {
   const questions = PREGUNTAS[State.surveyType] || [];
-  const fotoUrl = State.answers['foto_url'];
+  const fotoRaw = State.answers['foto_url'];
+  const photoList = Array.isArray(fotoRaw) ? fotoRaw.filter(Boolean) : (fotoRaw ? [fotoRaw] : []);
+  // Use blob URLs for preview when available
+  const blobList = Array.isArray(_photoBlobs['foto_url']) ? _photoBlobs['foto_url'] : [];
+  const previewList = photoList.map((u, i) => blobList[i] || u);
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = State.answers[q.id];
     let display = '—';
@@ -1544,7 +1636,13 @@ function renderSummary() {
         <span class="header-title">Resumen</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="summary-photo" alt="Foto de la problemática">` : ''}
+        ${previewList.length > 0 ? `
+          <div class="detail-photo-grid">
+            ${previewList.map(url => `
+              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto">
+              </div>`).join('')}
+          </div>` : ''}
         <div class="summary-meta">
           <span>${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
           ${State.location ? `<a href="${Geo.mapsUrl(State.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>📍 Sin ubicación</span>'}
@@ -1767,24 +1865,13 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
-async function loadDetailPhoto(url) {
-  if (!url) return;
-  const imgEl = document.getElementById('detailPhoto');
-  if (!imgEl) return;
-  imgEl.onerror = () => {
-    imgEl.remove();
-    const fallback = document.getElementById('detailPhotoFallback');
-    if (fallback) fallback.style.display = '';
-  };
-  imgEl.src = url;
-  imgEl.style.display = '';
-}
 
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
   const questions = PREGUNTAS[r.type] || [];
-  const fotoUrl = r.answers?.foto_url;
+  const fotoRaw = r.answers?.foto_url;
+  const photoList = Array.isArray(fotoRaw) ? fotoRaw.filter(Boolean) : (fotoRaw ? [fotoRaw] : []);
 
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = r.answers?.[q.id];
@@ -1805,11 +1892,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `
-          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
-            onclick="this.classList.toggle('detail-photo-expand')">
-          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
-            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+        ${photoList.length > 0 ? `
+          <div class="detail-photo-grid">
+            ${photoList.map(url => `
+              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto">
+              </div>`).join('')}
           </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
