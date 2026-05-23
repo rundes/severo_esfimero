@@ -573,6 +573,16 @@ function renderPadronDetail() {
        </div>`
     : '';
 
+  const elecClass = (v) => {
+    if (!v) return '';
+    const u = v.toUpperCase();
+    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
+    if (u.includes('NO VOTO') || u.includes('NO VOTÓ')) return 'elec-absent';
+    if (u === '0' || u === 'N') return 'elec-absent';
+    if (u === '1' || u === 'S' || u === 'SI' || u === 'SÍ') return 'elec-voted';
+    return 'elec-neutral';
+  };
+
   const elections = [
     { label: '2019 PASO',  val: r.elec_2019_paso },
     { label: '2019 Gral',  val: r.elec_2019_gen },
@@ -583,15 +593,7 @@ function renderPadronDetail() {
     { label: '2023 Bal.',  val: r.elec_2023_bal },
     { label: '2025 Sep',   val: r.elec_2025_sep },
     { label: '2025 Oct',   val: r.elec_2025_oct },
-  ].filter((e) => e.val && e.val !== '');
-
-  const elecClass = (v) => {
-    if (!v) return '';
-    const u = v.toUpperCase();
-    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
-    if (u.includes('NO')) return 'elec-absent';
-    return 'elec-neutral';
-  };
+  ].filter((e) => e.val && e.val !== '' && elecClass(e.val) === 'elec-voted');
 
   return `
     <div class="screen">
