@@ -120,7 +120,7 @@ const SheetsDB = {
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
         'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto',
         'Estado de la vivienda', 'Participa menores', 'Participa adultos', 'Participa mayores',
-        'Políticas municipales'];
+        'Políticas municipales', 'Foto frente'];
     }
     return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
@@ -192,7 +192,8 @@ const SheetsDB = {
         (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
         sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || '',
         a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || '',
-        sc(a.politicas_municipio)];
+        sc(a.politicas_municipio),
+        Array.isArray(a.foto_frente) ? a.foto_frente.filter(Boolean).join('\n') : (a.foto_frente || '')];
     }
     // problematica
     const a = r.answers || {};
@@ -228,7 +229,8 @@ const SheetsDB = {
           mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
           voto: row[35], vivienda_estado: row[36] || '',
           participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '',
-          politicas_municipio: row[40] || '' } };
+          politicas_municipio: row[40] || '',
+          foto_frente: (row[41] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],

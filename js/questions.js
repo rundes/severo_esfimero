@@ -508,5 +508,13 @@ const PREGUNTAS = {
         { value: 'DUDOSO',  label: 'Dudoso' },
       ],
     },
+    {
+      id: 'foto_frente',
+      block: 'Foto de la vivienda',
+      label: 'Foto del frente de la vivienda',
+      type: 'photo',
+      required: false,
+      hint: 'Tomá una foto del frente de la vivienda encuestada.',
+    },
   ],
 };
