@@ -701,9 +701,9 @@ function renderPadronDetail() {
         </div>
 
         <div class="padron-actions">
-          <button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">
-            + Nuevo relevamiento
-          </button>
+          ${State.padronCiudadanoRecord?.fallecido
+            ? `<div class="fallecido-block-msg">† Este ciudadano figura como fallecido — no es posible iniciar un relevamiento.</div>`
+            : `<button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">+ Nuevo relevamiento</button>`}
         </div>
 
       </div>
@@ -711,6 +711,10 @@ function renderPadronDetail() {
 }
 
 function startSurveyFromPadron() {
+  if (State.padronCiudadanoRecord?.fallecido) {
+    showToast('† Ciudadano registrado como fallecido');
+    return;
+  }
   _photoBlobs = {};
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
@@ -1593,6 +1597,16 @@ async function doPadronLookup(dniQuestion, questions) {
   }
 
   if (!record) return; // ciudadano no encontrado en el padrón
+
+  // Bloquear si el ciudadano está registrado como fallecido
+  const ciuRecord = (State.surveys || []).find(
+    (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === dni
+  );
+  if (ciuRecord?.fallecido) {
+    showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+    go('home');
+    return;
+  }
 
   // Guardar meta para el update de lat/lng al guardar
   State.padronMeta = record._meta || null;
