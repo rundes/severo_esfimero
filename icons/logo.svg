@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1565C0"/>
+      <stop offset="100%" stop-color="#0D47A1"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo circular azul -->
+  <circle cx="256" cy="256" r="248" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="248" fill="url(#shine)"/>
+
+  <!-- Escarapela: anillos celeste y blanco -->
+  <!-- Anillo exterior celeste -->
+  <circle cx="256" cy="256" r="220" fill="#75AADB"/>
+  <!-- Anillo blanco -->
+  <circle cx="256" cy="256" r="178" fill="#FFFFFF"/>
+  <!-- Anillo celeste interior -->
+  <circle cx="256" cy="256" r="136" fill="#75AADB"/>
+  <!-- Centro blanco -->
+  <circle cx="256" cy="256" r="94" fill="#FFFFFF"/>
+  <!-- Núcleo dorado / sol -->
+  <circle cx="256" cy="256" r="60" fill="#F5C518"/>
+
+  <!-- Rayos del sol (16 rayos: 8 rectos, 8 ondulados) -->
+  <g transform="translate(256,256)">
+    <!-- Rayos rectos -->
+    <g fill="#E6A800">
+      <rect x="-4" y="-90" width="8" height="28" rx="3"/>
+      <rect x="-4" y="62" width="8" height="28" rx="3"/>
+      <rect x="-90" y="-4" width="28" height="8" rx="3"/>
+      <rect x="62" y="-4" width="28" height="8" rx="3"/>
+      <!-- Diagonales -->
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(45)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(90)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(135)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(180)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(225)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(270)"/>
+      <rect x="-4" y="-90" width="8" height="28" rx="3" transform="rotate(315)"/>
+    </g>
+    <!-- Rayos ondulados (en ángulos intermedios) -->
+    <g fill="#E6A800">
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(22.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(67.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(112.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(157.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(202.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(247.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(292.5)"/>
+      <ellipse cx="0" cy="-85" rx="5" ry="12" transform="rotate(337.5)"/>
+    </g>
+    <!-- Sol centro -->
+    <circle cx="0" cy="0" r="42" fill="#F5C518"/>
+    <circle cx="0" cy="0" r="36" fill="#E6A800"/>
+    <!-- Cara del sol: ojos -->
+    <circle cx="-10" cy="-8" r="5" fill="#0D47A1"/>
+    <circle cx="10" cy="-8" r="5" fill="#0D47A1"/>
+    <!-- Nariz -->
+    <circle cx="0" cy="0" r="3" fill="#0D47A1"/>
+    <!-- Boca -->
+    <path d="M -12 10 Q 0 20 12 10" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Borde exterior sutil -->
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#0A3880" stroke-width="4"/>
+</svg>
