@@ -1274,6 +1274,28 @@ html, body {
   .scale-btn { padding: 14px 2px; }
 }
 
+/* ── PWA Install card ──────────────────────────────────────────────────────── */
+.pwa-install-card { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 16px; position: relative; box-shadow: 0 4px 16px rgba(13,71,161,.35); animation: slideDown .25s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.pwa-install-icon { font-size: 1.8rem; flex-shrink: 0; line-height: 1; }
+.pwa-install-text { flex: 1; display: flex; flex-direction: column; gap: 3px; color: #fff; }
+.pwa-install-text strong { font-size: .95rem; font-weight: 700; }
+.pwa-install-text span { font-size: .78rem; opacity: .85; line-height: 1.4; }
+.pwa-install-btn { flex-shrink: 0; padding: 8px 14px; font-size: .82rem; min-height: 36px; background: #fff; color: var(--primary); border: none; border-radius: calc(var(--radius) - 2px); }
+.pwa-install-btn:hover { background: #e3f2fd; }
+.pwa-install-dismiss { position: absolute; top: 6px; right: 6px; background: rgba(255,255,255,.2); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; touch-action: manipulation; }
+
+/* ── PWA Update modal (blocking) ───────────────────────────────────────────── */
+.pwa-update-modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.pwa-update-box { background: var(--surface); border-radius: calc(var(--radius) * 1.5); padding: 36px 28px 28px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 24px 64px rgba(0,0,0,.5); }
+.pwa-update-icon { font-size: 3rem; margin-bottom: 16px; animation: spin 1.4s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.pwa-update-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 12px; color: var(--text); }
+.pwa-update-body { font-size: .9rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 24px; }
+.pwa-update-btn { font-size: 1rem; padding: 14px; }
+.pwa-update-hint { margin-top: 12px; font-size: .75rem; color: var(--text-secondary); opacity: .7; }
+
   </style>
 </head>
 <body>
@@ -2760,6 +2782,112 @@ function render() {
   if (State.toast) showToast(State.toast);
 }
 
+// ── PWA: Install card + Update modal ────────────────────────────────────────
+
+function _pwaIsStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+function _pwaIsIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+}
+function _pwaShouldShowInstall() {
+  if (_pwaIsStandalone()) return false;
+  if (localStorage.getItem('pwa_installed')) return false;
+  const dismissed = localStorage.getItem('pwa_install_dismissed_at');
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  if (count >= 2) return false;
+  if (dismissed) {
+    const daysSince = (Date.now() - Number(dismissed)) / 86_400_000;
+    if (daysSince < 3) return false;
+  }
+  return true;
+}
+function _pwaInstallCard() {
+  if (!_pwaShouldShowInstall()) return '';
+  if (_pwaIsIOS()) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Tocá <strong>Compartir</strong> (⬆) y luego<br>"Agregar a pantalla de inicio"</span>
+        </div>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  if (window._deferredInstallPrompt) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Accedé más rápido, funciona sin conexión</span>
+        </div>
+        <button class="btn btn-primary pwa-install-btn" onclick="pwaInstallNow()">Instalar</button>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  return '';
+}
+async function pwaInstallNow() {
+  const prompt = window._deferredInstallPrompt;
+  if (!prompt) return;
+  prompt.prompt();
+  const { outcome } = await prompt.userChoice;
+  window._deferredInstallPrompt = null;
+  if (outcome === 'accepted') {
+    localStorage.setItem('pwa_installed', '1');
+  } else {
+    pwaInstallDismiss();
+  }
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+function pwaInstallDismiss() {
+  localStorage.setItem('pwa_install_dismissed_at', String(Date.now()));
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  localStorage.setItem('pwa_install_dismiss_count', String(count + 1));
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+window._pwaRenderInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (!card && _pwaShouldShowInstall() && !_pwaIsIOS()) {
+    const home = document.querySelector('.home-actions');
+    if (home) home.insertAdjacentHTML('beforebegin', _pwaInstallCard());
+  }
+};
+window._pwaHideInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+};
+let _pwaWaitingWorker = null;
+window._pwaShowUpdateModal = (worker) => {
+  _pwaWaitingWorker = worker;
+  if (document.getElementById('pwaUpdateModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'pwaUpdateModal';
+  modal.className = 'pwa-update-modal';
+  modal.innerHTML = `
+    <div class="pwa-update-box">
+      <div class="pwa-update-icon">🔄</div>
+      <h2 class="pwa-update-title">Nueva versión disponible</h2>
+      <p class="pwa-update-body">
+        Se publicó una actualización importante.<br>
+        Actualizar evita errores al sincronizar tus encuestas.
+      </p>
+      <button class="btn btn-primary btn-block pwa-update-btn" id="pwaUpdateBtn">
+        Actualizar ahora
+      </button>
+      <p class="pwa-update-hint">La app se recargará automáticamente.</p>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('pwaUpdateBtn').addEventListener('click', () => {
+    if (_pwaWaitingWorker) _pwaWaitingWorker.postMessage({ type: 'SKIP_WAITING' });
+  });
+};
+
 // ── Utilidades UI ────────────────────────────────────────────────────────────
 
 function avatar(user) {
@@ -2861,6 +2989,7 @@ function renderHome() {
           <div class="user-email">${u?.email || ''}</div>
         </div>
       </div>
+      ${_pwaInstallCard()}
       <div class="home-actions">
         <button class="btn btn-primary btn-block" onclick="startNewSurvey()">
           + Nuevo relevamiento
@@ -4617,9 +4746,38 @@ function showToast(msg) {
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleTokenClient()"></script>
   <script>
+    window._deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window._deferredInstallPrompt = e;
+      if (window._pwaRenderInstallCard) window._pwaRenderInstallCard();
+    });
+    window.addEventListener('appinstalled', () => {
+      window._deferredInstallPrompt = null;
+      localStorage.setItem('pwa_installed', '1');
+      if (window._pwaHideInstallCard) window._pwaHideInstallCard();
+    });
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          function onNewWorkerWaiting(worker) {
+            if (window._pwaShowUpdateModal) window._pwaShowUpdateModal(worker);
+          }
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            onNewWorkerWaiting(reg.waiting);
+          }
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                onNewWorkerWaiting(nw);
+              }
+            });
+          });
+        }).catch(() => {});
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
       });
     }
   </script>
