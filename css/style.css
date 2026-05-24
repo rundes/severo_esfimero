@@ -1,9 +1,10 @@
 /* ── Variables ──────────────────────────────────────────────────────────────── */
 :root {
-  --primary:      #1565C0;
-  --primary-dark: #0D47A1;
+  --primary:      #0D47A1;
+  --primary-dark: #083B87;
   --primary-light:#E3F2FD;
   --accent:       #00897B;
+  --gold:         #FFC845;
   --bg:           #F4F6F9;
   --surface:      #FFFFFF;
   --border:       #DDE1E7;
@@ -23,7 +24,7 @@
 html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
+  background: var(--text);
   color: var(--text);
   font-size: 16px;
   line-height: 1.5;
@@ -77,6 +78,16 @@ html, body {
 .header-count {
   font-size: .85rem;
   opacity: .8;
+}
+
+.header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+  /* El ícono SVG tiene fondo #0D47A1 que se funde con el header;
+     solo se ven los nodos blancos y el punto dorado */
 }
 
 .btn-icon {
@@ -184,15 +195,16 @@ html, body {
 }
 
 .logo-img {
-  width: 100px;
-  height: 100px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
+  margin-bottom: 20px;
+  border-radius: 26px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 3px rgba(255,255,255,.15);
 }
 
 .logo-title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -.5px;
 }
@@ -200,6 +212,10 @@ html, body {
 .logo-sub {
   opacity: .8;
   margin-top: 4px;
+  font-size: .9rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .auth-card {
@@ -1122,6 +1138,98 @@ html, body {
   text-decoration: none;
 }
 
+/* ── Photo grid (multi-photo) ───────────────────────────────────────────────── */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.photo-thumb-wrap {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--bg);
+}
+.photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-thumb-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.75);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,.6);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  z-index: 1;
+  /* Extend tap area without changing visual size */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.photo-add-btn {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: 2px dashed var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: .75rem;
+  gap: 4px;
+  text-align: center;
+}
+.photo-add-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.detail-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.detail-photo-item {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+  transition: transform .2s;
+}
+.detail-photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.detail-photo-item.detail-photo-item-expand {
+  grid-column: 1 / -1;
+  aspect-ratio: unset;
+  cursor: zoom-out;
+}
+.detail-photo-item.detail-photo-item-expand img {
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
 /* ── Estado badge ────────────────────────────────────────────────────────────── */
 .estado-badge {
   display: inline-flex;
@@ -1176,3 +1284,275 @@ html, body {
 .btn-estado-ok:hover{ border-color: var(--success); color: var(--success); background: #F1F8F1; }
 .btn-estado-active  { border-color: var(--warn); color: var(--warn); background: #FFF3E0; }
 .btn-estado-ok.btn-estado-active { border-color: var(--success); color: var(--success); background: #E8F5E9; }
+
+/* ── Fallecido ───────────────────────────────────────────────────────────────── */
+.fallecido-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: .72rem;
+  font-weight: 700;
+  background: #1a1a2e;
+  color: #fff;
+  border: 1px solid #555;
+  flex-shrink: 0;
+}
+
+.fallecido-badge-lg {
+  font-size: .85rem;
+  padding: 4px 12px;
+}
+
+.btn-fallecido {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #555;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-fallecido:hover { border-color: var(--text); background: rgba(26,26,46,.08); }
+
+.fallecido-active-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fallecido-anio-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: .9rem;
+}
+
+.btn-fallecido-quitar {
+  flex-shrink: 0;
+  font-size: .8rem;
+  padding: 8px 12px;
+  min-height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.fallecido-block-msg {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: #1a1a2e;
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 600;
+  text-align: center;
+  opacity: .85;
+}
+
+/* ── Datos Personales screen ─────────────────────────────────────────────────── */
+.dp-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.dp-search-section {
+  padding: 16px 16px 12px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dp-fields-section {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dp-section-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: var(--primary);
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.dp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dp-field-label {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dp-optional {
+  font-weight: 400;
+  color: var(--text-2);
+  font-size: .85rem;
+}
+
+/* ── Mobile-first survey improvements ───────────────────────────────────────── */
+.radio-option {
+  min-height: 52px;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.scale-btn {
+  min-height: 64px;
+  padding: 12px 4px;
+}
+
+.scale-lbl {
+  font-size: .58rem;
+}
+
+@media (max-width: 360px) {
+  .scale-lbl { display: none; }
+  .scale-btn { padding: 14px 2px; }
+}
+
+/* ── PWA Install card ──────────────────────────────────────────────────────── */
+.pwa-install-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1255A8 0%, #083B87 100%);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(13,71,161,.35);
+  animation: slideDown .25s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pwa-install-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.pwa-install-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #fff;
+}
+.pwa-install-text strong {
+  font-size: .95rem;
+  font-weight: 700;
+}
+.pwa-install-text span {
+  font-size: .78rem;
+  opacity: .85;
+  line-height: 1.4;
+}
+.pwa-install-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: .82rem;
+  min-height: 36px;
+  background: #fff;
+  color: var(--primary);
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+.pwa-install-btn:hover { background: #e3f2fd; }
+.pwa-install-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255,255,255,.2);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  touch-action: manipulation;
+}
+
+/* ── PWA Update modal (blocking) ───────────────────────────────────────────── */
+.pwa-update-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pwa-update-box {
+  background: var(--surface);
+  border-radius: calc(var(--radius) * 1.5);
+  padding: 36px 28px 28px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+.pwa-update-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  animation: spin 1.4s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.pwa-update-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+.pwa-update-body {
+  font-size: .9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+.pwa-update-btn {
+  font-size: 1rem;
+  padding: 14px;
+}
+.pwa-update-hint {
+  margin-top: 12px;
+  font-size: .75rem;
+  color: var(--text-secondary);
+  opacity: .7;
+}

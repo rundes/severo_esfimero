@@ -30,7 +30,7 @@ const GCS = {
     const token = localStorage.getItem('severo_access_token');
     if (!token) throw new Error('401');
     const bucket = (typeof CONFIG !== 'undefined' && CONFIG.GCS_BUCKET) || 'maipu-pba';
-    const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(filename)}`;
+    const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(filename)}&predefinedAcl=publicRead`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/jpeg' },

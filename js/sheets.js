@@ -110,7 +110,7 @@ const SheetsDB = {
     const base = ['ID', 'Fecha', 'Email operador', 'Nombre operador', 'Latitud', 'Longitud', 'Precisión (m)'];
     if (type === 'ciudadano') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio', 'Edad', 'Residencia',
-        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios'];
+        'Calidad de vida', 'Problemas', 'Mejoras', 'Comentarios', 'Fallecido'];
     }
     if (type === 'sociohabitacional') {
       return [...base, 'DNI', 'Apellido y nombre', 'Apodo', 'Domicilio', 'Barrio',
@@ -119,7 +119,8 @@ const SheetsDB = {
         'Desagüe', 'Agua potable', 'Electricidad', 'Gas', 'Discapacidad', 'Tipo discapacidad',
         'CUD', 'Actividades menores', 'Actividades adultos', 'Actividades mayores',
         'Mejora barrio', 'Mejora municipio', 'Falta Maipú', 'Voto',
-        'Vivienda terminada', 'Participa menores', 'Participa adultos', 'Participa mayores'];
+        'Estado de la vivienda', 'Participa menores', 'Participa adultos', 'Participa mayores',
+        'Políticas municipales', 'Foto frente'];
     }
     return [...base, 'Categoría', 'Dirección', 'Barrio', 'Descripción', 'Urgencia', 'Afecta tránsito', 'Observaciones', 'Foto URL', 'Estado'];
   },
@@ -176,7 +177,7 @@ const SheetsDB = {
       const a = r.answers || {};
       return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio), a.barrio || '',
         a.edad || '', a.residencia || '', a.calidad_vida || '',
-        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios)];
+        (a.problemas || []).join(', '), sc(a.mejoras), sc(a.comentarios), r.fallecido || ''];
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
@@ -190,13 +191,18 @@ const SheetsDB = {
         (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
         (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
         sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || '',
-        a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || ''];
+        a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || '',
+        sc(a.politicas_municipio),
+        Array.isArray(a.foto_frente) ? a.foto_frente.filter(Boolean).join('\n') : (a.foto_frente || '')];
     }
     // problematica
     const a = r.answers || {};
+    const fotoStr = Array.isArray(a.foto_url)
+      ? a.foto_url.filter(Boolean).join('\n')
+      : (a.foto_url || '');
     return [...base, a.categoria || '', sc(a.direccion), a.barrio || '', sc(a.descripcion),
       a.urgencia || '', a.afecta_transito || '', sc(a.observaciones),
-      sc(a.foto_url || ''), sc(r.estado || '')];
+      fotoStr, sc(r.estado || '')];
   },
 
   _fromRows(type, rows) {
@@ -204,7 +210,7 @@ const SheetsDB = {
       const base = { id: row[0], savedAt: row[1], operador: { email: row[2], name: row[3] },
         location: { lat: parseFloat(row[4]), lng: parseFloat(row[5]), accuracy: parseInt(row[6]) } };
       if (type === 'ciudadano') {
-        return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
+        return { ...base, fallecido: row[18] || '', answers: { dni: row[7], apellido: row[8], apodo: row[9],
           domicilio: row[10], barrio: row[11], edad: row[12], residencia: row[13],
           calidad_vida: row[14], problemas: row[15] ? row[15].split(', ') : [],
           mejoras: row[16], comentarios: row[17] } };
@@ -222,11 +228,14 @@ const SheetsDB = {
           actividades_mayores: row[31] ? row[31].split(', ') : [],
           mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
           voto: row[35], vivienda_estado: row[36] || '',
-          participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '' } };
+          participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '',
+          politicas_municipio: row[40] || '',
+          foto_frente: (row[41] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],
-        foto_url: (row[14] || '').replace(/%2F/gi, '/') }, estado: row[15] || '' };
+        foto_url: (row[14] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) },
+        estado: row[15] || '' };
     });
   },
 
@@ -248,6 +257,17 @@ const SheetsDB = {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ values: [[updates.estado]] }),
+        }
+      );
+    }
+    if (type === 'ciudadano' && updates.fallecido !== undefined) {
+      const range = `${encodeURIComponent(sheet)}!S${sheetRow}`;
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SURVEY_SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[updates.fallecido]] }),
         }
       );
     }

@@ -107,6 +107,8 @@ const State = {
   homeSearchError: null,
   // padron detail
   padronDetailRecord: null,
+  padronCiudadanoRecord: null,   // ciudadano survey record matching padron DNI
+  padronCiudadanoLoading: false,
   familiaSearchQuery: '',
   familiaSearchResults: [],
   familiaSearching: false,
@@ -149,29 +151,143 @@ function render() {
 
   const el = document.getElementById('app');
   const screens = {
-    auth:          renderAuth,
-    home:          renderHome,
-    geo:           renderGeo,
-    typeSelect:    renderTypeSelect,
-    citizenSearch: renderCitizenSearch,
-    survey:        renderSurvey,
-    summary:       renderSummary,
-    saving:        renderSaving,
-    done:          renderDone,
-    list:          renderList,
-    detail:        renderDetail,
-    padronDetail:  renderPadronDetail,
+    auth:            renderAuth,
+    home:            renderHome,
+    geo:             renderGeo,
+    typeSelect:      renderTypeSelect,
+    datosPersonales: renderDatosPersonales,
+    citizenSearch:   renderCitizenSearch,
+    survey:          renderSurvey,
+    summary:         renderSummary,
+    saving:          renderSaving,
+    saveError:       renderSaveError,
+    done:            renderDone,
+    list:            renderList,
+    detail:          renderDetail,
+    padronDetail:    renderPadronDetail,
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
   if (State.screen === 'geo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
-  if (State.screen === 'detail' && State.detailRecord?.answers?.foto_url) {
-    loadDetailPhoto(State.detailRecord.answers.foto_url);
-  }
+
   if (State.toast) showToast(State.toast);
 }
+
+// ── PWA: Install card + Update modal ────────────────────────────────────────
+
+function _pwaIsStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function _pwaIsIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function _pwaShouldShowInstall() {
+  if (_pwaIsStandalone()) return false;
+  if (localStorage.getItem('pwa_installed')) return false;
+  const dismissed = localStorage.getItem('pwa_install_dismissed_at');
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  if (count >= 2) return false;
+  if (dismissed) {
+    const daysSince = (Date.now() - Number(dismissed)) / 86_400_000;
+    if (daysSince < 3) return false;
+  }
+  return true;
+}
+
+function _pwaInstallCard() {
+  if (!_pwaShouldShowInstall()) return '';
+  if (_pwaIsIOS()) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Tocá <strong>Compartir</strong> (⬆) y luego<br>"Agregar a pantalla de inicio"</span>
+        </div>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  if (window._deferredInstallPrompt) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Accedé más rápido, funciona sin conexión</span>
+        </div>
+        <button class="btn btn-primary pwa-install-btn" onclick="pwaInstallNow()">Instalar</button>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  return '';
+}
+
+async function pwaInstallNow() {
+  const prompt = window._deferredInstallPrompt;
+  if (!prompt) return;
+  prompt.prompt();
+  const { outcome } = await prompt.userChoice;
+  window._deferredInstallPrompt = null;
+  if (outcome === 'accepted') {
+    localStorage.setItem('pwa_installed', '1');
+  } else {
+    pwaInstallDismiss();
+  }
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+
+function pwaInstallDismiss() {
+  localStorage.setItem('pwa_install_dismissed_at', String(Date.now()));
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  localStorage.setItem('pwa_install_dismiss_count', String(count + 1));
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+
+// Hooks llamados desde index.html cuando llegan los eventos del navegador
+window._pwaRenderInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (!card && _pwaShouldShowInstall() && !_pwaIsIOS()) {
+    const home = document.querySelector('.home-actions');
+    if (home) home.insertAdjacentHTML('beforebegin', _pwaInstallCard());
+  }
+};
+window._pwaHideInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+};
+
+let _pwaWaitingWorker = null;
+window._pwaShowUpdateModal = (worker) => {
+  _pwaWaitingWorker = worker;
+  if (document.getElementById('pwaUpdateModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'pwaUpdateModal';
+  modal.className = 'pwa-update-modal';
+  modal.innerHTML = `
+    <div class="pwa-update-box">
+      <div class="pwa-update-icon">🔄</div>
+      <h2 class="pwa-update-title">Nueva versión disponible</h2>
+      <p class="pwa-update-body">
+        Se publicó una actualización importante.<br>
+        Actualizar evita errores al sincronizar tus encuestas.
+      </p>
+      <button class="btn btn-primary btn-block pwa-update-btn" id="pwaUpdateBtn">
+        Actualizar ahora
+      </button>
+      <p class="pwa-update-hint">La app se recargará automáticamente.</p>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('pwaUpdateBtn').addEventListener('click', () => {
+    if (_pwaWaitingWorker) _pwaWaitingWorker.postMessage({ type: 'SKIP_WAITING' });
+  });
+};
 
 // ── Utilidades UI ────────────────────────────────────────────────────────────
 
@@ -233,9 +349,8 @@ function renderAuth() {
   return `
     <div class="screen screen-auth">
       <div class="auth-hero">
-        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png"
-          class="logo-img" alt="Severo">
-        <h1 class="logo-title">Severo</h1>
+        <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
+        <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>
       <div class="auth-card">
@@ -264,7 +379,8 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <span class="header-title">Relevamientos</span>
+        <img src="icons/favicon.svg" class="header-logo" alt="">
+        <span class="header-title">Proyecto Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
       <div class="home-user">
@@ -274,6 +390,7 @@ function renderHome() {
           <div class="user-email">${u?.email || ''}</div>
         </div>
       </div>
+      ${_pwaInstallCard()}
       <div class="home-actions">
         <button class="btn btn-primary btn-block" onclick="startNewSurvey()">
           + Nuevo relevamiento
@@ -372,7 +489,49 @@ function openPadronDetail(idx) {
   const record = (State.homeSearchResults || [])[idx];
   if (record) {
     go('padronDetail', { padronDetailRecord: record,
-      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false });
+      familiaSearchQuery: '', familiaSearchResults: [], familiaSearching: false,
+      padronCiudadanoRecord: null, padronCiudadanoLoading: true });
+    loadPadronCiudadanoRecord(record.dni);
+  }
+}
+
+async function loadPadronCiudadanoRecord(dni) {
+  if (!dni) { State.padronCiudadanoLoading = false; render(); return; }
+  try {
+    const fromState = (State.surveys || []).find(
+      (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(dni).trim()
+    );
+    if (fromState) {
+      State.padronCiudadanoRecord = fromState;
+      State.padronCiudadanoLoading = false;
+      if (State.screen === 'padronDetail') render();
+      return;
+    }
+    const all = await SheetsDB.getAllAsync('ciudadano');
+    const found = all.map((r) => ({ ...r, type: 'ciudadano' }))
+      .find((r) => String(r.answers?.dni).trim() === String(dni).trim());
+    State.padronCiudadanoRecord = found || null;
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  } catch {
+    State.padronCiudadanoLoading = false;
+    if (State.screen === 'padronDetail') render();
+  }
+}
+
+async function setFallecidoFromPadron(value) {
+  const cr = State.padronCiudadanoRecord;
+  if (!cr) return;
+  State.padronCiudadanoRecord = { ...cr, fallecido: value };
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(cr.id));
+  if (idx >= 0) State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', cr.id, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch {
+    showToast('Error al guardar');
   }
 }
 
@@ -529,6 +688,16 @@ function renderPadronDetail() {
        </div>`
     : '';
 
+  const elecClass = (v) => {
+    if (!v) return '';
+    const u = v.toUpperCase();
+    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
+    if (u.includes('NO VOTO') || u.includes('NO VOTÓ')) return 'elec-absent';
+    if (u === '0' || u === 'N') return 'elec-absent';
+    if (u === '1' || u === 'S' || u === 'SI' || u === 'SÍ') return 'elec-voted';
+    return 'elec-neutral';
+  };
+
   const elections = [
     { label: '2019 PASO',  val: r.elec_2019_paso },
     { label: '2019 Gral',  val: r.elec_2019_gen },
@@ -539,15 +708,7 @@ function renderPadronDetail() {
     { label: '2023 Bal.',  val: r.elec_2023_bal },
     { label: '2025 Sep',   val: r.elec_2025_sep },
     { label: '2025 Oct',   val: r.elec_2025_oct },
-  ].filter((e) => e.val && e.val !== '');
-
-  const elecClass = (v) => {
-    if (!v) return '';
-    const u = v.toUpperCase();
-    if (u.includes('VOTÓ') && !u.includes('NO')) return 'elec-voted';
-    if (u.includes('NO')) return 'elec-absent';
-    return 'elec-neutral';
-  };
+  ].filter((e) => e.val && e.val !== '' && elecClass(e.val) === 'elec-voted');
 
   return `
     <div class="screen">
@@ -637,10 +798,29 @@ function renderPadronDetail() {
           <div id="familiaSection">${renderFamiliaSection()}</div>
         </div>
 
+        <div class="padron-section">
+          <div class="padron-section-title">Estado vital</div>
+          ${State.padronCiudadanoLoading
+            ? `<div class="padron-row" style="color:var(--text-2);font-size:.85rem"><div class="geo-spinner geo-spinner-sm" style="display:inline-block;margin-right:6px"></div>Buscando encuesta…</div>`
+            : State.padronCiudadanoRecord
+              ? (State.padronCiudadanoRecord.fallecido
+                ? `<div class="fallecido-active-row">
+                     <span class="fallecido-badge fallecido-badge-lg">† Fallecido${State.padronCiudadanoRecord.fallecido !== 'FALLECIDO' ? ' ' + State.padronCiudadanoRecord.fallecido : ''}</span>
+                     <select class="input fallecido-anio-select" onchange="setFallecidoFromPadron(this.value)">
+                       <option value="FALLECIDO" ${State.padronCiudadanoRecord.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                       ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map((y) =>
+                         `<option value="${y}" ${State.padronCiudadanoRecord.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+                     </select>
+                     <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecidoFromPadron('')">Quitar</button>
+                   </div>`
+                : `<button class="btn btn-fallecido" onclick="setFallecidoFromPadron('FALLECIDO')">† Registrar como fallecido</button>`)
+              : `<p style="font-size:.85rem;color:var(--text-2)">Sin encuesta ciudadana registrada para este DNI.</p>`}
+        </div>
+
         <div class="padron-actions">
-          <button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">
-            + Nuevo relevamiento
-          </button>
+          ${State.padronCiudadanoRecord?.fallecido
+            ? `<div class="fallecido-block-msg">† Este ciudadano figura como fallecido — no es posible iniciar un relevamiento.</div>`
+            : `<button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">+ Nuevo relevamiento</button>`}
         </div>
 
       </div>
@@ -648,6 +828,10 @@ function renderPadronDetail() {
 }
 
 function startSurveyFromPadron() {
+  if (State.padronCiudadanoRecord?.fallecido) {
+    showToast('† Ciudadano registrado como fallecido');
+    return;
+  }
   _photoBlobs = {};
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
@@ -682,7 +866,9 @@ function renderGeo() {
     problematica:     'Ubicación de la problemática',
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
-  const backTarget = (State.surveyType === 'ciudadano' || State.surveyType === 'sociohabitacional') ? 'citizenSearch' : 'typeSelect';
+  const backTarget = State.surveyType === 'sociohabitacional' ? 'datosPersonales'
+    : State.surveyType === 'ciudadano' ? 'citizenSearch'
+    : 'typeSelect';
   return `
     <div class="screen screen-geo">
       <header class="app-header">
@@ -890,7 +1076,29 @@ function selectType(type) {
   const base = { surveyType: type, currentQ: 0, answers: {}, padronLoaded: false, padronFilled: {},
     padronMeta: null, padronDomicilio: null, padronLocation: null, location: null,
     _preselectedCitizen: null };
-  if (type === 'ciudadano' || type === 'sociohabitacional') {
+  if (type === 'sociohabitacional') {
+    const answers = {};
+    const padronFilled = {};
+    if (preselected) {
+      (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+        if (q.padronKey && preselected.dni) { answers[q.id] = preselected.dni; padronFilled[q.id] = true; }
+        else if (q.padronField && preselected[q.padronField]) { answers[q.id] = preselected[q.padronField]; padronFilled[q.id] = true; }
+      });
+    }
+    const padLat = preselected ? _parseCoord(preselected.lat) : NaN;
+    const padLng = preselected ? _parseCoord(preselected.lng) : NaN;
+    const padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
+      ? { lat: padLat, lng: padLng } : null;
+    go('datosPersonales', { ...base,
+      answers, padronFilled,
+      padronMeta: preselected?._meta || null,
+      padronDomicilio: preselected?.domicilio || null,
+      padronLocation,
+      citizenSearchQuery: preselected?.apellido || '',
+      citizenDNIQuery: '',
+      citizenSearchResults: preselected ? [preselected] : [],
+      citizenSearching: false, citizenSearchError: null });
+  } else if (type === 'ciudadano') {
     go('citizenSearch', { ...base,
       citizenSearchQuery: preselected?.apellido || '',
       citizenDNIQuery: '',
@@ -900,6 +1108,179 @@ function selectType(type) {
     go('geo', { ...base, citizenSearchQuery: '', citizenDNIQuery: '',
       citizenSearchResults: [], citizenSearching: false, citizenSearchError: null });
   }
+}
+
+// ── Datos Personales screen (sociohabitacional step 1) ───────────────────────
+
+function renderDatosPersonales() {
+  const barrioQ = (PREGUNTAS.sociohabitacional || []).find((q) => q.id === 'barrio');
+  const barrioOpts = barrioQ?.options || [];
+  return `
+    <div class="screen">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('typeSelect')">←</button>
+        <span class="header-title">🏠 Socio-habitacional</span>
+        <span class="header-count">1/3</span>
+      </header>
+      <div class="block-header">Datos personales</div>
+      <div class="dp-body">
+        <div class="dp-search-section">
+          <div class="dp-section-title">Buscar en el padrón</div>
+          <div class="search-group">
+            <label class="question-label">Apellido y nombre</label>
+            <input type="text" class="input" id="dpSearchApellido"
+              placeholder="Ingresá las primeras 4 letras…"
+              value="${esc(State.citizenSearchQuery || '')}"
+              oninput="onDPSearchInput('apellido', this.value)"
+              autocomplete="off">
+          </div>
+          <div class="search-divider">— o por número de documento —</div>
+          <div class="search-group">
+            <label class="question-label">DNI</label>
+            <input type="text" inputmode="numeric" class="input" id="dpSearchDNI"
+              placeholder="Número de documento"
+              value="${esc(State.citizenDNIQuery || '')}"
+              oninput="onDPSearchInput('dni', this.value)"
+              autocomplete="off">
+          </div>
+          <div id="dpSearchResults">${renderDPResults()}</div>
+        </div>
+        <div class="dp-fields-section">
+          <div class="dp-section-title">Datos del encuestado</div>
+          <div class="dp-field">
+            <label class="dp-field-label">DNI</label>
+            <input type="text" inputmode="numeric" class="input" id="dpFieldDni"
+              placeholder="Número de documento"
+              value="${esc(State.answers.dni || '')}"
+              oninput="saveAnswer('dni', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Apellido y nombre</label>
+            <input type="text" class="input" id="dpFieldApellido"
+              placeholder="Apellido y nombre completo"
+              value="${esc(State.answers.apellido || '')}"
+              oninput="saveAnswer('apellido', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Apodo <span class="dp-optional">(opcional)</span></label>
+            <input type="text" class="input" id="dpFieldApodo"
+              placeholder="Opcional"
+              value="${esc(State.answers.apodo || '')}"
+              oninput="saveAnswer('apodo', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Domicilio <span class="dp-optional">(electoral)</span></label>
+            <input type="text" class="input" id="dpFieldDomicilio"
+              placeholder="Calle y número"
+              value="${esc(State.answers.domicilio || '')}"
+              oninput="saveAnswer('domicilio', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Barrio</label>
+            <div class="chip-group">
+              ${barrioOpts.map((o) => `
+                <button class="chip ${State.answers.barrio === o.value ? 'active' : ''}"
+                  onclick="saveAnswer('barrio', '${esc(o.value)}'); render()">
+                  ${esc(o.label)}
+                </button>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="survey-footer">
+        <button class="btn btn-ghost" onclick="skipDatosPersonales()">Omitir</button>
+        <button class="btn btn-primary" onclick="confirmDatosPersonales()">Continuar →</button>
+      </div>
+    </div>`;
+}
+
+function renderDPResults() {
+  if (State.citizenSearching) {
+    return `<div class="search-status"><div class="geo-spinner"></div> Buscando en el padrón…</div>`;
+  }
+  if (State.citizenSearchError) {
+    return `<div class="search-status search-error">⚠ ${esc(State.citizenSearchError)}</div>`;
+  }
+  const results = State.citizenSearchResults || [];
+  if (!results.length) {
+    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
+    return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
+  }
+  return `<div class="citizen-results">
+    ${results.map((r, i) => `
+      <div class="citizen-result" onclick="selectDPCitizen(${i})">
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function onDPSearchInput(field, value) {
+  if (field === 'apellido') {
+    State.citizenSearchQuery = value;
+    State.citizenDNIQuery = '';
+    const other = document.getElementById('dpSearchDNI');
+    if (other) other.value = '';
+  } else {
+    State.citizenDNIQuery = value;
+    State.citizenSearchQuery = '';
+    const other = document.getElementById('dpSearchApellido');
+    if (other) other.value = '';
+  }
+  clearTimeout(_searchDebounce);
+  const minLen = field === 'apellido' ? 4 : 6;
+  if (value.length >= minLen) {
+    State.citizenSearching = true;
+    State.citizenSearchResults = [];
+    State.citizenSearchError = null;
+    updateCitizenSearchUI();
+    _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
+  } else {
+    State.citizenSearchResults = [];
+    State.citizenSearching = false;
+    State.citizenSearchError = null;
+    updateCitizenSearchUI();
+  }
+}
+
+function selectDPCitizen(idx) {
+  const record = (State.citizenSearchResults || [])[idx];
+  if (!record) return;
+  (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+    if (q.padronKey && record.dni) {
+      State.answers[q.id] = record.dni;
+      State.padronFilled[q.id] = true;
+    } else if (q.padronField && record[q.padronField]) {
+      State.answers[q.id] = record[q.padronField];
+      State.padronFilled[q.id] = true;
+    }
+  });
+  State.padronMeta = record._meta || null;
+  State.padronDomicilio = record.domicilio || null;
+  const padLat = _parseCoord(record.lat);
+  const padLng = _parseCoord(record.lng);
+  State.padronLocation = (!isNaN(padLat) && !isNaN(padLng) && padLat !== 0 && padLng !== 0)
+    ? { lat: padLat, lng: padLng } : null;
+  State.padronLoaded = true;
+  State.citizenSearchResults = [];
+  State.citizenSearchQuery = '';
+  State.citizenDNIQuery = '';
+  render();
+}
+
+function confirmDatosPersonales() {
+  go('geo', { currentQ: 5 });
+}
+
+function skipDatosPersonales() {
+  ['dni', 'apellido', 'apodo', 'domicilio', 'barrio'].forEach((k) => {
+    delete State.answers[k];
+    delete State.padronFilled[k];
+  });
+  State.padronMeta = null;
+  State.padronDomicilio = null;
+  State.padronLocation = null;
+  go('geo', { currentQ: 5 });
 }
 
 // ── Citizen Search screen ────────────────────────────────────────────────────
@@ -991,6 +1372,8 @@ function onCitizenSearchInput(field, value) {
 function updateCitizenSearchUI() {
   const el = document.getElementById('searchResults');
   if (el) el.innerHTML = renderCitizenResults();
+  const dpEl = document.getElementById('dpSearchResults');
+  if (dpEl) dpEl.innerHTML = renderDPResults();
 }
 
 async function doCitizenSearch(field, value) {
@@ -1016,6 +1399,17 @@ async function doCitizenSearch(field, value) {
 
 function selectCitizen(idx) {
   const record = (idx !== null && State.citizenSearchResults?.[idx]) ? State.citizenSearchResults[idx] : null;
+
+  if (record) {
+    const ciuRecord = (State.surveys || []).find(
+      (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(record.dni).trim()
+    );
+    if (ciuRecord?.fallecido) {
+      showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+      return;
+    }
+  }
+
   const questions = PREGUNTAS[State.surveyType] || [];
   const answers = {};
   const padronFilled = {};
@@ -1166,18 +1560,36 @@ function renderInput(q, val) {
       </div>`;
 
     case 'photo': {
-      const url = _photoBlobs[q.id] || State.answers[q.id];
+      const blobs = Array.isArray(_photoBlobs[q.id]) ? _photoBlobs[q.id] : [];
+      const saved = Array.isArray(State.answers[q.id]) ? State.answers[q.id]
+        : (State.answers[q.id] ? [State.answers[q.id]] : []);
+      // Merge: use blob URL for preview when available (same index), else saved URL
+      const urls = saved.map((u, i) => blobs[i] || u);
+      const max = 5;
+      const canAdd = urls.length < max;
       return `
-        <div class="photo-wrap">
-          ${url
-            ? `<img src="${url}" class="photo-preview" alt="Foto" id="photoImg_${q.id}">`
-            : `<div class="photo-empty" id="photoEmpty_${q.id}">Sin foto adjunta</div>`}
+        <div class="photo-wrap" id="photoWrap_${q.id}">
+          ${urls.length > 0 ? `
+            <div class="photo-grid">
+              ${urls.map((url, i) => `
+                <div class="photo-thumb-wrap">
+                  <img class="photo-thumb" src="${esc(url)}" alt="Foto ${i + 1}">
+                  <button class="photo-thumb-remove" onclick="removePhoto('${q.id}',${i})">×</button>
+                </div>`).join('')}
+              ${canAdd ? `
+                <label class="photo-add-btn">
+                  <span class="photo-add-icon">📷</span>
+                  <span>Agregar</span>
+                  <input type="file" accept="image/*" capture="environment" style="display:none"
+                    onchange="onPhotoSelected(this,'${q.id}')">
+                </label>` : ''}
+            </div>` : `
+            <label class="btn btn-outline photo-btn">
+              📷 Tomar / seleccionar foto
+              <input type="file" accept="image/*" capture="environment" style="display:none"
+                onchange="onPhotoSelected(this,'${q.id}')">
+            </label>`}
           <div class="photo-status" id="photoStatus_${q.id}"></div>
-          <label class="btn btn-outline photo-btn">
-            📷 ${url ? 'Cambiar foto' : 'Tomar / seleccionar foto'}
-            <input type="file" accept="image/*" capture="environment" style="display:none"
-              onchange="onPhotoSelected(this,'${q.id}')">
-          </label>
         </div>`;
     }
 
@@ -1203,20 +1615,20 @@ async function onPhotoSelected(input, questionId) {
   const file = input.files[0];
   if (!file) return;
 
-  const imgEl    = document.getElementById(`photoImg_${questionId}`);
-  const emptyEl  = document.getElementById(`photoEmpty_${questionId}`);
-  const statusEl = document.getElementById(`photoStatus_${questionId}`);
-
-  // Mostrar preview local inmediatamente
-  const localUrl = URL.createObjectURL(file);
-  if (imgEl) {
-    imgEl.src = localUrl;
-  } else if (emptyEl) {
-    const img = document.createElement('img');
-    img.src = localUrl; img.className = 'photo-preview';
-    img.id = `photoImg_${questionId}`; img.alt = 'Foto';
-    emptyEl.replaceWith(img);
+  // Init arrays
+  if (!Array.isArray(_photoBlobs[questionId])) _photoBlobs[questionId] = [];
+  if (!Array.isArray(State.answers[questionId])) {
+    State.answers[questionId] = State.answers[questionId] ? [State.answers[questionId]] : [];
   }
+
+  // Append blob URL for immediate preview and re-render
+  const localUrl = URL.createObjectURL(file);
+  const idx = State.answers[questionId].length;
+  _photoBlobs[questionId].push(localUrl);
+  State.answers[questionId].push(localUrl);
+  render();
+
+  const statusEl = document.getElementById(`photoStatus_${questionId}`);
   if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Comprimiendo…';
 
   try {
@@ -1225,13 +1637,15 @@ async function onPhotoSelected(input, questionId) {
     const token = localStorage.getItem('severo_access_token');
     if (!token) {
       const reader = new FileReader();
-      reader.onload = (e) => { State.answers[questionId] = e.target.result; };
+      reader.onload = (e) => { State.answers[questionId][idx] = e.target.result; };
       reader.readAsDataURL(blob);
-      if (statusEl) statusEl.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
+      const st = document.getElementById(`photoStatus_${questionId}`);
+      if (st) st.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
       return;
     }
 
-    if (statusEl) statusEl.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
+    const st = document.getElementById(`photoStatus_${questionId}`);
+    if (st) st.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
     const filename = GCS.filename('problematicas');
     let gcsUrl;
     try {
@@ -1240,21 +1654,31 @@ async function onPhotoSelected(input, questionId) {
       if (err.message === '401') { await ensureFreshToken(); gcsUrl = await GCS.upload(blob, filename); }
       else throw err;
     }
-    State.answers[questionId] = gcsUrl;
-    _photoBlobs[questionId] = localUrl; // mantener blob para preview durante la sesión
-    if (statusEl) statusEl.innerHTML = '<span class="photo-ok">✓ Foto subida</span>';
+    State.answers[questionId][idx] = gcsUrl;
+    const count = State.answers[questionId].length;
+    const st2 = document.getElementById(`photoStatus_${questionId}`);
+    if (st2) st2.innerHTML = `<span class="photo-ok">✓ ${count} foto${count > 1 ? 's' : ''} subida${count > 1 ? 's' : ''}</span>`;
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
-    // Mantener el blob URL en la preview y en State hasta que se suba correctamente
-    if (statusEl) statusEl.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
+    const st = document.getElementById(`photoStatus_${questionId}`);
+    if (st) st.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
   }
+}
+
+function removePhoto(questionId, idx) {
+  if (Array.isArray(_photoBlobs[questionId])) _photoBlobs[questionId].splice(idx, 1);
+  if (Array.isArray(State.answers[questionId])) State.answers[questionId].splice(idx, 1);
+  render();
 }
 
 function surveyBack() {
   const questions = PREGUNTAS[State.surveyType] || [];
+  const personalQCount = State.surveyType === 'sociohabitacional' ? 5 : 0;
   const prev = prevVisibleIdx(State.currentQ, questions);
-  if (prev < 0) {
-    go('geo');
+  if (prev < personalQCount) {
+    const hasUserAnswers = Object.keys(State.answers || {}).some((k) => !State.padronFilled?.[k]);
+    if (hasUserAnswers && !confirm('¿Salir del relevamiento? Se perderán los datos ingresados.')) return;
+    go(State.surveyType === 'sociohabitacional' ? 'datosPersonales' : 'geo');
   } else {
     State.currentQ = prev;
     render();
@@ -1304,6 +1728,23 @@ async function doPadronLookup(dniQuestion, questions) {
 
   if (!record) return; // ciudadano no encontrado en el padrón
 
+  // Bloquear si el ciudadano está registrado como fallecido
+  let ciuRecord = (State.surveys || []).find(
+    (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === dni
+  );
+  // Si la lista en memoria está vacía (app recién abierta), consultar directamente
+  if (!ciuRecord && !(State.surveys || []).some((r) => r.type === 'ciudadano')) {
+    try {
+      const rows = await SheetsDB.load('ciudadano');
+      ciuRecord = rows.find((r) => String(r.answers?.dni).trim() === dni);
+    } catch { /* no bloquear por error de red */ }
+  }
+  if (ciuRecord?.fallecido) {
+    showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+    go('home');
+    return;
+  }
+
   // Guardar meta para el update de lat/lng al guardar
   State.padronMeta = record._meta || null;
 
@@ -1322,7 +1763,11 @@ async function doPadronLookup(dniQuestion, questions) {
 
 function renderSummary() {
   const questions = PREGUNTAS[State.surveyType] || [];
-  const fotoUrl = State.answers['foto_url'];
+  const fotoRaw = State.answers['foto_url'];
+  const photoList = Array.isArray(fotoRaw) ? fotoRaw.filter(Boolean) : (fotoRaw ? [fotoRaw] : []);
+  // Use blob URLs for preview when available
+  const blobList = Array.isArray(_photoBlobs['foto_url']) ? _photoBlobs['foto_url'] : [];
+  const previewList = photoList.map((u, i) => blobList[i] || u);
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = State.answers[q.id];
     let display = '—';
@@ -1342,7 +1787,13 @@ function renderSummary() {
         <span class="header-title">Resumen</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `<img src="${fotoUrl}" class="summary-photo" alt="Foto de la problemática">` : ''}
+        ${previewList.length > 0 ? `
+          <div class="detail-photo-grid">
+            ${previewList.map(url => `
+              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto">
+              </div>`).join('')}
+          </div>` : ''}
         <div class="summary-meta">
           <span>${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
           ${State.location ? `<a href="${Geo.mapsUrl(State.location)}" target="_blank" class="loc-link">📍 Ver en mapa</a>` : '<span>📍 Sin ubicación</span>'}
@@ -1398,10 +1849,26 @@ async function doSave() {
 
     go('done');
   } catch (err) {
-    go('summary');
-    State.toast = 'Error al guardar: ' + err.message;
-    render();
+    State.saveError = err.message;
+    go('saveError');
   }
+}
+
+function renderSaveError() {
+  const msg = State.saveError || 'Error desconocido';
+  return `
+    <div class="screen screen-center">
+      <div class="done-icon">⚠️</div>
+      <h2 style="color:var(--danger)">No se pudo guardar</h2>
+      <p class="done-sub" style="color:var(--text-secondary);padding:0 24px;text-align:center">${esc(msg)}</p>
+      <p style="font-size:.82rem;color:var(--text-secondary);padding:0 24px;text-align:center;margin-top:4px">
+        Tus respuestas no se perdieron. Podés reintentar o volver al resumen.
+      </p>
+      <div class="done-actions" style="margin-top:24px">
+        <button class="btn btn-primary btn-block" onclick="go('saving')">Reintentar</button>
+        <button class="btn btn-outline btn-block" onclick="go('summary')">Ver resumen</button>
+      </div>
+    </div>`;
 }
 
 function renderDone() {
@@ -1432,6 +1899,8 @@ function renderSurveyCard(r, idx) {
   const barrio = r.answers?.barrio
     ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';
   const estadoBadge = isProb ? renderEstadoBadge(r.estado) : '';
+  const fallecidoBadge = r.type === 'ciudadano' && r.fallecido
+    ? `<span class="fallecido-badge">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>` : '';
   return `
     <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
       <div class="card-accent"></div>
@@ -1440,6 +1909,7 @@ function renderSurveyCard(r, idx) {
           <span class="card-type-label">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
           ${barrio}
           ${estadoBadge}
+          ${fallecidoBadge}
         </div>
         <div class="card-title">${esc(title)}</div>
         ${subtitle ? `<div class="card-subtitle">${esc(subtitle)}</div>` : ''}
@@ -1562,31 +2032,13 @@ function renderEstadoBadge(estado) {
   return `<span class="estado-badge estado-pendiente">◦ Pendiente</span>`;
 }
 
-async function loadDetailPhoto(url) {
-  if (!url) return;
-  const imgEl = document.getElementById('detailPhoto');
-  if (!imgEl) return;
-  const token = localStorage.getItem('severo_access_token');
-  try {
-    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
-    if (!res.ok) throw new Error(`${res.status}`);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    imgEl.onload = () => URL.revokeObjectURL(blobUrl);
-    imgEl.src = blobUrl;
-    imgEl.style.display = '';
-  } catch (_) {
-    imgEl.remove();
-    const fallback = document.getElementById('detailPhotoFallback');
-    if (fallback) fallback.style.display = '';
-  }
-}
 
 function renderDetail() {
   const r = State.detailRecord;
   if (!r) { go('list'); return ''; }
   const questions = PREGUNTAS[r.type] || [];
-  const fotoUrl = r.answers?.foto_url;
+  const fotoRaw = r.answers?.foto_url;
+  const photoList = Array.isArray(fotoRaw) ? fotoRaw.filter(Boolean) : (fotoRaw ? [fotoRaw] : []);
 
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = r.answers?.[q.id];
@@ -1607,11 +2059,12 @@ function renderDetail() {
         <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
       </header>
       <div class="summary-body">
-        ${fotoUrl ? `
-          <img id="detailPhoto" src="" class="detail-photo" alt="Foto" style="display:none"
-            onclick="this.classList.toggle('detail-photo-expand')">
-          <div id="detailPhotoFallback" class="detail-photo-fallback" style="display:none">
-            <a href="${esc(fotoUrl)}" target="_blank" rel="noopener">Ver foto adjunta ↗</a>
+        ${photoList.length > 0 ? `
+          <div class="detail-photo-grid">
+            ${photoList.map(url => `
+              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto">
+              </div>`).join('')}
           </div>` : ''}
         <div class="summary-meta">
           <span>${formatDate(r.savedAt)}</span>
@@ -1629,6 +2082,21 @@ function renderDetail() {
             <button class="btn btn-estado btn-estado-ok ${r.estado === 'resuelto' ? 'btn-estado-active' : ''}"
               onclick="updateEstado('${r.id}', 'resuelto')">✓ Resuelto</button>
           </div>
+        </div>` : ''}
+        ${r.type === 'ciudadano' ? `
+        <div class="estado-section">
+          <div class="estado-section-title">Estado vital</div>
+          ${r.fallecido ? `
+            <div class="fallecido-active-row">
+              <span class="fallecido-badge fallecido-badge-lg">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>
+              <select class="input fallecido-anio-select" onchange="setFallecido('${r.id}', this.value)">
+                <option value="FALLECIDO" ${r.fallecido === 'FALLECIDO' ? 'selected' : ''}>Sin año especificado</option>
+                ${Array.from({length: 2026 - 1999}, (_, i) => 2026 - i).map(y =>
+                  `<option value="${y}" ${r.fallecido == y ? 'selected' : ''}>${y}</option>`).join('')}
+              </select>
+              <button class="btn btn-ghost btn-fallecido-quitar" onclick="setFallecido('${r.id}', '')">Quitar</button>
+            </div>` : `
+            <button class="btn btn-fallecido" onclick="setFallecido('${r.id}', 'FALLECIDO')">† Registrar como fallecido</button>`}
         </div>` : ''}
       </div>
     </div>`;
@@ -1648,6 +2116,21 @@ async function updateEstado(recordId, estado) {
     showToast(next === 'resuelto' ? '✓ Marcado como resuelto' : next === 'persiste' ? 'Marcado como persiste' : 'Estado reiniciado');
   } catch (err) {
     showToast('Error al guardar estado: ' + err.message);
+  }
+}
+
+async function setFallecido(recordId, value) {
+  const idx = (State.surveys || []).findIndex((r) => String(r.id) === String(recordId));
+  if (idx < 0) return;
+  State.surveys[idx] = { ...State.surveys[idx], fallecido: value };
+  State.detailRecord = { ...State.detailRecord, fallecido: value };
+  render();
+  try {
+    await SheetsDB.update('ciudadano', recordId, { fallecido: value });
+    if (value) showToast(value === 'FALLECIDO' ? '† Registrado como fallecido' : `† Fallecido en ${value}`);
+    else showToast('Marca de fallecido eliminada');
+  } catch (err) {
+    showToast('Error al guardar: ' + err.message);
   }
 }
 

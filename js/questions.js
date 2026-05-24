@@ -45,6 +45,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
     {
@@ -106,6 +108,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
     {
@@ -218,6 +222,8 @@ const PREGUNTAS = {
         { value: 'Santo Domingo', label: 'Santo Domingo' },
         { value: 'Villa Vannelli',label: 'Villa Vannelli' },
         { value: 'Villa Italia',  label: 'Villa Italia' },
+        { value: 'Segurola',      label: 'Segurola' },
+        { value: 'Monsalvo',      label: 'Monsalvo' },
       ],
     },
 
@@ -485,6 +491,13 @@ const PREGUNTAS = {
       placeholder: 'Respuesta libre…',
     },
     {
+      id: 'politicas_municipio',
+      label: '¿Qué políticas/programas del municipio considera importantes?',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Describa libremente…',
+    },
+    {
       id: 'voto',
       label: '¿Nos votaría?',
       type: 'radio',
@@ -494,6 +507,14 @@ const PREGUNTAS = {
         { value: 'NO',      label: 'No' },
         { value: 'DUDOSO',  label: 'Dudoso' },
       ],
+    },
+    {
+      id: 'foto_frente',
+      block: 'Foto de la vivienda',
+      label: 'Foto del frente de la vivienda',
+      type: 'photo',
+      required: false,
+      hint: 'Tomá una foto del frente de la vivienda encuestada.',
     },
   ],
 };
