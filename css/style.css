@@ -1152,14 +1152,14 @@ html, body {
 }
 .photo-thumb-remove {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 24px;
-  height: 24px;
+  top: -6px;
+  right: -6px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(0,0,0,.65);
+  background: rgba(0,0,0,.75);
   color: #fff;
-  border: none;
+  border: 2px solid rgba(255,255,255,.6);
   cursor: pointer;
   font-size: 1rem;
   display: flex;
@@ -1168,6 +1168,9 @@ html, body {
   line-height: 1;
   padding: 0;
   z-index: 1;
+  /* Extend tap area without changing visual size */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .photo-add-btn {
   aspect-ratio: 1;

@@ -160,6 +160,7 @@ function render() {
     survey:          renderSurvey,
     summary:         renderSummary,
     saving:          renderSaving,
+    saveError:       renderSaveError,
     done:            renderDone,
     list:            renderList,
     detail:          renderDetail,
@@ -1284,6 +1285,17 @@ async function doCitizenSearch(field, value) {
 
 function selectCitizen(idx) {
   const record = (idx !== null && State.citizenSearchResults?.[idx]) ? State.citizenSearchResults[idx] : null;
+
+  if (record) {
+    const ciuRecord = (State.surveys || []).find(
+      (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(record.dni).trim()
+    );
+    if (ciuRecord?.fallecido) {
+      showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+      return;
+    }
+  }
+
   const questions = PREGUNTAS[State.surveyType] || [];
   const answers = {};
   const padronFilled = {};
@@ -1550,6 +1562,8 @@ function surveyBack() {
   const personalQCount = State.surveyType === 'sociohabitacional' ? 5 : 0;
   const prev = prevVisibleIdx(State.currentQ, questions);
   if (prev < personalQCount) {
+    const hasUserAnswers = Object.keys(State.answers || {}).some((k) => !State.padronFilled?.[k]);
+    if (hasUserAnswers && !confirm('¿Salir del relevamiento? Se perderán los datos ingresados.')) return;
     go(State.surveyType === 'sociohabitacional' ? 'datosPersonales' : 'geo');
   } else {
     State.currentQ = prev;
@@ -1601,9 +1615,16 @@ async function doPadronLookup(dniQuestion, questions) {
   if (!record) return; // ciudadano no encontrado en el padrón
 
   // Bloquear si el ciudadano está registrado como fallecido
-  const ciuRecord = (State.surveys || []).find(
+  let ciuRecord = (State.surveys || []).find(
     (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === dni
   );
+  // Si la lista en memoria está vacía (app recién abierta), consultar directamente
+  if (!ciuRecord && !(State.surveys || []).some((r) => r.type === 'ciudadano')) {
+    try {
+      const rows = await SheetsDB.load('ciudadano');
+      ciuRecord = rows.find((r) => String(r.answers?.dni).trim() === dni);
+    } catch { /* no bloquear por error de red */ }
+  }
   if (ciuRecord?.fallecido) {
     showToast('† Ciudadano registrado como fallecido — no se puede relevar');
     go('home');
@@ -1714,10 +1735,26 @@ async function doSave() {
 
     go('done');
   } catch (err) {
-    go('summary');
-    State.toast = 'Error al guardar: ' + err.message;
-    render();
+    State.saveError = err.message;
+    go('saveError');
   }
+}
+
+function renderSaveError() {
+  const msg = State.saveError || 'Error desconocido';
+  return `
+    <div class="screen screen-center">
+      <div class="done-icon">⚠️</div>
+      <h2 style="color:var(--danger)">No se pudo guardar</h2>
+      <p class="done-sub" style="color:var(--text-secondary);padding:0 24px;text-align:center">${esc(msg)}</p>
+      <p style="font-size:.82rem;color:var(--text-secondary);padding:0 24px;text-align:center;margin-top:4px">
+        Tus respuestas no se perdieron. Podés reintentar o volver al resumen.
+      </p>
+      <div class="done-actions" style="margin-top:24px">
+        <button class="btn btn-primary btn-block" onclick="go('saving')">Reintentar</button>
+        <button class="btn btn-outline btn-block" onclick="go('summary')">Ver resumen</button>
+      </div>
+    </div>`;
 }
 
 function renderDone() {
