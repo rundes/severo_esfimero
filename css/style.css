@@ -1,9 +1,10 @@
 /* ── Variables ──────────────────────────────────────────────────────────────── */
 :root {
-  --primary:      #1565C0;
-  --primary-dark: #0D47A1;
+  --primary:      #0D47A1;
+  --primary-dark: #083B87;
   --primary-light:#E3F2FD;
   --accent:       #00897B;
+  --gold:         #FFC845;
   --bg:           #F4F6F9;
   --surface:      #FFFFFF;
   --border:       #DDE1E7;
@@ -80,11 +81,13 @@ html, body {
 }
 
 .header-logo {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: brightness(0) invert(1);
+  border-radius: 6px;
+  /* El ícono SVG tiene fondo #0D47A1 que se funde con el header;
+     solo se ven los nodos blancos y el punto dorado */
 }
 
 .btn-icon {
@@ -192,15 +195,16 @@ html, body {
 }
 
 .logo-img {
-  width: 100px;
-  height: 100px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
+  margin-bottom: 20px;
+  border-radius: 26px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 3px rgba(255,255,255,.15);
 }
 
 .logo-title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -.5px;
 }
@@ -208,6 +212,10 @@ html, body {
 .logo-sub {
   opacity: .8;
   margin-top: 4px;
+  font-size: .9rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .auth-card {
@@ -1427,7 +1435,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  background: linear-gradient(135deg, #1255A8 0%, #083B87 100%);
   border-radius: var(--radius);
   padding: 14px 16px;
   margin: 0 0 16px;
