@@ -379,7 +379,7 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <img src="icons/favicon.svg" class="header-logo" alt="">
+        <img src="icons/icon-header.svg" class="header-logo" alt="">
         <span class="header-title">Proyecto Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
@@ -409,6 +409,11 @@ function renderHome() {
         <div id="homeSearchResults">${renderHomeSearchResults()}</div>
       </div>
       ${CONFIG.USE_MOCK ? `<p class="hint center">Modo prototipo — datos en localStorage</p>` : ''}
+      <footer class="app-footer">
+        <img src="icons/icon-header.svg" class="footer-logo" alt="">
+        <span>Proyecto Severo — Relevamientos</span>
+        <span class="footer-version">v2.0</span>
+      </footer>
     </div>`;
 }
 

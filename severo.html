@@ -99,12 +99,13 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: var(--primary);
+  background: linear-gradient(90deg, #083B87 0%, #0D47A1 60%, #1255A8 100%);
   color: #fff;
   position: sticky;
   top: 0;
   z-index: 10;
   min-height: 56px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
 }
 
 .header-title {
@@ -201,7 +202,7 @@ html, body {
 
 /* ── Auth screen ────────────────────────────────────────────────────────────── */
 .screen-auth {
-  background: var(--primary);
+  background: linear-gradient(160deg, #0D47A1 0%, #083B87 100%);
   justify-content: center;
   padding: 32px 24px;
   gap: 0;
@@ -1301,6 +1302,11 @@ html, body {
 .pwa-update-body { font-size: .9rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 24px; }
 .pwa-update-btn { font-size: 1rem; padding: 14px; }
 .pwa-update-hint { margin-top: 12px; font-size: .75rem; color: var(--text-secondary); opacity: .7; }
+
+/* ── App footer ───────────────────────────────────────────────────────────── */
+.app-footer { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px 16px 28px; margin-top: auto; color: var(--text-2); font-size: .78rem; opacity: .65; border-top: 1px solid var(--border); }
+.footer-logo { width: 18px; height: 18px; opacity: .5; filter: invert(30%) sepia(50%) saturate(600%) hue-rotate(190deg) brightness(60%); }
+.footer-version { background: var(--primary); color: #fff; font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: .03em; opacity: 1; }
 
   </style>
 </head>
@@ -2983,7 +2989,7 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <img src="icons/favicon.svg" class="header-logo" alt="">
+        <img src="icons/icon-header.svg" class="header-logo" alt="">
         <span class="header-title">Proyecto Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
@@ -3013,6 +3019,11 @@ function renderHome() {
         <div id="homeSearchResults">${renderHomeSearchResults()}</div>
       </div>
       ${!SheetsDB._hasToken() ? `<p class="hint center">Login de prueba — surveys en localStorage</p>` : ''}
+      <footer class="app-footer">
+        <img src="icons/icon-header.svg" class="footer-logo" alt="">
+        <span>Proyecto Severo — Relevamientos</span>
+        <span class="footer-version">v2.0</span>
+      </footer>
     </div>`;
 }
 
