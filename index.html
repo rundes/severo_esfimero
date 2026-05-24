@@ -61,9 +61,45 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <script>
+    // ── PWA install prompt ───────────────────────────────────────────────────
+    window._deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window._deferredInstallPrompt = e;
+      if (window._pwaRenderInstallCard) window._pwaRenderInstallCard();
+    });
+    window.addEventListener('appinstalled', () => {
+      window._deferredInstallPrompt = null;
+      localStorage.setItem('pwa_installed', '1');
+      if (window._pwaHideInstallCard) window._pwaHideInstallCard();
+    });
+
+    // ── Service Worker + update detection ───────────────────────────────────
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+
+          function onNewWorkerWaiting(worker) {
+            if (window._pwaShowUpdateModal) window._pwaShowUpdateModal(worker);
+          }
+
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            onNewWorkerWaiting(reg.waiting);
+          }
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                onNewWorkerWaiting(nw);
+              }
+            });
+          });
+
+        }).catch(() => {});
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
       });
     }
   </script>

@@ -175,6 +175,120 @@ function render() {
   if (State.toast) showToast(State.toast);
 }
 
+// ── PWA: Install card + Update modal ────────────────────────────────────────
+
+function _pwaIsStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function _pwaIsIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function _pwaShouldShowInstall() {
+  if (_pwaIsStandalone()) return false;
+  if (localStorage.getItem('pwa_installed')) return false;
+  const dismissed = localStorage.getItem('pwa_install_dismissed_at');
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  if (count >= 2) return false;
+  if (dismissed) {
+    const daysSince = (Date.now() - Number(dismissed)) / 86_400_000;
+    if (daysSince < 3) return false;
+  }
+  return true;
+}
+
+function _pwaInstallCard() {
+  if (!_pwaShouldShowInstall()) return '';
+  if (_pwaIsIOS()) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Tocá <strong>Compartir</strong> (⬆) y luego<br>"Agregar a pantalla de inicio"</span>
+        </div>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  if (window._deferredInstallPrompt) {
+    return `
+      <div class="pwa-install-card" id="pwaInstallCard">
+        <div class="pwa-install-icon">📲</div>
+        <div class="pwa-install-text">
+          <strong>Instalá Proyecto Severo</strong>
+          <span>Accedé más rápido, funciona sin conexión</span>
+        </div>
+        <button class="btn btn-primary pwa-install-btn" onclick="pwaInstallNow()">Instalar</button>
+        <button class="pwa-install-dismiss" onclick="pwaInstallDismiss()" aria-label="Cerrar">×</button>
+      </div>`;
+  }
+  return '';
+}
+
+async function pwaInstallNow() {
+  const prompt = window._deferredInstallPrompt;
+  if (!prompt) return;
+  prompt.prompt();
+  const { outcome } = await prompt.userChoice;
+  window._deferredInstallPrompt = null;
+  if (outcome === 'accepted') {
+    localStorage.setItem('pwa_installed', '1');
+  } else {
+    pwaInstallDismiss();
+  }
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+
+function pwaInstallDismiss() {
+  localStorage.setItem('pwa_install_dismissed_at', String(Date.now()));
+  const count = Number(localStorage.getItem('pwa_install_dismiss_count') || 0);
+  localStorage.setItem('pwa_install_dismiss_count', String(count + 1));
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+}
+
+// Hooks llamados desde index.html cuando llegan los eventos del navegador
+window._pwaRenderInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (!card && _pwaShouldShowInstall() && !_pwaIsIOS()) {
+    const home = document.querySelector('.home-actions');
+    if (home) home.insertAdjacentHTML('beforebegin', _pwaInstallCard());
+  }
+};
+window._pwaHideInstallCard = () => {
+  const card = document.getElementById('pwaInstallCard');
+  if (card) card.remove();
+};
+
+let _pwaWaitingWorker = null;
+window._pwaShowUpdateModal = (worker) => {
+  _pwaWaitingWorker = worker;
+  if (document.getElementById('pwaUpdateModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'pwaUpdateModal';
+  modal.className = 'pwa-update-modal';
+  modal.innerHTML = `
+    <div class="pwa-update-box">
+      <div class="pwa-update-icon">🔄</div>
+      <h2 class="pwa-update-title">Nueva versión disponible</h2>
+      <p class="pwa-update-body">
+        Se publicó una actualización importante.<br>
+        Actualizar evita errores al sincronizar tus encuestas.
+      </p>
+      <button class="btn btn-primary btn-block pwa-update-btn" id="pwaUpdateBtn">
+        Actualizar ahora
+      </button>
+      <p class="pwa-update-hint">La app se recargará automáticamente.</p>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('pwaUpdateBtn').addEventListener('click', () => {
+    if (_pwaWaitingWorker) _pwaWaitingWorker.postMessage({ type: 'SKIP_WAITING' });
+  });
+};
+
 // ── Utilidades UI ────────────────────────────────────────────────────────────
 
 function avatar(user) {
@@ -277,6 +391,7 @@ function renderHome() {
           <div class="user-email">${u?.email || ''}</div>
         </div>
       </div>
+      ${_pwaInstallCard()}
       <div class="home-actions">
         <button class="btn btn-primary btn-block" onclick="startNewSurvey()">
           + Nuevo relevamiento
