@@ -9,7 +9,7 @@
   <meta name="application-name" content="Proyecto Severo">
 
   <!-- PWA -->
-  <meta name="theme-color" content="#1565C0">
+  <meta name="theme-color" content="#0D47A1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -38,10 +38,11 @@
   <style>
 /* ── Variables ──────────────────────────────────────────────────────────────── */
 :root {
-  --primary:      #1565C0;
-  --primary-dark: #0D47A1;
+  --primary:      #0D47A1;
+  --primary-dark: #083B87;
   --primary-light:#E3F2FD;
   --accent:       #00897B;
+  --gold:         #FFC845;
   --bg:           #F4F6F9;
   --surface:      #FFFFFF;
   --border:       #DDE1E7;
@@ -118,11 +119,11 @@ html, body {
 }
 
 .header-logo {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: brightness(0) invert(1);
+  border-radius: 6px;
 }
 
 .btn-icon {
@@ -230,15 +231,16 @@ html, body {
 }
 
 .logo-img {
-  width: 100px;
-  height: 100px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,.25));
+  margin-bottom: 20px;
+  border-radius: 26px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 3px rgba(255,255,255,.15);
 }
 
 .logo-title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -.5px;
 }
@@ -246,6 +248,10 @@ html, body {
 .logo-sub {
   opacity: .8;
   margin-top: 4px;
+  font-size: .9rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .auth-card {
@@ -1275,7 +1281,7 @@ html, body {
 }
 
 /* ── PWA Install card ──────────────────────────────────────────────────────── */
-.pwa-install-card { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 16px; position: relative; box-shadow: 0 4px 16px rgba(13,71,161,.35); animation: slideDown .25s ease; }
+.pwa-install-card { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #1255A8 0%, #083B87 100%); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 16px; position: relative; box-shadow: 0 4px 16px rgba(13,71,161,.35); animation: slideDown .25s ease; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .pwa-install-icon { font-size: 1.8rem; flex-shrink: 0; line-height: 1; }
 .pwa-install-text { flex: 1; display: flex; flex-direction: column; gap: 3px; color: #fff; }
@@ -2948,9 +2954,8 @@ function renderAuth() {
   return `
     <div class="screen screen-auth">
       <div class="auth-hero">
-        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png"
-          class="logo-img" alt="Severo">
-        <h1 class="logo-title">Severo</h1>
+        <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
+        <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>
       <div class="auth-card">
@@ -2978,8 +2983,8 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png" class="header-logo" alt="">
-        <span class="header-title">Severo</span>
+        <img src="icons/favicon.svg" class="header-logo" alt="">
+        <span class="header-title">Proyecto Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
       <div class="home-user">

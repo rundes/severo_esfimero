@@ -349,9 +349,8 @@ function renderAuth() {
   return `
     <div class="screen screen-auth">
       <div class="auth-hero">
-        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png"
-          class="logo-img" alt="Severo">
-        <h1 class="logo-title">Severo</h1>
+        <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
+        <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
       </div>
       <div class="auth-card">
@@ -380,8 +379,8 @@ function renderHome() {
   return `
     <div class="screen">
       <header class="app-header">
-        <img src="https://cpelectoral.org/wp-content/uploads/2024/09/escarapela-05-768x775.png" class="header-logo" alt="">
-        <span class="header-title">Severo</span>
+        <img src="icons/favicon.svg" class="header-logo" alt="">
+        <span class="header-title">Proyecto Severo</span>
         <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
       </header>
       <div class="home-user">
