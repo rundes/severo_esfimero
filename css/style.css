@@ -55,6 +55,11 @@ html, body {
   padding: 32px;
 }
 
+/* ── Home screen ────────────────────────────────────────────────────────────── */
+.screen-home {
+  background: linear-gradient(180deg, #E3EEFF 0px, var(--bg) 180px);
+}
+
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 .app-header {
   display: flex;
@@ -217,6 +222,18 @@ html, body {
   letter-spacing: .05em;
   text-transform: uppercase;
   font-weight: 500;
+}
+
+.auth-version {
+  margin-top: 14px;
+  background: rgba(255,255,255,.18);
+  color: rgba(255,255,255,.9);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.25);
 }
 
 .auth-card {
