@@ -352,6 +352,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
+        <span class="auth-version">v2.0</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -377,7 +378,7 @@ function mockLogin() {
 function renderHome() {
   const u = State.user;
   return `
-    <div class="screen">
+    <div class="screen screen-home">
       <header class="app-header">
         <img src="icons/icon-header.svg" class="header-logo" alt="">
         <span class="header-title">Proyecto Severo</span>
