@@ -286,16 +286,10 @@ const SheetsDB = {
 const Padron = {
   _cache: {},
 
-  _apiKeyHeaders() {
-    return {};  // API key goes in query param, no auth header needed
-  },
-
-  _apiKeyParam() {
-    return CONFIG.GOOGLE_API_KEY ? `?key=${CONFIG.GOOGLE_API_KEY}` : '';
-  },
-
-  _hasApiKey() {
-    return !!CONFIG.GOOGLE_API_KEY;
+  // El padrón se lee con el token OAuth del relevador (la planilla está
+  // compartida con su cuenta). Ya no se usa API key ni acceso público.
+  _hasToken() {
+    return !!localStorage.getItem('severo_access_token');
   },
 
   searchByDNI(dni) {
@@ -303,12 +297,12 @@ const Padron = {
   },
 
   async searchByDNIAsync(dni) {
-    if (!this._hasApiKey()) return this._mockSearch(dni);
+    if (!this._hasToken()) return this._mockSearch(dni);
     return this._apiSearch(dni);
   },
 
   async searchByApellidoAsync(query) {
-    if (!this._hasApiKey()) return this._mockSearchByApellido(query);
+    if (!this._hasToken()) return this._mockSearchByApellido(query);
     return this._apiSearchByApellido(query);
   },
 
@@ -379,9 +373,13 @@ const Padron = {
 
   async _fetchSheet(sheetName) {
     if (this._cache[sheetName]) return this._cache[sheetName];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}${this._apiKeyParam()}`;
-    console.log('[Padron] GET', sheetName, url.replace(/key=[^&]+/, 'key=…'));
-    const res = await fetch(url);
+    const token = localStorage.getItem('severo_access_token');
+    if (!token) {
+      throw new Error('Sesión requerida para leer el padrón. Iniciá sesión con Google.');
+    }
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}`;
+    console.log('[Padron] GET', sheetName);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     console.log('[Padron] status', res.status, sheetName);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
