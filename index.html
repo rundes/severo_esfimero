@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <title>Proyecto Severo — Relevamientos</title>
   <meta name="description" content="Sistema de relevamientos ciudadanos del Proyecto Severo">
@@ -37,7 +37,9 @@
   <meta name="twitter:description" content="Sistema de relevamientos ciudadanos del Proyecto Severo">
   <meta name="twitter:image" content="https://rundes.github.io/severo_esfimero/icons/icon-512.png">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <!-- Leaflet CSS is only needed on the geo screen: load it off the critical path -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

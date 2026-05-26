@@ -64,7 +64,7 @@ function ensureFreshToken() {
       if (_silentRefreshResolve) {
         _silentRefreshResolve = null;
         _silentRefreshReject  = null;
-        reject(new Error('Timeout al renovar sesión — volvé a ingresar'));
+        reject(new Error('Timeout al renovar sesión. Volvé a ingresar'));
       }
     }, 15000);
   });
@@ -365,7 +365,7 @@ function renderAuth() {
         <button class="btn btn-ghost btn-block" onclick="mockLogin()" style="font-size:.9rem;border:1px solid var(--border)">
           Entrar como operador de prueba
         </button>
-        ${CONFIG.USE_MOCK ? `<p class="hint" style="margin-top:0">Modo prototipo — surveys en localStorage · padrón desde Google Sheets</p>` : ''}
+        ${CONFIG.USE_MOCK ? `<p class="hint" style="margin-top:0">Modo prototipo: surveys en localStorage · padrón desde Google Sheets</p>` : ''}
       </div>
     </div>`;
 }
@@ -381,8 +381,8 @@ function renderHome() {
     <div class="screen screen-home">
       <header class="app-header">
         <img src="icons/icon-header.svg" class="header-logo" alt="">
-        <span class="header-title">Proyecto Severo</span>
-        <button class="btn-icon" onclick="logout()" title="Salir">⏏</button>
+        <h1 class="header-title">Proyecto Severo</h1>
+        <button class="btn-icon" onclick="logout()" title="Salir" aria-label="Cerrar sesión">⏏</button>
       </header>
       <div class="home-user">
         ${avatar(u)}
@@ -409,7 +409,7 @@ function renderHome() {
           autocomplete="off">
         <div id="homeSearchResults">${renderHomeSearchResults()}</div>
       </div>
-      ${CONFIG.USE_MOCK ? `<p class="hint center">Modo prototipo — datos en localStorage</p>` : ''}
+      ${CONFIG.USE_MOCK ? `<p class="hint center">Modo prototipo: datos en localStorage</p>` : ''}
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
@@ -484,7 +484,7 @@ function renderHomeSearchResults() {
   }
   return `<div class="citizen-results">
     ${results.map((r, i) => `
-      <div class="citizen-result" onclick="openPadronDetail(${i})">
+      <div class="citizen-result" role="button" tabindex="0" onclick="openPadronDetail(${i})">
         <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
         <div class="citizen-result-info">DNI ${esc(r.dni)} · ${esc(r.domicilio) || 'Sin domicilio'}</div>
       </div>`).join('')}
@@ -603,7 +603,7 @@ function renderFamiliaSection() {
                 <div class="familia-member-name">${esc(m.apellido) || '—'}</div>
                 <div class="familia-member-sub">DNI ${esc(m.dni)}${m.domicilio ? ' · ' + esc(m.domicilio) : ''}</div>
               </div>
-              <button class="btn-icon btn-remove" onclick="removeFamiliaMember('${esc(r.dni)}',${i})" title="Quitar">✕</button>
+              <button class="btn-icon btn-remove" onclick="removeFamiliaMember('${esc(r.dni)}',${i})" title="Quitar" aria-label="Quitar">✕</button>
             </div>`).join('')}
         </div>`
       : '<p class="hint" style="text-align:left;padding:4px 0 8px;color:var(--text-2)">Sin miembros registrados</p>'}
@@ -719,8 +719,8 @@ function renderPadronDetail() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Perfil del ciudadano</span>
+        <button class="btn-icon" onclick="go('home')" aria-label="Volver">←</button>
+        <h1 class="header-title">Perfil del ciudadano</h1>
       </header>
       <div class="padron-detail-body">
 
@@ -825,7 +825,7 @@ function renderPadronDetail() {
 
         <div class="padron-actions">
           ${State.padronCiudadanoRecord?.fallecido
-            ? `<div class="fallecido-block-msg">† Este ciudadano figura como fallecido — no es posible iniciar un relevamiento.</div>`
+            ? `<div class="fallecido-block-msg">† Este ciudadano figura como fallecido: no es posible iniciar un relevamiento.</div>`
             : `<button class="btn btn-primary btn-block" onclick="startSurveyFromPadron()">+ Nuevo relevamiento</button>`}
         </div>
 
@@ -878,8 +878,8 @@ function renderGeo() {
   return `
     <div class="screen screen-geo">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('${backTarget}')">←</button>
-        <span class="header-title">📍 ${title}</span>
+        <button class="btn-icon" onclick="go('${backTarget}')" aria-label="Volver">←</button>
+        <h1 class="header-title">📍 ${title}</h1>
       </header>
       <div class="geo-search-row">
         <input type="text" class="input geo-search-input" id="geoSearchInput"
@@ -973,7 +973,7 @@ async function startGeoCapture() {
   if (State.padronLocation) {
     spinnerEl.style.display = 'none';
     statusEl.textContent = State.padronDomicilio
-      ? 'Domicilio del padrón — arrastrá el pin para actualizar'
+      ? 'Domicilio del padrón. Arrastrá el pin para actualizar'
       : 'Arrastrá el pin o tocá el mapa para ajustar';
     initMap(State.padronLocation.lat, State.padronLocation.lng);
     return;
@@ -986,7 +986,7 @@ async function startGeoCapture() {
     initMap(loc.lat, loc.lng);
   } catch (err) {
     spinnerEl.style.display = 'none';
-    statusEl.textContent = `${err.message} — ajustá el pin manualmente`;
+    statusEl.textContent = `${err.message}. Ajustá el pin manualmente`;
     initMap(DEFAULT.lat, DEFAULT.lng);
   }
 }
@@ -1052,15 +1052,15 @@ function renderTypeSelect() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Tipo de relevamiento</span>
+        <button class="btn-icon" onclick="go('home')" aria-label="Volver">←</button>
+        <h1 class="header-title">Tipo de relevamiento</h1>
       </header>
       <div class="type-loc">📍 ${locText}</div>
       <div class="type-cards">
         <button class="type-card" onclick="selectType('sociohabitacional')">
           <div class="type-card-icon">🏠</div>
           <div class="type-card-title">Encuesta socio-habitacional</div>
-          <div class="type-card-desc">Maipú 2026 — vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
+          <div class="type-card-desc">Maipú 2026: vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
         </button>
         <button class="type-card" onclick="selectType('ciudadano')">
           <div class="type-card-icon">🧑</div>
@@ -1124,8 +1124,8 @@ function renderDatosPersonales() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('typeSelect')">←</button>
-        <span class="header-title">🏠 Socio-habitacional</span>
+        <button class="btn-icon" onclick="go('typeSelect')" aria-label="Volver">←</button>
+        <h1 class="header-title">🏠 Socio-habitacional</h1>
         <span class="header-count">1/3</span>
       </header>
       <div class="block-header">Datos personales</div>
@@ -1133,16 +1133,16 @@ function renderDatosPersonales() {
         <div class="dp-search-section">
           <div class="dp-section-title">Buscar en el padrón</div>
           <div class="search-group">
-            <label class="question-label">Apellido y nombre</label>
+            <label class="question-label" for="dpSearchApellido">Apellido y nombre</label>
             <input type="text" class="input" id="dpSearchApellido"
               placeholder="Ingresá las primeras 4 letras…"
               value="${esc(State.citizenSearchQuery || '')}"
               oninput="onDPSearchInput('apellido', this.value)"
               autocomplete="off">
           </div>
-          <div class="search-divider">— o por número de documento —</div>
+          <div class="search-divider">o por número de documento</div>
           <div class="search-group">
-            <label class="question-label">DNI</label>
+            <label class="question-label" for="dpSearchDNI">DNI</label>
             <input type="text" inputmode="numeric" class="input" id="dpSearchDNI"
               placeholder="Número de documento"
               value="${esc(State.citizenDNIQuery || '')}"
@@ -1214,7 +1214,7 @@ function renderDPResults() {
   }
   return `<div class="citizen-results">
     ${results.map((r, i) => `
-      <div class="citizen-result" onclick="selectDPCitizen(${i})">
+      <div class="citizen-result" role="button" tabindex="0" onclick="selectDPCitizen(${i})">
         <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
         <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
       </div>`).join('')}
@@ -1295,21 +1295,21 @@ function renderCitizenSearch() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('typeSelect')">←</button>
-        <span class="header-title">🧑 Buscar en el padrón</span>
+        <button class="btn-icon" onclick="go('typeSelect')" aria-label="Volver">←</button>
+        <h1 class="header-title">🧑 Buscar en el padrón</h1>
       </header>
       <div class="survey-body">
         <div class="search-group">
-          <label class="question-label">Apellido y nombre</label>
+          <label class="question-label" for="searchApellido">Apellido y nombre</label>
           <input type="text" class="input" id="searchApellido"
             placeholder="Ingresá las primeras 4 letras…"
             value="${State.citizenSearchQuery || ''}"
             oninput="onCitizenSearchInput('apellido', this.value)"
             autocomplete="off">
         </div>
-        <div class="search-divider">— o por número de documento —</div>
+        <div class="search-divider">o por número de documento</div>
         <div class="search-group">
-          <label class="question-label">DNI</label>
+          <label class="question-label" for="searchDNI">DNI</label>
           <input type="text" inputmode="numeric" class="input" id="searchDNI"
             placeholder="Número de documento"
             value="${State.citizenDNIQuery || ''}"
@@ -1338,7 +1338,7 @@ function renderCitizenResults() {
   }
   return `<div class="citizen-results">
     ${results.map((r, i) => `
-      <div class="citizen-result" onclick="selectCitizen(${i})">
+      <div class="citizen-result" role="button" tabindex="0" onclick="selectCitizen(${i})">
         <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
         <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
       </div>`).join('')}
@@ -1411,7 +1411,7 @@ function selectCitizen(idx) {
       (r) => r.type === 'ciudadano' && String(r.answers?.dni).trim() === String(record.dni).trim()
     );
     if (ciuRecord?.fallecido) {
-      showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+      showToast('† Ciudadano registrado como fallecido: no se puede relevar');
       return;
     }
   }
@@ -1482,14 +1482,14 @@ function renderSurvey() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="surveyBack()">←</button>
-        <span class="header-title">${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</span>
+        <button class="btn-icon" onclick="surveyBack()" aria-label="Volver">←</button>
+        <h1 class="header-title">${typeIcon(State.surveyType)} ${typeLabel(State.surveyType)}</h1>
         <span class="header-count">${visPos}/${visTotal}</span>
       </header>
-      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="transform:scaleX(${(progress || 0) / 100})"></div></div>
       ${blockHeader}
       <div class="survey-body">
-        <label class="question-label">
+        <label class="question-label" for="q_${q.id}">
           ${q.label}
           ${q.required ? '<span class="required">*</span>' : ''}
           ${(q.padronField || q.padronKey) && State.padronFilled[q.id] ? '<span class="padron-badge">padrón</span>' : ''}
@@ -1579,7 +1579,7 @@ function renderInput(q, val) {
             <div class="photo-grid">
               ${urls.map((url, i) => `
                 <div class="photo-thumb-wrap">
-                  <img class="photo-thumb" src="${esc(url)}" alt="Foto ${i + 1}">
+                  <img class="photo-thumb" loading="lazy" src="${esc(url)}" alt="Foto ${i + 1}">
                   <button class="photo-thumb-remove" onclick="removePhoto('${q.id}',${i})">×</button>
                 </div>`).join('')}
               ${canAdd ? `
@@ -1646,7 +1646,7 @@ async function onPhotoSelected(input, questionId) {
       reader.onload = (e) => { State.answers[questionId][idx] = e.target.result; };
       reader.readAsDataURL(blob);
       const st = document.getElementById(`photoStatus_${questionId}`);
-      if (st) st.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google — foto guardada localmente</span>';
+      if (st) st.innerHTML = '<span class="photo-warn">⚠ Sin sesión Google: foto guardada localmente</span>';
       return;
     }
 
@@ -1667,7 +1667,7 @@ async function onPhotoSelected(input, questionId) {
   } catch (err) {
     console.error('[GCS] upload error:', err.message, err);
     const st = document.getElementById(`photoStatus_${questionId}`);
-    if (st) st.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'} — reintentá al finalizar</span>`;
+    if (st) st.innerHTML = `<span class="photo-warn">⚠ ${err.message || 'Error al subir'}. Reintentá al finalizar</span>`;
   }
 }
 
@@ -1746,7 +1746,7 @@ async function doPadronLookup(dniQuestion, questions) {
     } catch { /* no bloquear por error de red */ }
   }
   if (ciuRecord?.fallecido) {
-    showToast('† Ciudadano registrado como fallecido — no se puede relevar');
+    showToast('† Ciudadano registrado como fallecido: no se puede relevar');
     go('home');
     return;
   }
@@ -1789,15 +1789,15 @@ function renderSummary() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('survey')">←</button>
-        <span class="header-title">Resumen</span>
+        <button class="btn-icon" onclick="go('survey')" aria-label="Volver">←</button>
+        <h1 class="header-title">Resumen</h1>
       </header>
       <div class="summary-body">
         ${previewList.length > 0 ? `
           <div class="detail-photo-grid">
             ${previewList.map(url => `
-              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
-                <img src="${esc(url)}" alt="Foto">
+              <div class="detail-photo-item" role="button" tabindex="0" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto" loading="lazy">
               </div>`).join('')}
           </div>` : ''}
         <div class="summary-meta">
@@ -1908,7 +1908,7 @@ function renderSurveyCard(r, idx) {
   const fallecidoBadge = r.type === 'ciudadano' && r.fallecido
     ? `<span class="fallecido-badge">† Fallecido${r.fallecido !== 'FALLECIDO' ? ' ' + r.fallecido : ''}</span>` : '';
   return `
-    <div class="survey-card survey-card--${r.type}" onclick="openDetail(${idx})">
+    <div class="survey-card survey-card--${r.type}" role="button" tabindex="0" onclick="openDetail(${idx})">
       <div class="card-accent"></div>
       <div class="card-body">
         <div class="card-top-row">
@@ -1924,7 +1924,7 @@ function renderSurveyCard(r, idx) {
           ${r.location ? `<span class="card-loc">📍 ${r.location.lat.toFixed(4)}, ${r.location.lng.toFixed(4)}</span>` : ''}
         </div>
       </div>
-      <div class="card-arrow">›</div>
+      <div class="card-arrow" aria-hidden="true">›</div>
     </div>`;
 }
 
@@ -1971,8 +1971,8 @@ function renderList() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('home')">←</button>
-        <span class="header-title">Mis relevamientos</span>
+        <button class="btn-icon" onclick="go('home')" aria-label="Volver">←</button>
+        <h1 class="header-title">Mis relevamientos</h1>
         <span class="header-count" id="listCount">${all.length}</span>
       </header>
       <div class="list-filter-bar">${_listFilterTabs(all)}</div>
@@ -2061,15 +2061,15 @@ function renderDetail() {
   return `
     <div class="screen">
       <header class="app-header">
-        <button class="btn-icon" onclick="go('list')">←</button>
-        <span class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</span>
+        <button class="btn-icon" onclick="go('list')" aria-label="Volver">←</button>
+        <h1 class="header-title">${typeIcon(r.type)} ${typeLabel(r.type)}</h1>
       </header>
       <div class="summary-body">
         ${photoList.length > 0 ? `
           <div class="detail-photo-grid">
             ${photoList.map(url => `
-              <div class="detail-photo-item" onclick="this.classList.toggle('detail-photo-item-expand')">
-                <img src="${esc(url)}" alt="Foto">
+              <div class="detail-photo-item" role="button" tabindex="0" onclick="this.classList.toggle('detail-photo-item-expand')">
+                <img src="${esc(url)}" alt="Foto" loading="lazy">
               </div>`).join('')}
           </div>` : ''}
         <div class="summary-meta">
@@ -2159,3 +2159,13 @@ function showToast(msg) {
   el.classList.add('visible');
   setTimeout(() => el.classList.remove('visible'), 3000);
 }
+
+// A11y: activate role="button" elements with Enter/Space (keyboard parity for click-only divs)
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+  var t = e.target;
+  if (t && t.getAttribute && t.getAttribute("role") === "button" && t.hasAttribute("tabindex")) {
+    e.preventDefault();
+    t.click();
+  }
+});

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-25T00:00:00Z",
+  "title": "Design System: Proyecto Severo — Relevamientos",
+  "extensions": {
+    "colorMeta": {
+      "primary":      { "role": "primary",   "displayName": "Constellation Blue", "canonical": "#0D47A1", "tonalRamp": ["#06224F", "#083B87", "#0D47A1", "#1255A8", "#2E6BC4", "#5C90D8", "#9CBEEA", "#E3F2FD"] },
+      "gold":         { "role": "secondary", "displayName": "Severo Gold",        "canonical": "#FFC845", "tonalRamp": ["#4A3700", "#7A5C00", "#A88300", "#D6A700", "#FFC845", "#FFD673", "#FFE4A1", "#FFF3D6"] },
+      "accent-teal":  { "role": "tertiary",  "displayName": "Signal Teal",        "canonical": "#00897B", "tonalRamp": ["#00302B", "#004A42", "#00665B", "#00897B", "#26A99B", "#5FC4B8", "#9DDDD4", "#E0F2F1"] },
+      "text":         { "role": "neutral",   "displayName": "Ink Navy",           "canonical": "#1A1A2E", "tonalRamp": ["#1A1A2E", "#2C2C44", "#41415C", "#5C6677", "#8A93A3", "#B7BECB", "#DDE1E7", "#F4F6F9"] },
+      "bg":           { "role": "neutral",   "displayName": "Field Off-White",    "canonical": "#F4F6F9", "tonalRamp": ["#1A1A2E", "#3A3F4A", "#5C6677", "#8A93A3", "#B7BECB", "#DDE1E7", "#EAEDF1", "#F4F6F9"] },
+      "type-ciudadano":         { "role": "tertiary", "displayName": "Ciudadano Blue",        "canonical": "#3B82F6", "tonalRamp": ["#102A52", "#1A468F", "#2563C8", "#3B82F6", "#669DF8", "#93B9FB", "#C2D6FD", "#E8F0FE"] },
+      "type-problematica":      { "role": "tertiary", "displayName": "Problemática Amber",    "canonical": "#F59E0B", "tonalRamp": ["#4A3000", "#7A5000", "#A86E00", "#D68C00", "#F59E0B", "#F8B847", "#FBD285", "#FEF0D6"] },
+      "type-sociohabitacional": { "role": "tertiary", "displayName": "Sociohabitacional Green", "canonical": "#10B981", "tonalRamp": ["#053024", "#075440", "#0A7A5C", "#0D9B74", "#10B981", "#47CFA0", "#8AE2C4", "#D6F5E9"] },
+      "on-primary":     { "role": "neutral",  "displayName": "On-Primary White", "canonical": "#FFFFFF" },
+      "success-bg":     { "role": "semantic", "displayName": "Confirm Surface",  "canonical": "#E8F5E9" },
+      "success-border": { "role": "semantic", "displayName": "Confirm Border",   "canonical": "#A5D6A7" },
+      "warn-bg":        { "role": "semantic", "displayName": "Caution Surface",  "canonical": "#FFF3E0" },
+      "warn-border":    { "role": "semantic", "displayName": "Caution Border",   "canonical": "#FFCC80" },
+      "error-bg":       { "role": "semantic", "displayName": "Alert Surface",    "canonical": "#FFEBEE" },
+      "warn-text":      { "role": "semantic", "displayName": "Warn Text",        "canonical": "#B23E00" },
+      "accent-text":    { "role": "semantic", "displayName": "Accent Text",      "canonical": "#00695C" }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Auth-screen logo title only. The one heroic moment." },
+      "headline": { "displayName": "Headline", "purpose": "Screen heroes, e.g. a citizen's name on the padrón-detail screen." },
+      "title":    { "displayName": "Title",    "purpose": "Card titles, type-card titles, modal titles." },
+      "body":     { "displayName": "Body",     "purpose": "Question labels and field values. 16px floor to stop iOS focus-zoom." },
+      "label":    { "displayName": "Eyebrow Label", "purpose": "Small bold uppercase section/field labels. Structure without weight." }
+    },
+    "shadows": [
+      { "name": "resting-subtle", "value": "0 1px 2px rgba(6,34,79,.06), 0 1px 1px rgba(6,34,79,.04)", "purpose": "Faintest grounding; tooltips, Google button." },
+      { "name": "ambient-card", "value": "0 4px 16px rgba(6,34,79,.10)", "purpose": "Hover lift; survey cards, type cards, citizen results." },
+      { "name": "header-lift",  "value": "0 1px 0 rgba(6,34,79,.10), 0 6px 18px rgba(6,34,79,.16)", "purpose": "Sticky gradient header with a hairline seam." },
+      { "name": "pop", "value": "0 12px 32px rgba(6,34,79,.20)", "purpose": "Floating elements; toast, install card, auth card." },
+      { "name": "modal-weight", "value": "0 24px 64px rgba(6,34,79,.42)", "purpose": "Blocking update modal; maximum elevation, paired with navy backdrop blur." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(.22, 1, .36, 1)", "purpose": "The single easing curve for all state changes. No bounce." },
+      { "name": "transition-standard", "value": "180ms cubic-bezier(.22, 1, .36, 1)", "purpose": "Default for hover/focus/border state changes on controls." },
+      { "name": "transition-fast", "value": "120ms cubic-bezier(.22, 1, .36, 1)", "purpose": "Press feedback; controls dip 1px (translateY) on :active." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgba(13,71,161,.34)", "purpose": "Visible :focus-visible ring on every interactive control." },
+      { "name": "progress-fill", "value": "width 0.35s cubic-bezier(.22, 1, .36, 1)", "purpose": "Survey progress-bar fill." },
+      { "name": "spin", "value": "0.7s-1.4s linear infinite", "purpose": "Loading spinners and the update-modal icon (kept under reduced-motion)." }
+    ],
+    "breakpoints": [
+      { "name": "app-container", "value": "480px" },
+      { "name": "small-phone", "value": "360px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled blue, full-width default for the main action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Guardar relevamiento</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 14px 24px; border: none; border-radius: 12px; background: #0D47A1; color: #fff; font-size: 1rem; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; cursor: pointer; transition: background 0.18s ease; } .ds-btn-primary:hover { background: #083B87; } .ds-btn-primary:focus-visible { outline: 2px solid #1255A8; outline-offset: 2px; } .ds-btn-primary:active { opacity: 0.9; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Transparent with a 2px blue border; secondary actions.",
+      "html": "<button class=\"ds-btn-outline\">Cancelar</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 14px 24px; border: 2px solid #0D47A1; border-radius: 12px; background: transparent; color: #0D47A1; font-size: 1rem; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; cursor: pointer; transition: background 0.18s ease; } .ds-btn-outline:hover { background: #E3F2FD; } .ds-btn-outline:focus-visible { outline: 2px solid #0D47A1; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "16px field with hairline border; border shifts to blue on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Buscar por DNI o apellido\" />",
+      "css": ".ds-input { width: 100%; border: 2px solid #DDE1E7; border-radius: 8px; padding: 12px; font-size: 16px; color: #1A1A2E; background: #fff; font-family: inherit; transition: border-color 0.18s ease; } .ds-input::placeholder { color: #5C6677; } .ds-input:focus { outline: none; border-color: #0D47A1; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill-shaped multi-select answer; fills blue when active.",
+      "html": "<div style=\"display:flex; gap:8px; flex-wrap:wrap;\"><button class=\"ds-chip ds-chip-active\">Cloacas</button><button class=\"ds-chip\">Alumbrado</button><button class=\"ds-chip\">Calles</button></div>",
+      "css": ".ds-chip { min-height: 44px; padding: 10px 16px; border: 2px solid #DDE1E7; border-radius: 20px; background: #fff; color: #1A1A2E; font-size: 0.9rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; cursor: pointer; transition: border-color 0.18s ease, background 0.18s ease; } .ds-chip:hover { border-color: #0D47A1; background: #E3F2FD; } .ds-chip-active { border-color: #0D47A1; background: #0D47A1; color: #fff; } .ds-chip-active:hover { background: #0D47A1; }"
+    },
+    {
+      "name": "Filter Tab",
+      "kind": "chip",
+      "refersTo": "filter-tab",
+      "description": "Lightweight pill with a count badge; used in the scrolling list filter bar.",
+      "html": "<div style=\"display:flex; gap:6px;\"><button class=\"ds-tab ds-tab-active\">Todos<span class=\"ds-tab-count ds-tab-count-on\">128</span></button><button class=\"ds-tab\">Ciudadanos<span class=\"ds-tab-count\">96</span></button></div>",
+      "css": ".ds-tab { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1.5px solid #DDE1E7; border-radius: 20px; background: transparent; color: #5C6677; font-size: 0.8rem; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; cursor: pointer; white-space: nowrap; transition: border-color 0.18s ease, color 0.18s ease; } .ds-tab:hover { border-color: #0D47A1; color: #0D47A1; } .ds-tab-active { background: #0D47A1; border-color: #0D47A1; color: #fff; } .ds-tab-count { border-radius: 10px; padding: 1px 6px; font-size: 0.72rem; font-weight: 700; background: #DDE1E7; color: #5C6677; } .ds-tab-count-on { background: rgba(255,255,255,.3); color: #fff; }"
+    },
+    {
+      "name": "Survey Card",
+      "kind": "card",
+      "refersTo": "survey-card",
+      "description": "List row led by a small type-colored dot; lifts on hover.",
+      "html": "<div class=\"ds-survey-card\"><span class=\"ds-card-accent\"></span><div class=\"ds-card-body\"><div class=\"ds-card-eyebrow\">Problemática <span class=\"ds-card-barrio\">Centro</span></div><div class=\"ds-card-title\">Falta de alumbrado público</div><div class=\"ds-card-sub\">Calle San Martín 1240</div><div class=\"ds-card-meta\">25/05/2026 · -32.97, -68.86</div></div><span class=\"ds-card-arrow\">›</span></div>",
+      "css": ".ds-survey-card { display: flex; align-items: stretch; background: #fff; border: 1px solid #DDE1E7; border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color 180ms cubic-bezier(.22,1,.36,1), box-shadow 180ms cubic-bezier(.22,1,.36,1), transform 120ms cubic-bezier(.22,1,.36,1); } .ds-survey-card:hover { border-color: #0D47A1; box-shadow: 0 4px 16px rgba(6,34,79,.10); } .ds-survey-card:active { transform: translateY(1px); } .ds-card-accent { flex-shrink: 0; align-self: center; width: 9px; height: 9px; border-radius: 50%; margin-left: 14px; background: #F59E0B; } .ds-card-body { flex: 1; min-width: 0; padding: 12px 10px 12px 12px; } .ds-card-eyebrow { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; color: #5C6677; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; } .ds-card-barrio { font-size: 0.72rem; text-transform: none; letter-spacing: 0; background: #F4F6F9; border: 1px solid #DDE1E7; border-radius: 999px; padding: 1px 8px; color: #5C6677; } .ds-card-title { font-size: 0.97rem; font-weight: 650; color: #1A1A2E; margin-bottom: 2px; } .ds-card-sub { font-size: 0.82rem; color: #5C6677; margin-bottom: 5px; } .ds-card-meta { font-size: 0.76rem; color: #5C6677; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; } .ds-card-arrow { display: flex; align-items: center; padding: 0 12px 0 6px; font-size: 1.3rem; color: #C7CEDA; flex-shrink: 0; transition: color 180ms cubic-bezier(.22,1,.36,1), transform 180ms cubic-bezier(.22,1,.36,1); } .ds-survey-card:hover .ds-card-arrow { color: #0D47A1; transform: translateX(2px); }"
+    },
+    {
+      "name": "Eyebrow Section Label",
+      "kind": "custom",
+      "refersTo": "label",
+      "description": "Signature small uppercase section header underlined in pale blue.",
+      "html": "<div class=\"ds-eyebrow\">Datos personales</div>",
+      "css": ".ds-eyebrow { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: #0D47A1; padding-bottom: 4px; border-bottom: 2px solid #E3F2FD; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Territorial Constellation",
+    "overview": "Severo's identity is a constellation: deep institutional blue as the night, gold as the single bright node, and a network of households plotted across the territory of Maipú. Blue carries the surface and every primary action; gold is the rare spark reserved for the brand mark. The system reads as confident, modern, capable, a well-run operation rather than a hobby project or a legacy government form. The aesthetic is crisp and modern: flat white surfaces on a cool off-white field, separated by hairline borders rather than heavy shadows, with hierarchy from weight and uppercase eyebrow labels instead of ornament. It explicitly rejects the clunky government portal, flashy startup SaaS, the cluttered enterprise CRM, and any surveillance-tool chill.",
+    "keyCharacteristics": [
+      "Deep-blue dominant surface with a single reserved gold accent.",
+      "Flat, bordered cards on a cool off-white field; shadow signals elevation or state, never sits at rest.",
+      "Native system sans for speed and familiarity; uppercase eyebrow labels for structure.",
+      "Oversized touch targets tuned for one-handed use in direct sun.",
+      "Functional color-coding: each relevamiento type owns a fixed accent hue."
+    ],
+    "rules": [
+      { "name": "The Gold-Spark Rule", "body": "Gold (#FFC845) belongs to the brand mark alone. Spending it on buttons or highlights destroys its meaning; emphasize with weight, size, or Constellation Blue instead.", "section": "colors" },
+      { "name": "The Type-Hue Rule", "body": "Each relevamiento type owns exactly one accent (ciudadano blue, problemática amber, sociohabitacional green). These hues mean record type and may not be reused decoratively.", "section": "colors" },
+      { "name": "The Single-White Rule", "body": "White text and icons on any colored or dark surface come from one token, --on-primary. Never type a raw #fff; if you reach for white, reach for the token.", "section": "colors" },
+      { "name": "The 16px Floor Rule", "body": "Any input or textarea renders at a minimum of 16px so iOS Safari does not zoom on focus and throw the volunteer out of their flow.", "section": "typography" },
+      { "name": "The Eyebrow Rule", "body": "Structure is signalled by small, bold, uppercase, letter-spaced labels, not by big headings.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "A card sitting still has a border, not a shadow. Shadow is earned by interaction or by floating above the page.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep Constellation Blue (#0D47A1) as the single dominant hue: primary actions, active states, links, eyebrow titles.",
+      "Do reserve Severo Gold (#FFC845) for the brand mark only.",
+      "Do size touch targets for one hand in sunlight: 48px buttons, 44px chips, 52px radio rows, 64px scale buttons.",
+      "Do render every input at 16px minimum to prevent iOS focus-zoom.",
+      "Do signal structure with small uppercase eyebrow labels, not large headings.",
+      "Do keep surfaces flat at rest with hairline borders; let shadow mean elevation or state, and tint every shadow with the brand navy, never neutral black.",
+      "Do give every interactive control a visible :focus-visible ring; if you remove a browser outline, replace it with the soft-blue ring.",
+      "Do use the fixed type-hues (blue/amber/green) only to mean relevamiento type.",
+      "Do make every error recoverable and plainly worded; pair destructive or sensitive actions with calm confirmation."
+    ],
+    "donts": [
+      "Don't build the clunky government portal: no gray dense forms, no lifeless institutional type, no bureaucratic chrome.",
+      "Don't drift toward flashy startup SaaS: no decorative gradient heroes, no emoji confetti, no marketing-app energy.",
+      "Don't crowd a screen like an enterprise CRM: one primary task per screen.",
+      "Don't let the interface feel like a surveillance or police tool; handle citizen data with visible care.",
+      "Don't spend gold on UI, add a second accent hue, or reuse a type-hue decoratively.",
+      "Don't use a colored side-stripe edge on any card, list row, or callout; encode meaning with a leading dot, label, or icon instead (the Survey Card uses a leading type dot).",
+      "Don't put a drop shadow on a static, resting panel; if it isn't elevated or interacting, it gets a border.",
+      "Don't introduce a custom display typeface; the native system stack is the deliberate choice."
+    ]
+  }
+}

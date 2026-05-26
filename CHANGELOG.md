@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.1 — 2026-05-25
+
+### Sistema de diseño (Constelación, evolucionado)
+- Capa de tokens ampliada: escalas de tipografía y espaciado, niveles de elevación tintados al azul de marca, curva de movimiento ease-out, tokens de foco y de superficies semánticas
+- Documentación del sistema: `DESIGN.md`, `PRODUCT.md` y sidecar `.impeccable/design.json`
+- Tokens semánticos consolidados (se eliminaron colores hardcodeados salvo el botón de Google)
+
+### Accesibilidad
+- Zoom habilitado (se quitó `user-scalable=no`) y `viewport-fit=cover` para safe-area
+- Tarjetas y resultados clicables ahora accesibles por teclado (`role`/`tabindex` + Enter/Espacio)
+- `aria-label` en botones de ícono, títulos de pantalla como encabezados `<h1>`, labels asociadas a sus campos
+- Contraste AA en textos de estado (`--warn-text`, `--accent-text`) y en el pie de página
+
+### Rendimiento
+- Carga diferida de fotos (`loading="lazy"`), barra de progreso por `transform`, CSS de Leaflet fuera de la ruta crítica
+
+### Interfaz
+- Indicador de tipo de relevamiento como punto guía (sin franja lateral); foco visible en todos los controles; objetivos táctiles ≥44px
+
 ## v2.0 — 2026-05-24
 
 ### Identidad visual oficial
