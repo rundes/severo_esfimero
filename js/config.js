@@ -2,8 +2,10 @@ const CONFIG = {
   // Client ID de Google Cloud Console (proyecto maipu-datos)
   GOOGLE_CLIENT_ID: '821059657602-44t1k4nshuf25qkc83j72u9k5ienl9gb.apps.googleusercontent.com',
 
-  // API Key de Google Cloud (para lectura del padrón y geocodificación inversa)
-  // La planilla del padrón debe tener acceso "Cualquier persona con el vínculo puede ver"
+  // API Key de Google Cloud — SOLO para geocodificación (Maps Geocoding API).
+  // El padrón YA NO se lee con esta key: se lee con el token OAuth del relevador.
+  // Restringí esta key por referrer (rundes.github.io/severo_esfimero/*) y a la
+  // Geocoding API. Esta key estuvo expuesta en el repo: rotala en Cloud Console.
   GOOGLE_API_KEY: 'AIzaSyAFICbCFMxxLS7HWwsvRVCGiKCfoaF4x4I',
 
   // Planilla donde se guardan los relevamientos (ciudadanos, problemáticas, socio-habitacional)
@@ -14,6 +16,8 @@ const CONFIG = {
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
   // Padrón electoral — fuente única de datos personales ("Padron integrado")
+  // Se lee con el token OAuth del relevador. La planilla debe estar compartida
+  // (lectura) SOLO con las cuentas de los relevadores, NUNCA pública por enlace.
   // A=DNI, B=SEXO, C=TIPO, D–L=participación elecciones,
   // M=TIPO_DNI, N=APELLIDO Y NOMBRE, O=CLASE, P=DOMICILIO,
   // Q=LATITUD, R=LONGITUD, S=DOMICILIO REAL, T=PROFESION,
