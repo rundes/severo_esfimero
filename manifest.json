@@ -1,7 +1,7 @@
 {
   "name": "Proyecto Severo — Relevamientos",
   "short_name": "Proyecto Severo",
-  "description": "Sistema de relevamientos ciudadanos del Proyecto Severo",
+  "description": "Sistema de relevamientos territoriales del Proyecto Severo: vecinos, problemáticas urbanas y condiciones del hogar.",
   "start_url": "/severo_esfimero/",
   "scope": "/severo_esfimero/",
   "display": "standalone",
