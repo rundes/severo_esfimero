@@ -1,4 +1,4 @@
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -169,6 +169,7 @@ const State = {
   padronDomicilio: null,  // domicilio registrado en el padrón
   padronLocation:  null,  // { lat, lng } guardados previamente en el padrón
   // citizen search (survey flow)
+  citizenSearchMode: 'apellido',  // 'apellido' (apellido/DNI) | 'domicilio'
   citizenSearchQuery: '',
   citizenDNIQuery: '',
   citizenDomicilioQuery: '',
@@ -442,7 +443,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
-        <span class="auth-version">v2.5</span>
+        <span class="auth-version">v2.6</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -509,7 +510,7 @@ function renderHome() {
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
-        <span class="footer-version">v2.5</span>
+        <span class="footer-version">v2.6</span>
       </footer>
     </div>`;
 }
@@ -1176,7 +1177,7 @@ function renderTypeSelect() {
         <button class="type-card" onclick="selectType('sociohabitacional')">
           <div class="type-card-icon">🏠</div>
           <div class="type-card-title">Encuesta socio-habitacional</div>
-          <div class="type-card-desc">Maipú 2026: vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
+          <div class="type-card-desc">Vivienda, servicios básicos, composición del hogar y opinión ciudadana (26 preguntas)</div>
         </button>
         <button class="type-card" onclick="selectType('ciudadano')">
           <div class="type-card-icon">🧑</div>
@@ -1216,12 +1217,14 @@ function selectType(type) {
       padronMeta: preselected?._meta || null,
       padronDomicilio: preselected?.domicilio || null,
       padronLocation,
+      citizenSearchMode: 'apellido',
       citizenSearchQuery: preselected?.apellido || '',
       citizenDNIQuery: '',
       citizenSearchResults: preselected ? [preselected] : [],
       citizenSearching: false, citizenSearchError: null });
   } else if (type === 'ciudadano') {
     go('citizenSearch', { ...base,
+      citizenSearchMode: 'apellido',
       citizenSearchQuery: preselected?.apellido || '',
       citizenDNIQuery: '',
       citizenSearchResults: preselected ? [preselected] : [],
@@ -1246,32 +1249,17 @@ function renderDatosPersonales() {
       <div class="dp-body">
         <div class="dp-search-section">
           <div class="dp-section-title">Buscar en el padrón</div>
-          <div class="search-group">
-            <label class="question-label" for="dpSearchApellido">Apellido y nombre</label>
-            <input type="text" class="input" id="dpSearchApellido"
-              placeholder="Ingresá las primeras 4 letras…"
-              value="${esc(State.citizenSearchQuery || '')}"
-              oninput="onDPSearchInput('apellido', this.value)"
-              autocomplete="off">
+          <div class="search-mode-tabs">
+            <button class="search-mode-tab ${State.citizenSearchMode !== 'domicilio' ? 'active' : ''}"
+              onclick="setCitizenSearchMode('apellido')">Apellido / DNI</button>
+            <button class="search-mode-tab ${State.citizenSearchMode === 'domicilio' ? 'active' : ''}"
+              onclick="setCitizenSearchMode('domicilio')">Domicilio</button>
           </div>
-          <div class="search-divider">o por número de documento</div>
-          <div class="search-group">
-            <label class="question-label" for="dpSearchDNI">DNI</label>
-            <input type="text" inputmode="numeric" class="input" id="dpSearchDNI"
-              placeholder="Número de documento"
-              value="${esc(State.citizenDNIQuery || '')}"
-              oninput="onDPSearchInput('dni', this.value)"
-              autocomplete="off">
-          </div>
-          <div class="search-divider">o por domicilio</div>
-          <div class="search-group">
-            <label class="question-label" for="dpSearchDomicilio">Domicilio</label>
-            <input type="text" class="input" id="dpSearchDomicilio"
-              placeholder="Nombre de calle o número"
-              value="${esc(State.citizenDomicilioQuery || '')}"
-              oninput="onDPSearchInput('domicilio', this.value)"
-              autocomplete="off">
-          </div>
+          <input type="text" class="input" id="dpSearchInput"
+            placeholder="${State.citizenSearchMode === 'domicilio' ? 'Nombre de calle o número…' : 'Apellido (4+ letras) o DNI (6+ dígitos)…'}"
+            value="${esc(State.citizenSearchQuery || '')}"
+            oninput="onCitizenSearchInput(this.value)"
+            autocomplete="off">
           <div id="dpSearchResults">${renderDPResults()}</div>
         </div>
         <div class="dp-fields-section">
@@ -1414,41 +1402,8 @@ function renderDPResults() {
   </div>`;
 }
 
-function onDPSearchInput(field, value) {
-  if (field === 'apellido') {
-    State.citizenSearchQuery = value;
-    State.citizenDNIQuery = '';
-    State.citizenDomicilioQuery = '';
-    const d = document.getElementById('dpSearchDNI'); if (d) d.value = '';
-    const e = document.getElementById('dpSearchDomicilio'); if (e) e.value = '';
-  } else if (field === 'dni') {
-    State.citizenDNIQuery = value;
-    State.citizenSearchQuery = '';
-    State.citizenDomicilioQuery = '';
-    const a = document.getElementById('dpSearchApellido'); if (a) a.value = '';
-    const e = document.getElementById('dpSearchDomicilio'); if (e) e.value = '';
-  } else {
-    State.citizenDomicilioQuery = value;
-    State.citizenSearchQuery = '';
-    State.citizenDNIQuery = '';
-    const a = document.getElementById('dpSearchApellido'); if (a) a.value = '';
-    const d = document.getElementById('dpSearchDNI'); if (d) d.value = '';
-  }
-  clearTimeout(_searchDebounce);
-  const minLen = (field === 'dni') ? 6 : 4;
-  if (value.length >= minLen) {
-    State.citizenSearching = true;
-    State.citizenSearchResults = [];
-    State.citizenSearchError = null;
-    updateCitizenSearchUI();
-    _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
-  } else {
-    State.citizenSearchResults = [];
-    State.citizenSearching = false;
-    State.citizenSearchError = null;
-    updateCitizenSearchUI();
-  }
-}
+// onDPSearchInput eliminado: el buscador de datosPersonales usa el diseño
+// unificado (tabs Apellido/DNI · Domicilio) con onCitizenSearchInput / setCitizenSearchMode.
 
 function selectDPCitizen(idx) {
   const record = (State.citizenSearchResults || [])[idx];
@@ -1552,32 +1507,17 @@ function renderCitizenSearch() {
         <h1 class="header-title">🧑 Buscar en el padrón</h1>
       </header>
       <div class="survey-body">
-        <div class="search-group">
-          <label class="question-label" for="searchApellido">Apellido y nombre</label>
-          <input type="text" class="input" id="searchApellido"
-            placeholder="Ingresá las primeras 4 letras…"
-            value="${State.citizenSearchQuery || ''}"
-            oninput="onCitizenSearchInput('apellido', this.value)"
-            autocomplete="off">
+        <div class="search-mode-tabs">
+          <button class="search-mode-tab ${State.citizenSearchMode !== 'domicilio' ? 'active' : ''}"
+            onclick="setCitizenSearchMode('apellido')">Apellido / DNI</button>
+          <button class="search-mode-tab ${State.citizenSearchMode === 'domicilio' ? 'active' : ''}"
+            onclick="setCitizenSearchMode('domicilio')">Domicilio</button>
         </div>
-        <div class="search-divider">o por número de documento</div>
-        <div class="search-group">
-          <label class="question-label" for="searchDNI">DNI</label>
-          <input type="text" inputmode="numeric" class="input" id="searchDNI"
-            placeholder="Número de documento"
-            value="${State.citizenDNIQuery || ''}"
-            oninput="onCitizenSearchInput('dni', this.value)"
-            autocomplete="off">
-        </div>
-        <div class="search-divider">o por domicilio</div>
-        <div class="search-group">
-          <label class="question-label" for="searchDomicilio">Domicilio</label>
-          <input type="text" class="input" id="searchDomicilio"
-            placeholder="Nombre de calle o número"
-            value="${State.citizenDomicilioQuery || ''}"
-            oninput="onCitizenSearchInput('domicilio', this.value)"
-            autocomplete="off">
-        </div>
+        <input type="text" class="input" id="citizenSearchInput"
+          placeholder="${State.citizenSearchMode === 'domicilio' ? 'Nombre de calle o número…' : 'Apellido (4+ letras) o DNI (6+ dígitos)…'}"
+          value="${esc(State.citizenSearchQuery || '')}"
+          oninput="onCitizenSearchInput(this.value)"
+          autocomplete="off">
         <div id="searchResults">${renderCitizenResults()}</div>
       </div>
       <div class="survey-footer">
@@ -1607,35 +1547,29 @@ function renderCitizenResults() {
   </div>`;
 }
 
-function onCitizenSearchInput(field, value) {
-  if (field === 'apellido') {
-    State.citizenSearchQuery = value;
-    State.citizenDNIQuery = '';
-    State.citizenDomicilioQuery = '';
-    const d = document.getElementById('searchDNI'); if (d) d.value = '';
-    const e = document.getElementById('searchDomicilio'); if (e) e.value = '';
-  } else if (field === 'dni') {
-    State.citizenDNIQuery = value;
-    State.citizenSearchQuery = '';
-    State.citizenDomicilioQuery = '';
-    const a = document.getElementById('searchApellido'); if (a) a.value = '';
-    const e = document.getElementById('searchDomicilio'); if (e) e.value = '';
-  } else {
-    State.citizenDomicilioQuery = value;
-    State.citizenSearchQuery = '';
-    State.citizenDNIQuery = '';
-    const a = document.getElementById('searchApellido'); if (a) a.value = '';
-    const d = document.getElementById('searchDNI'); if (d) d.value = '';
-  }
-
+function setCitizenSearchMode(mode) {
+  State.citizenSearchMode = mode;
+  State.citizenSearchQuery = '';
+  State.citizenSearchResults = [];
+  State.citizenSearching = false;
+  State.citizenSearchError = null;
   clearTimeout(_searchDebounce);
-  const minLen = (field === 'dni') ? 6 : 4;
+  render();
+}
+
+function onCitizenSearchInput(value) {
+  State.citizenSearchQuery = value;
+  clearTimeout(_searchDebounce);
+  const isDomicilio = State.citizenSearchMode === 'domicilio';
+  const isNumeric = !isDomicilio && /^\d+$/.test(value.trim());
+  const minLen = isNumeric ? 6 : 4;
 
   if (value.length >= minLen) {
     State.citizenSearching = true;
     State.citizenSearchResults = [];
     State.citizenSearchError = null;
     updateCitizenSearchUI();
+    const field = isDomicilio ? 'domicilio' : (isNumeric ? 'dni' : 'apellido');
     _searchDebounce = setTimeout(() => doCitizenSearch(field, value), 450);
   } else {
     State.citizenSearchResults = [];

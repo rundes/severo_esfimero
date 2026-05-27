@@ -10,9 +10,9 @@ Grassroots field volunteers (*relevadores*) of mixed ages and tech comfort, canv
 
 ## Product Purpose
 
-Proyecto Severo — Relevamientos is the territorial citizen-survey system for Proyecto Severo in Maipú, Provincia de Buenos Aires. Volunteers locate a citizen in the integrated electoral roll (*padrón integrado*) and record a relevamiento against them: civic *problemáticas*, socio-housing conditions (with a photo of the home's front), and electoral participation. It is a mobile-first installable PWA backed by Google Sheets, Cloud Storage, and Google sign-in, built to keep working when the network does not.
+Proyecto Severo — Relevamientos is the territorial citizen-survey system for Proyecto Severo. Volunteers find the right respondent and record a relevamiento: civic *problemáticas*, socio-housing conditions (with a photo of the home's front), and survey responses. It is a mobile-first installable PWA backed by Google Sheets, Cloud Storage, and Google sign-in, built to keep working when the network does not.
 
-Success: a volunteer reaches a household, finds the right person, and captures an accurate relevamiento in under a minute, without losing data and without the interaction feeling intrusive. Coverage compounds from there: many volunteers, many doors, clean data flowing into the dashboards (*severo_data*).
+Success: a volunteer reaches a household, finds the right respondent, and captures an accurate relevamiento in under a minute, without losing data and without the interaction feeling intrusive. Coverage compounds from there: many volunteers, many doors, clean data flowing into the dashboards (*severo_data*).
 
 ## Brand Personality
 
@@ -31,7 +31,7 @@ Confident, modern, capable. The interface should read as a well-run, technically
 - **Trust through legibility, not chrome.** Confident and modern means clear, not decorated. Hierarchy and contrast do the work; ornament is suspect. The tool looks competent because information is easy to read, not because it is styled.
 - **Never lose the volunteer's work.** Field connectivity fails mid-survey. Guard unsaved data, make save errors recoverable with an explicit retry, and never drop a relevamiento silently. The existing confirm-on-abandon and retry-on-save behavior is the baseline, not the exception.
 - **Field-first ergonomics.** Built for one hand in direct sunlight: high contrast for glare, generous touch targets (32px+), thumb-reachable primary actions, portrait-only. Outdoor readability outranks visual density.
-- **Dignified, not surveillant.** This handles sensitive citizen data (roll, address, social-welfare flags, deceased status). The interface must feel legitimate and humane to the person at the door and treat their data with visible care, never like harvesting.
+- **Dignified, not surveillant.** The interface must feel legitimate and humane to the person at the door and treat every record with visible care, never like harvesting.
 
 ## Accessibility & Inclusion
 

@@ -1,6 +1,6 @@
 ---
 name: Proyecto Severo — Relevamientos
-description: Field-canvassing PWA for territorial citizen surveys in Maipú, PBA.
+description: Field-canvassing PWA for territorial citizen surveys.
 colors:
   primary: "#0D47A1"
   primary-dark: "#083B87"
@@ -121,7 +121,7 @@ components:
 
 **Creative North Star: "The Territorial Constellation"**
 
-Severo's identity is a constellation: deep institutional blue as the night, gold as the single bright node, and a network of households plotted across the territory of Maipú. The whole interface answers to that image. Blue carries the surface and every primary action; gold is the rare spark reserved for the brand mark, never spent on ordinary UI. The system reads the way the project wants to be seen at the door: confident, modern, capable, a well-run operation rather than a hobby project or a legacy government form.
+Severo's identity is a constellation: deep institutional blue as the night, gold as the single bright node, and a network of households plotted across the territory. The whole interface answers to that image. Blue carries the surface and every primary action; gold is the rare spark reserved for the brand mark, never spent on ordinary UI. The system reads the way the project wants to be seen at the door: confident, modern, capable, a well-run operation rather than a hobby project or a legacy government form.
 
 The aesthetic is crisp and modern. Flat white surfaces sit on a cool off-white field (`#F4F6F9`), separated by hairline borders rather than heavy shadows. Corners are gently softened (12px), type is the native system stack so it renders fast and familiar on any phone, and hierarchy comes from weight and uppercase eyebrow labels, not ornament. Depth is used sparingly and only with intent: a gradient header, an elevated install card, a blocking update modal. Everything else stays calm and legible so the citizen's data leads.
 
