@@ -174,7 +174,7 @@ function go(screen, updates = {}) {
 
 function render() {
   // Destruir el mapa Leaflet si salimos de una pantalla con mapa
-  if (_map && State.screen !== 'geo' && State.screen !== 'datosDomicilio') {
+  if (_map && State.screen !== 'geo' && State.screen !== 'datosGeo') {
     _map.remove();
     _map = null;
     _marker = null;
@@ -188,6 +188,7 @@ function render() {
     typeSelect:      renderTypeSelect,
     datosPersonales: renderDatosPersonales,
     datosDomicilio:  renderDatosDomicilio,
+    datosGeo:        renderDatosGeo,
     citizenSearch:   renderCitizenSearch,
     survey:          renderSurvey,
     summary:         renderSummary,
@@ -200,7 +201,7 @@ function render() {
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
-  if (State.screen === 'geo' || State.screen === 'datosDomicilio') startGeoCapture();
+  if (State.screen === 'geo' || State.screen === 'datosGeo') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
 
@@ -915,7 +916,7 @@ function renderGeo() {
     problematica:     'Ubicación de la problemática',
   };
   const title = geoTitles[State.surveyType] || 'Ubicación';
-  const backTarget = State.surveyType === 'sociohabitacional' ? 'datosPersonales'
+  const backTarget = State.surveyType === 'sociohabitacional' ? 'datosDomicilio'
     : State.surveyType === 'ciudadano' ? 'citizenSearch'
     : 'typeSelect';
   return `
@@ -1059,7 +1060,11 @@ function confirmGeo() {
       if (detected) State.answers.barrio = detected;
     }
   }
-  go('survey');
+  if (State.screen === 'datosGeo') {
+    go('survey', { currentQ: 6 });
+  } else {
+    go('survey');
+  }
 }
 
 async function doGeoSearch() {
@@ -1268,36 +1273,11 @@ function renderDatosDomicilio() {
           </div>
         </div>
       </div>
-      <div class="block-header block-header-geo">Ubicación de la vivienda</div>
-      <div class="geo-search-row">
-        <input type="text" class="input geo-search-input" id="geoSearchInput"
-          placeholder="Buscar dirección…" autocomplete="off"
-          value="${esc(State.answers.domicilio_calle ? (State.answers.domicilio_calle + (State.answers.domicilio_numero ? ' ' + State.answers.domicilio_numero : '')) : (State.padronDomicilio || ''))}"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
-        <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
-      </div>
-      <div class="geo-status-bar" id="geoStatusBar">
-        <div class="geo-spinner" id="geoSpinner"></div>
-        <span id="geoStatus">Obteniendo ubicación…</span>
-      </div>
-      <div id="geoMap" class="geo-map geo-map-embedded"></div>
-      <div class="geo-footer geo-footer-embedded" id="geoFooter" style="display:none">
-        <p class="geo-coords" id="geoCoords"></p>
-        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
-        <div class="geo-actions">
-          <button class="btn btn-ghost" onclick="skipDatosDomicilio()">Sin ubicación</button>
-          <button class="btn btn-primary" onclick="confirmGeoAndContinue()">✓ Confirmar y continuar</button>
-        </div>
-      </div>
       <div class="survey-footer">
         <button class="btn btn-ghost" onclick="go('datosPersonales')">← Atrás</button>
         <button class="btn btn-primary" onclick="confirmDatosDomicilio()">Continuar →</button>
       </div>
     </div>`;
-}
-
-function confirmGeoAndContinue() {
-  confirmGeo();
 }
 
 function renderDPResults() {
@@ -1390,7 +1370,7 @@ function skipDatosPersonales() {
 }
 
 function confirmDatosDomicilio() {
-  go('survey', { currentQ: 6 });
+  go('datosGeo');
 }
 
 function skipDatosDomicilio() {
@@ -1398,6 +1378,45 @@ function skipDatosDomicilio() {
     delete State.answers[k];
     delete State.padronFilled[k];
   });
+  State.location = null;
+  go('survey', { currentQ: 6 });
+}
+
+function renderDatosGeo() {
+  const prefill = State.answers.domicilio_calle
+    ? (State.answers.domicilio_calle + (State.answers.domicilio_numero ? ' ' + State.answers.domicilio_numero : ''))
+    : (State.padronDomicilio || '');
+  return `
+    <div class="screen screen-geo">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('datosDomicilio')" aria-label="Volver">←</button>
+        <h1 class="header-title">📍 Ubicación de la vivienda</h1>
+        <span class="header-count">3/3</span>
+      </header>
+      <div class="geo-search-row">
+        <input type="text" class="input geo-search-input" id="geoSearchInput"
+          placeholder="Buscar dirección…" autocomplete="off"
+          value="${esc(prefill)}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
+        <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
+      </div>
+      <div class="geo-status-bar" id="geoStatusBar">
+        <div class="geo-spinner" id="geoSpinner"></div>
+        <span id="geoStatus">Obteniendo ubicación…</span>
+      </div>
+      <div id="geoMap" class="geo-map"></div>
+      <div class="geo-footer" id="geoFooter" style="display:none">
+        <p class="geo-coords" id="geoCoords"></p>
+        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
+        <div class="geo-actions">
+          <button class="btn btn-ghost" onclick="skipDatosGeo()">Sin ubicación</button>
+          <button class="btn btn-primary" onclick="confirmGeo()">✓ Confirmar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function skipDatosGeo() {
   State.location = null;
   go('survey', { currentQ: 6 });
 }
@@ -1797,7 +1816,7 @@ function surveyBack() {
   if (prev < personalQCount) {
     const hasUserAnswers = Object.keys(State.answers || {}).some((k) => !State.padronFilled?.[k]);
     if (hasUserAnswers && !confirm('¿Salir del relevamiento? Se perderán los datos ingresados.')) return;
-    go(State.surveyType === 'sociohabitacional' ? 'datosDomicilio' : 'geo');
+    go(State.surveyType === 'sociohabitacional' ? 'datosGeo' : 'geo');
   } else {
     State.currentQ = prev;
     render();
