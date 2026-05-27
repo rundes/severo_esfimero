@@ -84,7 +84,17 @@
         navigator.serviceWorker.register('sw.js').then((reg) => {
 
           function onNewWorkerWaiting(worker) {
-            if (window._pwaShowUpdateModal) window._pwaShowUpdateModal(worker);
+            if (window._pwaShowUpdateModal) {
+              window._pwaShowUpdateModal(worker);
+            } else {
+              // app.js aún no cargó: reintentar cuando esté disponible
+              const t = setInterval(() => {
+                if (window._pwaShowUpdateModal) {
+                  clearInterval(t);
+                  window._pwaShowUpdateModal(worker);
+                }
+              }, 100);
+            }
           }
 
           if (reg.waiting && navigator.serviceWorker.controller) {
@@ -98,6 +108,12 @@
               }
             });
           });
+
+          // Buscar actualizaciones al recuperar el foco y cada 5 minutos
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reg.update();
+          });
+          setInterval(() => reg.update(), 5 * 60 * 1000);
 
         }).catch(() => {});
 
