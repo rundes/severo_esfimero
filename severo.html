@@ -3296,8 +3296,16 @@ function _showForceUpdateOverlay() {
     </div>`;
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
-  document.getElementById('_forceUpdateBtn').addEventListener('click', () => {
+  document.getElementById('_forceUpdateBtn').addEventListener('click', async () => {
     document.getElementById('_forceUpdateBtn').textContent = 'Actualizando…';
+    try {
+      // Activar el SW nuevo si está en espera
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      // Borrar todos los cachés del SW para que la recarga descargue archivos frescos
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    } catch (_) {}
     window.location.reload(true);
   });
 }
