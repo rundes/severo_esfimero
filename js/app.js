@@ -1,4 +1,4 @@
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -440,7 +440,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
-        <span class="auth-version">v2.2</span>
+        <span class="auth-version">v2.3</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -501,7 +501,7 @@ function renderHome() {
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
-        <span class="footer-version">v2.2</span>
+        <span class="footer-version">v2.3</span>
       </footer>
     </div>`;
 }
@@ -1317,10 +1317,49 @@ function renderDatosDomicilio() {
           </div>
         </div>
       </div>
+      <div class="block-header">Foto del frente</div>
+      <div class="dp-body">
+        <div class="dp-fields-section">
+          ${renderFotoFrente()}
+        </div>
+      </div>
       <div class="survey-footer">
         <button class="btn btn-ghost" onclick="go('datosPersonales')">← Atrás</button>
         <button class="btn btn-primary" onclick="confirmDatosDomicilio()">Continuar →</button>
       </div>
+    </div>`;
+}
+
+function renderFotoFrente() {
+  const qid = 'foto_frente';
+  const blobs = Array.isArray(_photoBlobs[qid]) ? _photoBlobs[qid] : [];
+  const saved = Array.isArray(State.answers[qid]) ? State.answers[qid]
+    : (State.answers[qid] ? [State.answers[qid]] : []);
+  const urls = saved.map((u, i) => blobs[i] || u);
+  const canAdd = urls.length < 5;
+  return `
+    <div class="photo-wrap" id="photoWrap_${qid}">
+      ${urls.length > 0 ? `
+        <div class="photo-grid">
+          ${urls.map((url, i) => `
+            <div class="photo-thumb-wrap">
+              <img class="photo-thumb" loading="lazy" src="${esc(url)}" alt="Foto ${i + 1}">
+              <button class="photo-thumb-remove" onclick="removePhoto('${qid}',${i})">×</button>
+            </div>`).join('')}
+          ${canAdd ? `
+            <label class="photo-add-btn">
+              <span class="photo-add-icon">📷</span>
+              <span>Agregar</span>
+              <input type="file" accept="image/*" capture="environment" style="display:none"
+                onchange="onPhotoSelected(this,'${qid}')">
+            </label>` : ''}
+        </div>` : `
+        <label class="btn btn-outline photo-btn">
+          📷 Tomar / seleccionar foto
+          <input type="file" accept="image/*" capture="environment" style="display:none"
+            onchange="onPhotoSelected(this,'${qid}')">
+        </label>`}
+      <div class="photo-status" id="photoStatus_${qid}"></div>
     </div>`;
 }
 
@@ -1828,7 +1867,7 @@ async function onPhotoSelected(input, questionId) {
 
     const st = document.getElementById(`photoStatus_${questionId}`);
     if (st) st.innerHTML = '<div class="geo-spinner geo-spinner-sm"></div> Subiendo…';
-    const filename = GCS.filename('problematicas');
+    const filename = GCS.filename(State.surveyType || 'relevamientos');
     let gcsUrl;
     try {
       gcsUrl = await GCS.upload(blob, filename);
