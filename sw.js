@@ -1,4 +1,4 @@
-const CACHE = 'severo-v6';
+const CACHE = 'severo-v7';
 const PRECACHE = [
   './',
   './index.html',
