@@ -175,10 +175,10 @@ const PREGUNTAS = {
   // ── Encuesta Socio-Habitacional Maipú 2026 ──────────────────────────────────
   // P01 (lat/lng) se captura automáticamente por geolocalización, no aparece aquí.
   sociohabitacional: [
-    // BLOQUE 1 — Identificación
+    // BLOQUE 1 — Identificación personal
     {
       id: 'dni',
-      block: 'Identificación y localización',
+      block: 'Identificación personal',
       label: 'DNI',
       type: 'text',
       required: false,
@@ -200,13 +200,22 @@ const PREGUNTAS = {
       required: false,
       placeholder: 'Opcional',
     },
+    // BLOQUE 2 — Domicilio (pantalla separada)
     {
-      id: 'domicilio',
-      label: 'Domicilio',
+      id: 'domicilio_calle',
+      block: 'Domicilio y localización',
+      label: 'Nombre de calle',
       type: 'text',
       required: false,
-      placeholder: 'Calle y número',
+      placeholder: 'Ej: Av. San Martín',
       padronField: 'domicilio',
+    },
+    {
+      id: 'domicilio_numero',
+      label: 'Número de puerta',
+      type: 'text',
+      required: false,
+      placeholder: 'Ej: 1234',
     },
     {
       id: 'barrio',
