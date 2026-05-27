@@ -307,6 +307,11 @@ const Padron = {
     return this._apiSearchByApellido(query);
   },
 
+  async searchByDomicilioAsync(query) {
+    if (!this._hasToken()) return this._mockSearchByDomicilio(query);
+    return this._apiSearchByDomicilio(query);
+  },
+
   async updateLatLng(meta, lat, lng, domicilioReal) {
     if (!meta?.coordRange) return;
     // Escribir en padrón requiere token del relevador (debe tener acceso de edición)
@@ -346,6 +351,16 @@ const Padron = {
     const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
     return items
       .filter((r) => (r.apellido || '').toLowerCase().includes(q))
+      .slice(0, 15)
+      .map((r) => ({ ...r, _meta: { dni: r.dni } }));
+  },
+
+  _mockSearchByDomicilio(query) {
+    if (!query || query.length < 4) return [];
+    const q = query.toLowerCase();
+    const items = JSON.parse(localStorage.getItem('severo_padron') || '[]');
+    return items
+      .filter((r) => (r.domicilio || '').toLowerCase().includes(q))
       .slice(0, 15)
       .map((r) => ({ ...r, _meta: { dni: r.dni } }));
   },
@@ -469,6 +484,20 @@ const Padron = {
     // fila 0 = encabezados; N=col 13 = APELLIDO Y NOMBRE
     rows.slice(1).forEach((row, i) => {
       if ((row[13] || '').toLowerCase().includes(q)) {
+        results.push(this._rowToPadronRecord(row, i + 2));
+      }
+    });
+    return results.slice(0, 15);
+  },
+
+  async _apiSearchByDomicilio(query) {
+    if (!query || query.length < 4) return [];
+    const q = query.toLowerCase();
+    const rows = await this._fetchSheet(CONFIG.SHEET_PADRON);
+    const results = [];
+    // P=DOMICILIO = col 15
+    rows.slice(1).forEach((row, i) => {
+      if ((row[15] || '').toLowerCase().includes(q)) {
         results.push(this._rowToPadronRecord(row, i + 2));
       }
     });
