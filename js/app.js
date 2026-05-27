@@ -173,8 +173,8 @@ function go(screen, updates = {}) {
 }
 
 function render() {
-  // Destruir el mapa Leaflet si salimos de la pantalla geo
-  if (_map && State.screen !== 'geo') {
+  // Destruir el mapa Leaflet si salimos de una pantalla con mapa
+  if (_map && State.screen !== 'geo' && State.screen !== 'datosDomicilio') {
     _map.remove();
     _map = null;
     _marker = null;
@@ -187,6 +187,7 @@ function render() {
     geo:             renderGeo,
     typeSelect:      renderTypeSelect,
     datosPersonales: renderDatosPersonales,
+    datosDomicilio:  renderDatosDomicilio,
     citizenSearch:   renderCitizenSearch,
     survey:          renderSurvey,
     summary:         renderSummary,
@@ -199,7 +200,7 @@ function render() {
   };
   el.innerHTML = (screens[State.screen] || renderAuth)();
   bindEvents();
-  if (State.screen === 'geo') startGeoCapture();
+  if (State.screen === 'geo' || State.screen === 'datosDomicilio') startGeoCapture();
   if (State.screen === 'saving') doSave();
   if (State.screen === 'list') loadList();
 
@@ -1030,10 +1031,13 @@ function confirmGeo() {
     const addr = searchEl?.value?.trim() || null;
     State.domicilioReal = addr;
     if (addr) {
-      // Sincronizar la dirección confirmada al campo domicilio de la encuesta
-      // (sobreescribe el pre-llenado del padrón si el relevador lo editó en el mapa)
-      State.answers.domicilio = addr;
-      State.padronDomicilio   = addr;
+      // Sincronizar la dirección confirmada al campo de la encuesta
+      if (State.surveyType === 'sociohabitacional') {
+        State.answers.domicilio_calle = addr;
+      } else {
+        State.answers.domicilio = addr;
+      }
+      State.padronDomicilio = addr;
     }
     if (State.surveyType === 'problematica' && addr) {
       State.answers.direccion = addr;
@@ -1117,7 +1121,7 @@ function selectType(type) {
     const answers = {};
     const padronFilled = {};
     if (preselected) {
-      (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+      (PREGUNTAS.sociohabitacional || []).slice(0, 6).forEach((q) => {
         if (q.padronKey && preselected.dni) { answers[q.id] = preselected.dni; padronFilled[q.id] = true; }
         else if (q.padronField && preselected[q.padronField]) { answers[q.id] = preselected[q.padronField]; padronFilled[q.id] = true; }
       });
@@ -1150,8 +1154,6 @@ function selectType(type) {
 // ── Datos Personales screen (sociohabitacional step 1) ───────────────────────
 
 function renderDatosPersonales() {
-  const barrioQ = (PREGUNTAS.sociohabitacional || []).find((q) => q.id === 'barrio');
-  const barrioOpts = barrioQ?.options || [];
   return `
     <div class="screen">
       <header class="app-header">
@@ -1205,12 +1207,43 @@ function renderDatosPersonales() {
               value="${esc(State.answers.apodo || '')}"
               oninput="saveAnswer('apodo', this.value)">
           </div>
+        </div>
+      </div>
+      <div class="survey-footer">
+        <button class="btn btn-ghost" onclick="skipDatosPersonales()">Omitir</button>
+        <button class="btn btn-primary" onclick="confirmDatosPersonales()">Continuar →</button>
+      </div>
+    </div>`;
+}
+
+// ── Datos Domicilio screen (sociohabitacional step 2) ────────────────────────
+
+function renderDatosDomicilio() {
+  const barrioQ = (PREGUNTAS.sociohabitacional || []).find((q) => q.id === 'barrio');
+  const barrioOpts = barrioQ?.options || [];
+  return `
+    <div class="screen screen-datosDomicilio">
+      <header class="app-header">
+        <button class="btn-icon" onclick="go('datosPersonales')" aria-label="Volver">←</button>
+        <h1 class="header-title">🏠 Socio-habitacional</h1>
+        <span class="header-count">2/3</span>
+      </header>
+      <div class="block-header">Domicilio</div>
+      <div class="dp-body">
+        <div class="dp-fields-section">
           <div class="dp-field">
-            <label class="dp-field-label">Domicilio <span class="dp-optional">(electoral)</span></label>
-            <input type="text" class="input" id="dpFieldDomicilio"
-              placeholder="Calle y número"
-              value="${esc(State.answers.domicilio || '')}"
-              oninput="saveAnswer('domicilio', this.value)">
+            <label class="dp-field-label">Nombre de calle</label>
+            <input type="text" class="input" id="dpFieldCalle"
+              placeholder="Ej: Av. San Martín"
+              value="${esc(State.answers.domicilio_calle || '')}"
+              oninput="saveAnswer('domicilio_calle', this.value)">
+          </div>
+          <div class="dp-field">
+            <label class="dp-field-label">Número de puerta</label>
+            <input type="text" inputmode="numeric" class="input" id="dpFieldNumero"
+              placeholder="Ej: 1234"
+              value="${esc(State.answers.domicilio_numero || '')}"
+              oninput="saveAnswer('domicilio_numero', this.value)">
           </div>
           <div class="dp-field">
             <label class="dp-field-label">Barrio</label>
@@ -1224,11 +1257,36 @@ function renderDatosPersonales() {
           </div>
         </div>
       </div>
+      <div class="block-header block-header-geo">Ubicación de la vivienda</div>
+      <div class="geo-search-row">
+        <input type="text" class="input geo-search-input" id="geoSearchInput"
+          placeholder="Buscar dirección…" autocomplete="off"
+          value="${esc(State.answers.domicilio_calle ? (State.answers.domicilio_calle + (State.answers.domicilio_numero ? ' ' + State.answers.domicilio_numero : '')) : (State.padronDomicilio || ''))}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doGeoSearch()}">
+        <button class="btn btn-ghost geo-search-btn" onclick="doGeoSearch()">Buscar</button>
+      </div>
+      <div class="geo-status-bar" id="geoStatusBar">
+        <div class="geo-spinner" id="geoSpinner"></div>
+        <span id="geoStatus">Obteniendo ubicación…</span>
+      </div>
+      <div id="geoMap" class="geo-map geo-map-embedded"></div>
+      <div class="geo-footer geo-footer-embedded" id="geoFooter" style="display:none">
+        <p class="geo-coords" id="geoCoords"></p>
+        <p class="geo-barrio" id="geoBarrio" style="display:none">Barrio detectado: <strong id="geoBarrioName"></strong></p>
+        <div class="geo-actions">
+          <button class="btn btn-ghost" onclick="skipDatosDomicilio()">Sin ubicación</button>
+          <button class="btn btn-primary" onclick="confirmGeoAndContinue()">✓ Confirmar y continuar</button>
+        </div>
+      </div>
       <div class="survey-footer">
-        <button class="btn btn-ghost" onclick="skipDatosPersonales()">Omitir</button>
-        <button class="btn btn-primary" onclick="confirmDatosPersonales()">Continuar →</button>
+        <button class="btn btn-ghost" onclick="go('datosPersonales')">← Atrás</button>
+        <button class="btn btn-primary" onclick="confirmDatosDomicilio()">Continuar →</button>
       </div>
     </div>`;
+}
+
+function confirmGeoAndContinue() {
+  confirmGeo();
 }
 
 function renderDPResults() {
@@ -1283,7 +1341,7 @@ function onDPSearchInput(field, value) {
 function selectDPCitizen(idx) {
   const record = (State.citizenSearchResults || [])[idx];
   if (!record) return;
-  (PREGUNTAS.sociohabitacional || []).slice(0, 5).forEach((q) => {
+  (PREGUNTAS.sociohabitacional || []).slice(0, 6).forEach((q) => {
     if (q.padronKey && record.dni) {
       State.answers[q.id] = record.dni;
       State.padronFilled[q.id] = true;
@@ -1306,18 +1364,31 @@ function selectDPCitizen(idx) {
 }
 
 function confirmDatosPersonales() {
-  go('geo', { currentQ: 5 });
+  go('datosDomicilio');
 }
 
 function skipDatosPersonales() {
-  ['dni', 'apellido', 'apodo', 'domicilio', 'barrio'].forEach((k) => {
+  ['dni', 'apellido', 'apodo'].forEach((k) => {
     delete State.answers[k];
     delete State.padronFilled[k];
   });
   State.padronMeta = null;
   State.padronDomicilio = null;
   State.padronLocation = null;
-  go('geo', { currentQ: 5 });
+  go('datosDomicilio');
+}
+
+function confirmDatosDomicilio() {
+  go('survey', { currentQ: 6 });
+}
+
+function skipDatosDomicilio() {
+  ['domicilio_calle', 'domicilio_numero', 'barrio'].forEach((k) => {
+    delete State.answers[k];
+    delete State.padronFilled[k];
+  });
+  State.location = null;
+  go('survey', { currentQ: 6 });
 }
 
 // ── Citizen Search screen ────────────────────────────────────────────────────
@@ -1710,12 +1781,12 @@ function removePhoto(questionId, idx) {
 
 function surveyBack() {
   const questions = PREGUNTAS[State.surveyType] || [];
-  const personalQCount = State.surveyType === 'sociohabitacional' ? 5 : 0;
+  const personalQCount = State.surveyType === 'sociohabitacional' ? 6 : 0;
   const prev = prevVisibleIdx(State.currentQ, questions);
   if (prev < personalQCount) {
     const hasUserAnswers = Object.keys(State.answers || {}).some((k) => !State.padronFilled?.[k]);
     if (hasUserAnswers && !confirm('¿Salir del relevamiento? Se perderán los datos ingresados.')) return;
-    go(State.surveyType === 'sociohabitacional' ? 'datosPersonales' : 'geo');
+    go(State.surveyType === 'sociohabitacional' ? 'datosDomicilio' : 'geo');
   } else {
     State.currentQ = prev;
     render();
@@ -1931,7 +2002,9 @@ function renderSurveyCard(r, idx) {
       : (r.answers?.direccion || '');
   } else {
     title = r.answers?.apellido || (r.answers?.dni ? `DNI ${r.answers.dni}` : '—');
-    subtitle = r.answers?.domicilio || '';
+    subtitle = r.answers?.domicilio_calle
+      ? [r.answers.domicilio_calle, r.answers.domicilio_numero].filter(Boolean).join(' ')
+      : (r.answers?.domicilio || '');
   }
   const barrio = r.answers?.barrio
     ? `<span class="card-barrio">${esc(r.answers.barrio)}</span>` : '';

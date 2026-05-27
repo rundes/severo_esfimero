@@ -464,6 +464,20 @@ html, body {
   z-index: 1;
 }
 
+.geo-map-embedded {
+  flex: none;
+  height: 280px;
+  min-height: 280px;
+}
+
+.block-header-geo {
+  margin-top: 8px;
+}
+
+.geo-footer-embedded {
+  border-bottom: 1px solid var(--border);
+}
+
 .geo-footer {
   padding: var(--sp-3) var(--sp-4);
   padding-bottom: calc(var(--sp-3) + var(--safe-bottom));

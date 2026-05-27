@@ -181,7 +181,8 @@ const SheetsDB = {
     }
     if (type === 'sociohabitacional') {
       const a = r.answers || {};
-      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(a.domicilio),
+      const domicilio = [a.domicilio_calle, a.domicilio_numero].filter(Boolean).join(' ') || a.domicilio || '';
+      return [...base, a.dni || '', sc(a.apellido), sc(a.apodo), sc(domicilio),
         a.barrio || '', a.personas_total || '', a.personas_menores || '',
         a.personas_mayores65 || '', a.familias || '', a.tenencia || '',
         a.escritura || '', a.cuotas_adeuda || '', a.tipo_vivienda || '',
@@ -217,7 +218,7 @@ const SheetsDB = {
       }
       if (type === 'sociohabitacional') {
         return { ...base, answers: { dni: row[7], apellido: row[8], apodo: row[9],
-          domicilio: row[10], barrio: row[11], personas_total: row[12],
+          domicilio_calle: row[10], domicilio_numero: '', barrio: row[11], personas_total: row[12],
           personas_menores: row[13], personas_mayores65: row[14], familias: row[15],
           tenencia: row[16], escritura: row[17], cuotas_adeuda: row[18],
           tipo_vivienda: row[19], material_paredes: row[20], ambientes_dormir: row[21],
