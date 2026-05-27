@@ -3036,6 +3036,7 @@ const Auth = {
     };
     localStorage.setItem('severo_user', JSON.stringify(this._user));
     localStorage.setItem('severo_access_token', accessToken);
+    localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
     return this._user;
   },
 
@@ -3055,6 +3056,7 @@ const Auth = {
     this._user = null;
     localStorage.removeItem('severo_user');
     localStorage.removeItem('severo_access_token');
+    localStorage.removeItem('severo_token_expiry');
     if (token && window.google?.accounts?.oauth2) {
       try { google.accounts.oauth2.revoke(token); } catch {}
     }
@@ -3186,6 +3188,7 @@ function initGoogleTokenClient() {
         _silentRefreshReject  = null;
         if (tokenResponse.error) return reject(new Error(tokenResponse.error));
         localStorage.setItem('severo_access_token', tokenResponse.access_token);
+        localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
         return resolve(tokenResponse.access_token);
       }
       if (tokenResponse.error) return;
@@ -3225,6 +3228,32 @@ function ensureFreshToken() {
 }
 
 window.addEventListener('load', () => { if (!_tokenClient) initGoogleTokenClient(); });
+
+function _isTokenNearExpiry() {
+  const expiry = parseInt(localStorage.getItem('severo_token_expiry') || '0', 10);
+  return !expiry || Date.now() >= expiry - 5 * 60 * 1000;
+}
+
+async function ensureFreshTokenIfNeeded() {
+  if (!SheetsDB._hasToken()) return;
+  if (!_isTokenNearExpiry()) return;
+  try { await ensureFreshToken(); } catch (_) {}
+}
+
+async function withTokenRetry(fn) {
+  try { return await fn(); }
+  catch (err) {
+    if (!String(err.message).includes('401')) throw err;
+    await ensureFreshToken();
+    return fn();
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
+    ensureFreshTokenIfNeeded();
+  }
+});
 
 function esc(v) {
   return String(v ?? '')
@@ -3593,10 +3622,10 @@ async function doHomeSearch(value, isNumeric) {
   try {
     let results;
     if (isNumeric) {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     State.homeSearchResults = results || [];
     State.homeSearchError = null;
@@ -3779,10 +3808,10 @@ async function doFamiliaSearch(value, isNumeric) {
   try {
     let results;
     if (isNumeric) {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     const mainDni = State.padronDetailRecord?.dni;
     const existingDnis = new Set([mainDni, ...getFamiliaGroup(mainDni).map((m) => m.dni)]);
@@ -4524,10 +4553,10 @@ async function doCitizenSearch(field, value) {
   try {
     let results;
     if (field === 'dni') {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     State.citizenSearchResults = results || [];
     State.citizenSearchError = null;
@@ -4860,7 +4889,7 @@ async function doPadronLookup(dniQuestion, questions) {
 
   let record;
   try {
-    record = await Padron.searchByDNIAsync(dni);
+    record = await withTokenRetry(() => Padron.searchByDNIAsync(dni));
   } catch {
     return;
   }
