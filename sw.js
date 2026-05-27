@@ -8,9 +8,9 @@ const PRECACHE = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
-  );
+  // Cachea assets y queda en estado "waiting" — NO llama skipWaiting()
+  // para que el update modal controle cuándo activar.
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)));
 });
 
 self.addEventListener('activate', (e) => {

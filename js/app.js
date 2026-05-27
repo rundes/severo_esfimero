@@ -302,22 +302,33 @@ window._pwaShowUpdateModal = (worker) => {
   const modal = document.createElement('div');
   modal.id = 'pwaUpdateModal';
   modal.className = 'pwa-update-modal';
+  // Bloquear scroll del body y cualquier escape del modal
+  document.body.style.overflow = 'hidden';
+  modal.addEventListener('click', (e) => e.stopPropagation());
+  modal.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') e.preventDefault(); }, { capture: true });
   modal.innerHTML = `
     <div class="pwa-update-box">
       <div class="pwa-update-icon">🔄</div>
       <h2 class="pwa-update-title">Nueva versión disponible</h2>
       <p class="pwa-update-body">
-        Se publicó una actualización importante.<br>
-        Actualizar evita errores al sincronizar tus encuestas.
+        Se publicó una actualización.<br>
+        La app se recarga para aplicarla.
       </p>
       <button class="btn btn-primary btn-block pwa-update-btn" id="pwaUpdateBtn">
         Actualizar ahora
       </button>
-      <p class="pwa-update-hint">La app se recargará automáticamente.</p>
+      <p class="pwa-update-hint">Tus encuestas guardadas no se pierden.</p>
     </div>`;
   document.body.appendChild(modal);
   document.getElementById('pwaUpdateBtn').addEventListener('click', () => {
-    if (_pwaWaitingWorker) _pwaWaitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    document.getElementById('pwaUpdateBtn').textContent = 'Actualizando…';
+    document.getElementById('pwaUpdateBtn').disabled = true;
+    if (_pwaWaitingWorker) {
+      _pwaWaitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
   });
 };
 
