@@ -124,14 +124,15 @@ function _showForceUpdateOverlay() {
   document.getElementById('_forceUpdateBtn').addEventListener('click', async () => {
     document.getElementById('_forceUpdateBtn').textContent = 'Actualizando…';
     try {
-      // Activar el SW nuevo si está en espera
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      // Borrar todos los cachés del SW para que la recarga descargue archivos frescos
+      // Desregistrar todos los SW — la próxima carga no pasa por ningún SW
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+      // Borrar todos los cachés
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
     } catch (_) {}
-    window.location.reload(true);
+    // Parámetro único fuerza descarga fresca sin caché HTTP del browser
+    window.location.href = window.location.pathname + '?_v=' + Date.now();
   });
 }
 
