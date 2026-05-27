@@ -30,6 +30,7 @@ function initGoogleTokenClient() {
         _silentRefreshReject  = null;
         if (tokenResponse.error) return reject(new Error(tokenResponse.error));
         localStorage.setItem('severo_access_token', tokenResponse.access_token);
+        localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
         return resolve(tokenResponse.access_token);
       }
       // Login normal
@@ -69,6 +70,36 @@ function ensureFreshToken() {
     }, 15000);
   });
 }
+
+// Retorna true si el token está vencido o a menos de 5 min de vencer
+function _isTokenNearExpiry() {
+  const expiry = parseInt(localStorage.getItem('severo_token_expiry') || '0', 10);
+  return !expiry || Date.now() >= expiry - 5 * 60 * 1000;
+}
+
+// Refresca el token sólo si es necesario. Silencioso — no lanza en caso de fallo.
+async function ensureFreshTokenIfNeeded() {
+  if (!SheetsDB._hasToken()) return;
+  if (!_isTokenNearExpiry()) return;
+  try { await ensureFreshToken(); } catch (_) {}
+}
+
+// Envuelve una llamada a la API: si falla con 401 renueva el token y reintenta una vez.
+async function withTokenRetry(fn) {
+  try { return await fn(); }
+  catch (err) {
+    if (!String(err.message).includes('401')) throw err;
+    await ensureFreshToken();
+    return fn();
+  }
+}
+
+// Al volver al primer plano, refrescar token proactivamente si está por vencer
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
+    ensureFreshTokenIfNeeded();
+  }
+});
 
 function esc(v) {
   return String(v ?? '')
@@ -453,10 +484,10 @@ async function doHomeSearch(value, isNumeric) {
   try {
     let results;
     if (isNumeric) {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     State.homeSearchResults = results || [];
     State.homeSearchError = null;
@@ -639,10 +670,10 @@ async function doFamiliaSearch(value, isNumeric) {
   try {
     let results;
     if (isNumeric) {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     const mainDni = State.padronDetailRecord?.dni;
     const existingDnis = new Set([mainDni, ...getFamiliaGroup(mainDni).map((m) => m.dni)]);
@@ -1386,10 +1417,10 @@ async function doCitizenSearch(field, value) {
   try {
     let results;
     if (field === 'dni') {
-      const record = await Padron.searchByDNIAsync(value);
+      const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
-      results = await Padron.searchByApellidoAsync(value);
+      results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }
     State.citizenSearchResults = results || [];
     State.citizenSearchError = null;
@@ -1727,7 +1758,7 @@ async function doPadronLookup(dniQuestion, questions) {
 
   let record;
   try {
-    record = await Padron.searchByDNIAsync(dni);
+    record = await withTokenRetry(() => Padron.searchByDNIAsync(dni));
   } catch {
     return;
   }

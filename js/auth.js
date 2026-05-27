@@ -20,6 +20,8 @@ const Auth = {
     };
     localStorage.setItem('severo_user', JSON.stringify(this._user));
     localStorage.setItem('severo_access_token', accessToken);
+    // Tokens duran 3600 s; refrescamos a los 55 min (300 s de margen)
+    localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
     return this._user;
   },
 
@@ -39,6 +41,7 @@ const Auth = {
     this._user = null;
     localStorage.removeItem('severo_user');
     localStorage.removeItem('severo_access_token');
+    localStorage.removeItem('severo_token_expiry');
     if (token && window.google?.accounts?.oauth2) {
       try { google.accounts.oauth2.revoke(token); } catch {}
     }
