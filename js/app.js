@@ -1,4 +1,4 @@
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.5';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -442,7 +442,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
-        <span class="auth-version">v2.3</span>
+        <span class="auth-version">v2.5</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -509,7 +509,7 @@ function renderHome() {
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
-        <span class="footer-version">v2.3</span>
+        <span class="footer-version">v2.5</span>
       </footer>
     </div>`;
 }
@@ -1871,6 +1871,26 @@ function renderInput(q, val) {
         </div>`;
     }
 
+    case 'chips_otros': {
+      const selected = Array.isArray(State.answers[q.id]) ? State.answers[q.id] : [];
+      const otrosVal = State.answers[q.id + '_otros'] || '';
+      return `
+        <div class="chip-group">
+          ${(q.options || []).map((o) => {
+            const v = typeof o === 'string' ? o : o.value;
+            const l = typeof o === 'string' ? o : o.label;
+            return `<button class="chip ${selected.includes(v) ? 'active' : ''}"
+              onclick="toggleChip('${q.id}', '${esc(v)}')">
+              ${esc(l)}
+            </button>`;
+          }).join('')}
+        </div>
+        <input type="text" class="input" style="margin-top:8px"
+          placeholder="${esc(q.otrosPlaceholder || 'Otros…')}"
+          value="${esc(otrosVal)}"
+          oninput="saveAnswer('${q.id}_otros', this.value)">`;
+    }
+
     default:
       return '';
   }
@@ -2049,7 +2069,11 @@ function renderSummary() {
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = State.answers[q.id];
     let display = '—';
-    if (val !== undefined && val !== null && val !== '') {
+    if (q.type === 'chips_otros') {
+      const parts = [...(Array.isArray(val) ? val : (val ? [val] : [])),
+        State.answers[q.id + '_otros'] || ''].filter(Boolean);
+      display = parts.length ? esc(parts.join(', ')) : '—';
+    } else if (val !== undefined && val !== null && val !== '') {
       display = Array.isArray(val) ? esc(val.join(', ')) : esc(String(val));
     }
     return `<tr>
@@ -2323,7 +2347,11 @@ function renderDetail() {
   const rows = questions.filter((q) => q.type !== 'photo').map((q) => {
     const val = r.answers?.[q.id];
     let display = '—';
-    if (val !== undefined && val !== null && val !== '') {
+    if (q.type === 'chips_otros') {
+      const parts = [...(Array.isArray(val) ? val : (val ? [val] : [])),
+        r.answers?.[q.id + '_otros'] || ''].filter(Boolean);
+      display = parts.length ? esc(parts.join(', ')) : '—';
+    } else if (val !== undefined && val !== null && val !== '') {
       display = Array.isArray(val) ? esc(val.join(', ')) : esc(String(val));
     }
     return `<tr>
