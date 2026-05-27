@@ -1,3 +1,5 @@
+const APP_VERSION = '2.2';
+
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
 let _map = null;
@@ -94,10 +96,42 @@ async function withTokenRetry(fn) {
   }
 }
 
-// Al volver al primer plano, refrescar token proactivamente si está por vencer
+// ── Chequeo de versión contra servidor ───────────────────────────────────────
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.version && data.version !== APP_VERSION) _showForceUpdateOverlay();
+  } catch (_) {}
+}
+
+function _showForceUpdateOverlay() {
+  if (document.getElementById('_forceUpdateOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = '_forceUpdateOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,71,161,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.4);">
+      <div style="font-size:2.4rem;margin-bottom:12px;">🔄</div>
+      <h2 style="margin:0 0 8px;font-size:1.15rem;color:#0D47A1;font-weight:700;">Nueva versión disponible</h2>
+      <p style="margin:0 0 28px;color:#555;font-size:0.92rem;line-height:1.5;">Hay una actualización disponible. Recargá para continuar.</p>
+      <button id="_forceUpdateBtn" style="background:#0D47A1;color:#fff;border:none;padding:14px 0;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;width:100%;">Actualizar ahora</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  document.getElementById('_forceUpdateBtn').addEventListener('click', () => {
+    document.getElementById('_forceUpdateBtn').textContent = 'Actualizando…';
+    window.location.reload(true);
+  });
+}
+
+// Al volver al primer plano, refrescar token y chequear versión
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
-    ensureFreshTokenIfNeeded();
+  if (document.visibilityState === 'visible') {
+    if (Auth.isLoggedIn()) ensureFreshTokenIfNeeded();
+    checkForUpdate();
   }
 });
 
@@ -158,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     render();
   }
+  checkForUpdate();
 });
 
 // Compatibilidad: si GSI carga antes que initGoogleTokenClient se llame

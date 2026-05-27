@@ -1,4 +1,4 @@
-const CACHE = 'severo-v8';
+const CACHE = 'severo-v9';
 const PRECACHE = [
   './',
   './index.html',
@@ -32,8 +32,8 @@ self.addEventListener('fetch', (e) => {
   if (url.hostname !== location.hostname) return;
 
   const path = url.pathname;
-  // Network-first para HTML y JS: garantiza que los deploys se sirven frescos
-  if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('/')) {
+  // Network-first para HTML, JS y version.json: garantiza que los deploys se sirven frescos
+  if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('/') || path.endsWith('version.json')) {
     e.respondWith(
       fetch(e.request).then((res) => {
         const clone = res.clone();
