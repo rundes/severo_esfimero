@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.6 — 2026-05-27
+- Descripción y funcionalidades genéricas (meta/OG, manifest, tarjeta de tipo, PRODUCT.md, DESIGN.md)
+- Buscadores de persona unificados: pestañas Apellido/DNI · Domicilio + input único, en inicio y pre-encuesta
+- Documentación del proyecto: `README.md` + `docs/` (arquitectura, configuración, despliegue)
+
+## v2.5 — 2026-05-27
+- Pastillas (chips) seleccionables en las preguntas de opinión
+
+## v2.4 — 2026-05-27
+- Búsqueda por domicilio en los buscadores de inicio y de pre-encuesta
+
+## v2.3 — 2026-05-27
+- Foto del frente de la vivienda en el paso 2 del relevamiento socio-habitacional
+- Actualización más confiable: desregistro del Service Worker y recarga con cache-bust
+
+## v2.2 — 2026-05-27
+- Pantalla de ubicación (pin) separada como tercer paso del relevamiento socio-habitacional
+- Actualización forzada vía `version.json`, independiente del Service Worker
+
 ## v2.1 — 2026-05-25
 
 ### Sistema de diseño (Constelación, evolucionado)
