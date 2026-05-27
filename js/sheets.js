@@ -164,6 +164,11 @@ const SheetsDB = {
 
   _toRow(type, r) {
     const sc = (v) => this._sc(v);
+    // Combina chips seleccionados + texto libre "otros" en un string CSV
+    const _coq = (chips, otros) => {
+      const parts = [...(Array.isArray(chips) ? chips : (chips ? [chips] : [])), otros || ''].filter(Boolean);
+      return parts.join(', ');
+    };
     const base = [
       r.id || '',
       r.savedAt || new Date().toISOString(),
@@ -190,10 +195,10 @@ const SheetsDB = {
         a.agua_potable || '', a.electricidad || '', a.gas || '',
         a.discapacidad || '', (a.tipo_discapacidad || []).join(', '), a.cud || '',
         (a.actividades_menores || []).join(', '), (a.actividades_adultos || []).join(', '),
-        (a.actividades_mayores || []).join(', '), sc(a.mejora_barrio),
-        sc(a.mejora_municipio), sc(a.falta_maipu), a.voto || '',
+        (a.actividades_mayores || []).join(', '), _coq(a.mejora_barrio, a.mejora_barrio_otros),
+        '', _coq(a.falta_maipu, a.falta_maipu_otros), a.voto || '',
         a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || '',
-        sc(a.politicas_municipio),
+        _coq(a.politicas_municipio, a.politicas_municipio_otros),
         Array.isArray(a.foto_frente) ? a.foto_frente.filter(Boolean).join('\n') : (a.foto_frente || '')];
     }
     // problematica
@@ -227,10 +232,11 @@ const SheetsDB = {
           cud: row[28], actividades_menores: row[29] ? row[29].split(', ') : [],
           actividades_adultos: row[30] ? row[30].split(', ') : [],
           actividades_mayores: row[31] ? row[31].split(', ') : [],
-          mejora_barrio: row[32], mejora_municipio: row[33], falta_maipu: row[34],
+          mejora_barrio: [], mejora_barrio_otros: row[32] || '',
+          falta_maipu: [], falta_maipu_otros: row[34] || '',
           voto: row[35], vivienda_estado: row[36] || '',
           participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '',
-          politicas_municipio: row[40] || '',
+          politicas_municipio: [], politicas_municipio_otros: row[40] || '',
           foto_frente: (row[41] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
