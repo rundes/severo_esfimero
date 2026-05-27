@@ -171,11 +171,13 @@ const State = {
   // citizen search (survey flow)
   citizenSearchQuery: '',
   citizenDNIQuery: '',
+  citizenDomicilioQuery: '',
   citizenSearchResults: [],
   citizenSearching: false,
   citizenSearchError: null,
   // home padron search
   homeSearchQuery: '',
+  homeSearchMode: 'apellido',
   homeSearchResults: [],
   homeSearching: false,
   homeSearchError: null,
@@ -490,8 +492,14 @@ function renderHome() {
       </div>
       <div class="home-search-section">
         <div class="home-search-label">Buscar ciudadano en el padrón</div>
+        <div class="search-mode-tabs">
+          <button class="search-mode-tab ${State.homeSearchMode !== 'domicilio' ? 'active' : ''}"
+            onclick="setHomeSearchMode('apellido')">Apellido / DNI</button>
+          <button class="search-mode-tab ${State.homeSearchMode === 'domicilio' ? 'active' : ''}"
+            onclick="setHomeSearchMode('domicilio')">Domicilio</button>
+        </div>
         <input type="text" class="input" id="homeSearchInput"
-          placeholder="Apellido (4+ letras) o DNI (6+ dígitos)…"
+          placeholder="${State.homeSearchMode === 'domicilio' ? 'Nombre de calle o número…' : 'Apellido (4+ letras) o DNI (6+ dígitos)…'}"
           value="${esc(State.homeSearchQuery || '')}"
           oninput="onHomeSearchInput(this.value)"
           autocomplete="off">
@@ -513,10 +521,21 @@ function logout() {
 
 // ── Home padron search ───────────────────────────────────────────────────────
 
+function setHomeSearchMode(mode) {
+  State.homeSearchMode = mode;
+  State.homeSearchQuery = '';
+  State.homeSearchResults = [];
+  State.homeSearching = false;
+  State.homeSearchError = null;
+  clearTimeout(_homeSearchDebounce);
+  render();
+}
+
 function onHomeSearchInput(value) {
   State.homeSearchQuery = value;
   clearTimeout(_homeSearchDebounce);
-  const isNumeric = /^\d+$/.test(value.trim());
+  const isDomicilio = State.homeSearchMode === 'domicilio';
+  const isNumeric = !isDomicilio && /^\d+$/.test(value.trim());
   const minLen = isNumeric ? 6 : 4;
   if (value.length >= minLen) {
     State.homeSearching = true;
@@ -540,7 +559,9 @@ function updateHomeSearchUI() {
 async function doHomeSearch(value, isNumeric) {
   try {
     let results;
-    if (isNumeric) {
+    if (State.homeSearchMode === 'domicilio') {
+      results = await withTokenRetry(() => Padron.searchByDomicilioAsync(value));
+    } else if (isNumeric) {
       const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
     } else {
@@ -930,7 +951,7 @@ function startSurveyFromPadron() {
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
-    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
+    citizenSearchQuery: '', citizenDNIQuery: '', citizenDomicilioQuery: '', citizenSearchResults: [],
     citizenSearching: false, citizenSearchError: null,
     _preselectedCitizen: State.padronDetailRecord || null });
 }
@@ -939,7 +960,7 @@ function startNewSurvey() {
   go('typeSelect', { answers: {}, currentQ: 0, location: null, domicilioReal: null,
     surveyType: null, padronLoaded: false, padronFilled: {}, padronMeta: null,
     padronDomicilio: null, padronLocation: null,
-    citizenSearchQuery: '', citizenDNIQuery: '', citizenSearchResults: [],
+    citizenSearchQuery: '', citizenDNIQuery: '', citizenDomicilioQuery: '', citizenSearchResults: [],
     citizenSearching: false, citizenSearchError: null,
     _preselectedCitizen: null });
 }
@@ -1242,6 +1263,15 @@ function renderDatosPersonales() {
               oninput="onDPSearchInput('dni', this.value)"
               autocomplete="off">
           </div>
+          <div class="search-divider">o por domicilio</div>
+          <div class="search-group">
+            <label class="question-label" for="dpSearchDomicilio">Domicilio</label>
+            <input type="text" class="input" id="dpSearchDomicilio"
+              placeholder="Nombre de calle o número"
+              value="${esc(State.citizenDomicilioQuery || '')}"
+              oninput="onDPSearchInput('domicilio', this.value)"
+              autocomplete="off">
+          </div>
           <div id="dpSearchResults">${renderDPResults()}</div>
         </div>
         <div class="dp-fields-section">
@@ -1372,7 +1402,7 @@ function renderDPResults() {
   }
   const results = State.citizenSearchResults || [];
   if (!results.length) {
-    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
+    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6) || (State.citizenDomicilioQuery?.length >= 4);
     return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
   }
   return `<div class="citizen-results">
@@ -1388,16 +1418,24 @@ function onDPSearchInput(field, value) {
   if (field === 'apellido') {
     State.citizenSearchQuery = value;
     State.citizenDNIQuery = '';
-    const other = document.getElementById('dpSearchDNI');
-    if (other) other.value = '';
-  } else {
+    State.citizenDomicilioQuery = '';
+    const d = document.getElementById('dpSearchDNI'); if (d) d.value = '';
+    const e = document.getElementById('dpSearchDomicilio'); if (e) e.value = '';
+  } else if (field === 'dni') {
     State.citizenDNIQuery = value;
     State.citizenSearchQuery = '';
-    const other = document.getElementById('dpSearchApellido');
-    if (other) other.value = '';
+    State.citizenDomicilioQuery = '';
+    const a = document.getElementById('dpSearchApellido'); if (a) a.value = '';
+    const e = document.getElementById('dpSearchDomicilio'); if (e) e.value = '';
+  } else {
+    State.citizenDomicilioQuery = value;
+    State.citizenSearchQuery = '';
+    State.citizenDNIQuery = '';
+    const a = document.getElementById('dpSearchApellido'); if (a) a.value = '';
+    const d = document.getElementById('dpSearchDNI'); if (d) d.value = '';
   }
   clearTimeout(_searchDebounce);
-  const minLen = field === 'apellido' ? 4 : 6;
+  const minLen = (field === 'dni') ? 6 : 4;
   if (value.length >= minLen) {
     State.citizenSearching = true;
     State.citizenSearchResults = [];
@@ -1531,6 +1569,15 @@ function renderCitizenSearch() {
             oninput="onCitizenSearchInput('dni', this.value)"
             autocomplete="off">
         </div>
+        <div class="search-divider">o por domicilio</div>
+        <div class="search-group">
+          <label class="question-label" for="searchDomicilio">Domicilio</label>
+          <input type="text" class="input" id="searchDomicilio"
+            placeholder="Nombre de calle o número"
+            value="${State.citizenDomicilioQuery || ''}"
+            oninput="onCitizenSearchInput('domicilio', this.value)"
+            autocomplete="off">
+        </div>
         <div id="searchResults">${renderCitizenResults()}</div>
       </div>
       <div class="survey-footer">
@@ -1548,7 +1595,7 @@ function renderCitizenResults() {
   }
   const results = State.citizenSearchResults || [];
   if (!results.length) {
-    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6);
+    const hasQuery = (State.citizenSearchQuery?.length >= 4) || (State.citizenDNIQuery?.length >= 6) || (State.citizenDomicilioQuery?.length >= 4);
     return hasQuery ? `<div class="search-status">Sin resultados en el padrón</div>` : '';
   }
   return `<div class="citizen-results">
@@ -1564,17 +1611,25 @@ function onCitizenSearchInput(field, value) {
   if (field === 'apellido') {
     State.citizenSearchQuery = value;
     State.citizenDNIQuery = '';
-    const other = document.getElementById('searchDNI');
-    if (other) other.value = '';
-  } else {
+    State.citizenDomicilioQuery = '';
+    const d = document.getElementById('searchDNI'); if (d) d.value = '';
+    const e = document.getElementById('searchDomicilio'); if (e) e.value = '';
+  } else if (field === 'dni') {
     State.citizenDNIQuery = value;
     State.citizenSearchQuery = '';
-    const other = document.getElementById('searchApellido');
-    if (other) other.value = '';
+    State.citizenDomicilioQuery = '';
+    const a = document.getElementById('searchApellido'); if (a) a.value = '';
+    const e = document.getElementById('searchDomicilio'); if (e) e.value = '';
+  } else {
+    State.citizenDomicilioQuery = value;
+    State.citizenSearchQuery = '';
+    State.citizenDNIQuery = '';
+    const a = document.getElementById('searchApellido'); if (a) a.value = '';
+    const d = document.getElementById('searchDNI'); if (d) d.value = '';
   }
 
   clearTimeout(_searchDebounce);
-  const minLen = field === 'apellido' ? 4 : 6;
+  const minLen = (field === 'dni') ? 6 : 4;
 
   if (value.length >= minLen) {
     State.citizenSearching = true;
@@ -1603,6 +1658,8 @@ async function doCitizenSearch(field, value) {
     if (field === 'dni') {
       const record = await withTokenRetry(() => Padron.searchByDNIAsync(value));
       results = record ? [record] : [];
+    } else if (field === 'domicilio') {
+      results = await withTokenRetry(() => Padron.searchByDomicilioAsync(value));
     } else {
       results = await withTokenRetry(() => Padron.searchByApellidoAsync(value));
     }

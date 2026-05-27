@@ -1069,6 +1069,31 @@ html, body {
   padding-top: var(--sp-1);
 }
 
+/* ── Search mode tabs ───────────────────────────────────────────────────────── */
+.search-mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin: var(--sp-2) 0 var(--sp-2);
+}
+.search-mode-tab {
+  flex: 1;
+  padding: 7px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.search-mode-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ── Padrón detail screen ────────────────────────────────────────────────────── */
 .padron-detail-body {
   flex: 1;
