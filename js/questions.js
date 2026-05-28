@@ -485,7 +485,7 @@ const PREGUNTAS = {
       required: false,
       options: ['Calles y veredas', 'Alumbrado público', 'Seguridad', 'Espacios verdes',
         'Limpieza', 'Transporte', 'Cloacas y agua', 'Salud', 'Educación', 'Centros comunitarios',
-        'Cultura y deporte'],
+        'Cultura', 'Deporte'],
       otrosPlaceholder: 'Otras mejoras…',
     },
     {
