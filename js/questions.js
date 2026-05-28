@@ -516,13 +516,7 @@ const PREGUNTAS = {
         { value: 'NO',      label: 'No' },
         { value: 'DUDOSO',  label: 'Dudoso' },
       ],
-    },
-    {
-      id: 'voto_observaciones',
-      label: 'Observaciones',
-      type: 'textarea',
-      required: false,
-      placeholder: 'Comentarios adicionales sobre el voto…',
+      followUp: { id: 'voto_observaciones', label: 'Observaciones', placeholder: 'Comentarios adicionales…' },
     },
   ],
 };
