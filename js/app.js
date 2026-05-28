@@ -1,4 +1,4 @@
-const APP_VERSION = '2.6';
+const APP_VERSION = '2.7';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -443,7 +443,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
-        <span class="auth-version">v2.6</span>
+        <span class="auth-version">v2.7</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -510,7 +510,7 @@ function renderHome() {
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
-        <span class="footer-version">v2.6</span>
+        <span class="footer-version">v2.7</span>
       </footer>
     </div>`;
 }
@@ -595,7 +595,7 @@ function renderHomeSearchResults() {
   return `<div class="citizen-results">
     ${results.map((r, i) => `
       <div class="citizen-result" role="button" tabindex="0" onclick="openPadronDetail(${i})">
-        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}${resultBarrioPill(r)}</div>
         <div class="citizen-result-info">DNI ${esc(r.dni)} · ${esc(r.domicilio) || 'Sin domicilio'}</div>
       </div>`).join('')}
   </div>`;
@@ -783,6 +783,15 @@ function renderFamiliaAddResults() {
 
 function _parseCoord(v) {
   return parseFloat(String(v || '').replace(/,/g, '.'));
+}
+
+// Pastilla de barrio para resultados de búsqueda: deriva el barrio del padrón
+// desde lat/lng (point-in-polygon). Devuelve '' si no hay coords o no cae en un barrio.
+function resultBarrioPill(r) {
+  const lat = _parseCoord(r.lat), lng = _parseCoord(r.lng);
+  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '';
+  const b = (typeof barrioFromPoint === 'function') ? barrioFromPoint(lat, lng) : null;
+  return b ? ` <span class="card-barrio" style="margin-left:8px">${esc(b)}</span>` : '';
 }
 
 function renderPadronDetail() {
@@ -1396,7 +1405,7 @@ function renderDPResults() {
   return `<div class="citizen-results">
     ${results.map((r, i) => `
       <div class="citizen-result" role="button" tabindex="0" onclick="selectDPCitizen(${i})">
-        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}${resultBarrioPill(r)}</div>
         <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
       </div>`).join('')}
   </div>`;
@@ -1541,7 +1550,7 @@ function renderCitizenResults() {
   return `<div class="citizen-results">
     ${results.map((r, i) => `
       <div class="citizen-result" role="button" tabindex="0" onclick="selectCitizen(${i})">
-        <div class="citizen-result-name">${esc(r.apellido) || '—'}</div>
+        <div class="citizen-result-name">${esc(r.apellido) || '—'}${resultBarrioPill(r)}</div>
         <div class="citizen-result-info">DNI: ${esc(r.dni) || '—'} · ${esc(r.domicilio) || 'Sin domicilio registrado'}</div>
       </div>`).join('')}
   </div>`;
