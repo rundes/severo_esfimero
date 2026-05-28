@@ -1,4 +1,4 @@
-const APP_VERSION = '2.8.4';
+const APP_VERSION = '2.8.5';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -1773,8 +1773,8 @@ function renderInput(q, val) {
       </div>`;
     }
 
-    case 'radio':
-      return `<div class="radio-group">
+    case 'radio': {
+      const radioHtml = `<div class="radio-group">
         ${q.options.map((o) => `
           <label class="radio-option ${val === o.value ? 'active' : ''}">
             <input type="radio" name="q_${q.id}" value="${o.value}"
@@ -1783,6 +1783,15 @@ function renderInput(q, val) {
             <span>${o.label}</span>
           </label>`).join('')}
       </div>`;
+      if (!q.followUp) return radioHtml;
+      const fu = q.followUp;
+      const fuVal = State.answers[fu.id] || '';
+      return radioHtml + `
+        <label class="q-label" style="margin-top:16px;display:block">${esc(fu.label)}</label>
+        <textarea class="input textarea" rows="3"
+          placeholder="${esc(fu.placeholder || '')}"
+          oninput="saveAnswer('${fu.id}', this.value)">${esc(fuVal)}</textarea>`;
+    }
 
     case 'photo': {
       const blobs = Array.isArray(_photoBlobs[q.id]) ? _photoBlobs[q.id] : [];
