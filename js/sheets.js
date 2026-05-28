@@ -199,7 +199,8 @@ const SheetsDB = {
         '', _coq(a.falta_maipu, a.falta_maipu_otros), a.voto || '',
         a.vivienda_estado || '', a.participa_menores || '', a.participa_adultos || '', a.participa_mayores || '',
         _coq(a.politicas_municipio, a.politicas_municipio_otros),
-        Array.isArray(a.foto_frente) ? a.foto_frente.filter(Boolean).join('\n') : (a.foto_frente || '')];
+        Array.isArray(a.foto_frente) ? a.foto_frente.filter(Boolean).join('\n') : (a.foto_frente || ''),
+        a.voto_observaciones || ''];
     }
     // problematica
     const a = r.answers || {};
@@ -237,7 +238,8 @@ const SheetsDB = {
           voto: row[35], vivienda_estado: row[36] || '',
           participa_menores: row[37] || '', participa_adultos: row[38] || '', participa_mayores: row[39] || '',
           politicas_municipio: [], politicas_municipio_otros: row[40] || '',
-          foto_frente: (row[41] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean) } };
+          foto_frente: (row[41] || '').split('\n').map(u => u.replace(/%2F/gi, '/')).filter(Boolean),
+          voto_observaciones: row[42] || '' } };
       }
       return { ...base, answers: { categoria: row[7], direccion: row[8], barrio: row[9],
         descripcion: row[10], urgencia: row[11], afecta_transito: row[12], observaciones: row[13],

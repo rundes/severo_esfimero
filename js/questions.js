@@ -484,7 +484,8 @@ const PREGUNTAS = {
       type: 'chips_otros',
       required: false,
       options: ['Calles y veredas', 'Alumbrado público', 'Seguridad', 'Espacios verdes',
-        'Limpieza', 'Transporte', 'Cloacas y agua', 'Salud', 'Educación', 'Centros comunitarios'],
+        'Limpieza', 'Transporte', 'Cloacas y agua', 'Salud', 'Educación', 'Centros comunitarios',
+        'Cultura y deporte'],
       otrosPlaceholder: 'Otras mejoras…',
     },
     {
@@ -515,6 +516,13 @@ const PREGUNTAS = {
         { value: 'NO',      label: 'No' },
         { value: 'DUDOSO',  label: 'Dudoso' },
       ],
+    },
+    {
+      id: 'voto_observaciones',
+      label: 'Observaciones',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Comentarios adicionales sobre el voto…',
     },
   ],
 };
