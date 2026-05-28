@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.8 — 2026-05-27
+- La pastilla de barrio cae al campo `localidad` del padrón cuando no hay match geográfico (lat/lng fuera de los polígonos)
+
 ## v2.7 — 2026-05-27
 - Pastilla de barrio en los resultados de búsqueda (inicio y pre-encuesta): el barrio se deriva de las coordenadas del padrón
 

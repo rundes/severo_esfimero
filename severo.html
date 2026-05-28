@@ -3228,7 +3228,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.7';
+const APP_VERSION = '2.8';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -3651,7 +3651,7 @@ function renderAuth() {
         <img src="icons/icon-512.png" class="logo-img" alt="Proyecto Severo">
         <h1 class="logo-title">Proyecto Severo</h1>
         <p class="logo-sub">Sistema de Relevamientos</p>
-        <span class="auth-version">v2.7</span>
+        <span class="auth-version">v2.8</span>
       </div>
       <div class="auth-card">
         ${isConfigured
@@ -3717,7 +3717,7 @@ function renderHome() {
       <footer class="app-footer">
         <img src="icons/icon-header.svg" class="footer-logo" alt="">
         <span>Proyecto Severo — Relevamientos</span>
-        <span class="footer-version">v2.7</span>
+        <span class="footer-version">v2.8</span>
       </footer>
     </div>`;
 }
@@ -3993,11 +3993,15 @@ function _parseCoord(v) {
 }
 
 // Pastilla de barrio para resultados de búsqueda: deriva el barrio del padrón
-// desde lat/lng (point-in-polygon). Devuelve '' si no hay coords o no cae en un barrio.
+// desde lat/lng (point-in-polygon). Si no hay match geográfico, cae al campo
+// localidad del padrón. Devuelve '' si no hay ninguno.
 function resultBarrioPill(r) {
+  let b = null;
   const lat = _parseCoord(r.lat), lng = _parseCoord(r.lng);
-  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '';
-  const b = (typeof barrioFromPoint === 'function') ? barrioFromPoint(lat, lng) : null;
+  if (!isNaN(lat) && !isNaN(lng) && !(lat === 0 && lng === 0) && typeof barrioFromPoint === 'function') {
+    b = barrioFromPoint(lat, lng);
+  }
+  if (!b && r.localidad) b = String(r.localidad).trim();
   return b ? ` <span class="card-barrio" style="margin-left:8px">${esc(b)}</span>` : '';
 }
 
