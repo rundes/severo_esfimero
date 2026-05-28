@@ -693,6 +693,7 @@ html, body {
   padding: 8px 14px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-pill);
+  white-space: nowrap;
   background: var(--surface);
   cursor: pointer;
   font-size: .9rem;
