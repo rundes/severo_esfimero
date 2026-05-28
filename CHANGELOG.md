@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.7 — 2026-05-27
+- Pastilla de barrio en los resultados de búsqueda (inicio y pre-encuesta): el barrio se deriva de las coordenadas del padrón
+
 ## v2.6 — 2026-05-27
 - Descripción y funcionalidades genéricas (meta/OG, manifest, tarjeta de tipo, PRODUCT.md, DESIGN.md)
 - Buscadores de persona unificados: pestañas Apellido/DNI · Domicilio + input único, en inicio y pre-encuesta
