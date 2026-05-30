@@ -15,7 +15,7 @@ const CONFIG = {
   SHEET_PROBLEMATICAS:    'Problematicas',
   SHEET_SOCIOHABITACIONAL:'Sociohabitacional',
 
-  // Padrón electoral — fuente única de datos personales ("Padron integrado")
+  // Padrón electoral — fuente única de datos personales (pestaña "Padron")
   // Se lee con el token OAuth del relevador. La planilla debe estar compartida
   // (lectura) SOLO con las cuentas de los relevadores, NUNCA pública por enlace.
   // A=DNI, B=SEXO, C=TIPO, D–L=participación elecciones,
@@ -26,7 +26,7 @@ const CONFIG = {
   // AC=LOCALIDAD, AD–AF=EMPLEADORES, AG=REGIMEN_IMP,
   // AH–AI=CELULARES, AJ–AK=EMAILS, AL=AUH, AM=IFE, AN=TWITTER
   SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
-  SHEET_PADRON:   'Padron integrado',
+  SHEET_PADRON:   'Padron',
 
   // Google Cloud Storage — fotos de problemáticas
   GCS_BUCKET: 'maipu-pba',

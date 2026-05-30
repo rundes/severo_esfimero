@@ -1,4 +1,4 @@
-const APP_VERSION = '2.8.6';
+const APP_VERSION = '2.8.7';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 

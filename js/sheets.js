@@ -287,7 +287,7 @@ const SheetsDB = {
 // Acceso de LECTURA via API Key de Google (planilla debe permitir "ver con vínculo")
 // Acceso de ESCRITURA (lat/lng/domicilio real) via token OAuth del relevador
 //
-// Pestaña "Padron integrado":
+// Pestaña "Padron":
 //   A=DNI, B=SEXO, C=TIPO, D–L=elecciones,
 //   M=TIPO_DNI, N=APELLIDO Y NOMBRE, O=CLASE, P=DOMICILIO,
 //   Q=LATITUD,  R=LONGITUD,          S=DOMICILIO REAL
@@ -395,13 +395,24 @@ const Padron = {
 
   // ── API helpers ───────────────────────────────────────────────────────────
 
+  // Google Sheets API exige single quotes alrededor de sheet names que
+  // contienen espacios o caracteres no-alfanuméricos. Defensivo: aunque
+  // hoy el padrón vive en la pestaña "Padron" (un solo word), si el
+  // nombre cambia a algo con espacio el quoting evita el 400
+  // "Unable to parse range". Single quotes dentro del nombre se escapan
+  // duplicándolas (sintaxis A1).
+  _quoteSheetName(name) {
+    return `'${String(name).replace(/'/g, "''")}'`;
+  },
+
   async _fetchSheet(sheetName) {
     if (this._cache[sheetName]) return this._cache[sheetName];
     const token = localStorage.getItem('severo_access_token');
     if (!token) {
       throw new Error('Sesión requerida para leer el padrón. Iniciá sesión con Google.');
     }
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent("'" + sheetName + "'")}`;
+    const range = this._quoteSheetName(sheetName);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(range)}`;
     console.log('[Padron] GET', sheetName);
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     console.log('[Padron] status', res.status, sheetName);
@@ -469,8 +480,9 @@ const Padron = {
       beneficiario_ife: row[38] || '',
       twitter:        row[39] || '',
       _meta: {
-        coordRange:     `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:R${rowIdx}`,
-        coordRangeFull: `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:S${rowIdx}`,
+        // Sheet name quoted defensively (sintaxis A1 acepta quoting siempre).
+        coordRange:     `${this._quoteSheetName(CONFIG.SHEET_PADRON)}!Q${rowIdx}:R${rowIdx}`,
+        coordRangeFull: `${this._quoteSheetName(CONFIG.SHEET_PADRON)}!Q${rowIdx}:S${rowIdx}`,
       },
     };
   },
@@ -521,7 +533,7 @@ const Padron = {
     const values = useFullRange ? [[lat, lng, domicilioReal]] : [[lat, lng]];
 
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: {
