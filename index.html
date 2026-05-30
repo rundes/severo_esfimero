@@ -49,14 +49,26 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Propaga ?_v= a todos los scripts locales para forzar descarga fresca
-    // cuando el force-update overlay navega con ese parámetro.
+    // Propaga ?_v= a todos los scripts locales para forzar descarga fresca.
+    // Default = BUILD literal del release: en primera visita el browser
+    // ve URLs nuevas por release y NO puede servir JS stale del HTTP/CDN
+    // cache. Si la URL trae ?_v= (force-update overlay), gana ese valor.
+    // BUMP_HERE: actualizar BUILD en cada release, junto con version.json.
+    //
+    // Scripts dinámicos: async=false fuerza ejecución en orden de inserción
+    // (necesario porque app.js depende de config.js, sheets.js, etc.). Esto
+    // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
+    // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var _v = new URLSearchParams(location.search).get('_v') || '';
+      var BUILD = '2.8.9';
+      var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];
       scripts.forEach(function(src) {
-        document.write('<scr' + 'ipt src="' + src + (_v ? '?_v=' + _v : '') + '"><\/scr' + 'ipt>');
+        var s = document.createElement('script');
+        s.src = src + '?_v=' + encodeURIComponent(_v);
+        s.async = false;
+        document.head.appendChild(s);
       });
     })();
   </script>

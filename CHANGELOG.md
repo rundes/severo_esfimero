@@ -1,5 +1,45 @@
 # Changelog
 
+## v2.8.9 — 2026-05-30 — Force-update propaga `?_v=` a todos los JS desde el primer load
+
+### Bug
+- Tras un deploy, algunos relevadores reportaban que la app cargaba la
+  pantalla nueva pero los servicios (búsqueda, geo, fotos) seguían
+  comportándose como la versión vieja. Síntoma típico de un `index.html`
+  fresco que carga JS files cacheados (browser HTTP cache / CDN).
+
+### Causa
+- El IIFE en `index.html` propagaba `?_v=` a los scripts SOLO cuando la
+  URL ya traía ese parámetro (caso force-update overlay). En primera
+  visita / nueva sesión sin `?_v=`, los scripts se cargaban como
+  `js/app.js` (sin query) → el browser/CDN podía servir respuestas
+  cacheadas previas al deploy, mientras `index.html` venía fresco
+  (network-first del SW). Resultado: index nuevo + lógica vieja → los
+  "servicios" del JS fallaban silenciosamente.
+- Adicionalmente, el SW hacía `fetch(e.request)` sin opciones de
+  cache, así que su request al network podía ser servida por el HTTP
+  cache del browser y guardarse stale en el cache del SW.
+
+### Fix
+- **`index.html`**: el IIFE ahora siempre adjunta `?_v=` a cada script.
+  Default = `BUILD` literal del release (hardcoded, bumpear con cada
+  deploy). Si la URL trae `?_v=` (overlay de force-update), gana ese
+  valor. Garantiza URL única por release → primera visita ya recibe
+  JS fresco. Además se reemplazó `document.write()` por
+  `document.createElement('script')` + `appendChild` con
+  `async = false` para preservar el orden de carga (config.js antes
+  que app.js, etc.). Más seguro (XSS / CSP) y sin warnings del browser.
+- **`sw.js`**: el network-first para HTML/JS/version.json ahora usa
+  `fetch(e.request, { cache: 'no-cache' })`. Fuerza revalidación
+  contra el origen (server) y bypasea el HTTP cache del browser, así
+  el SW nunca guarda una respuesta stale en su propio cache.
+
+### Infra
+- `version.json` 2.8.8 → 2.8.9. `APP_VERSION` actualizado en
+  `js/app.js` y `severo.html`. `CACHE = 'severo-v20'` en `sw.js`.
+- `BUILD = '2.8.9'` en el IIFE de `index.html` (marcador comentado
+  `BUMP_HERE` para acordarse en el próximo release).
+
 ## v2.8.8 — 2026-05-30 — Versión dinámica en pantalla de auth y footer
 
 ### Bug
