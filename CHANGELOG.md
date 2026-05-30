@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.8.8 — 2026-05-30 — Versión dinámica en pantalla de auth y footer
+
+### Bug
+- La pantalla inicial (auth) y el footer mostraban "v2.8" hardcoded
+  desde que se introdujo la display. Cada bump de versión obligaba
+  a editarlas a mano y se olvidaba; la app publicada decía v2.8
+  aunque internamente fuera v2.8.7.
+
+### Fix
+- `js/app.js:446` y `js/app.js:513`: reemplacé `v2.8` por
+  `v${APP_VERSION}` dentro de los template literals de `renderAuth()`
+  y del `<footer class="app-footer">`. `APP_VERSION` ya está definido
+  en `js/app.js:1` y disponible en scope.
+- Mismas dos posiciones en `severo.html` (build monolítico).
+
+### Infra
+- `version.json` 2.8.7 → 2.8.8. `APP_VERSION` actualizado en
+  `js/app.js` y `severo.html`. `CACHE = 'severo-v19'` en `sw.js`.
+
 ## v2.8.7 — 2026-05-30 — Fix completo: nombre real de la pestaña + quoting helper
 
 ### Bug
