@@ -41,7 +41,7 @@ Credentials → *Create credentials* → *API key*. Copiala a `CONFIG.GOOGLE_API
 | Variable | Qué es | Acceso requerido |
 |----------|--------|------------------|
 | `SURVEY_SPREADSHEET_ID` | Planilla donde se **guardan** los relevamientos. Pestañas `Ciudadanos`, `Problematicas`, `Sociohabitacional` (se crean solas con sus cabeceras si faltan). | Edición para las cuentas de los relevadores. |
-| `SPREADSHEET_ID` | Listado de referencia (*padrón*), pestaña `Padron integrado`. | Solo **lectura/edición compartida** con las cuentas de los relevadores. **Nunca** pública por enlace. |
+| `SPREADSHEET_ID` | Listado de referencia (*padrón*), pestaña `Padron`. | Solo **lectura/edición compartida** con las cuentas de los relevadores. **Nunca** pública por enlace. |
 
 El mapeo de columnas del padrón está documentado como comentario en `js/config.js` y se materializa en `Padron._rowToPadronRecord` (`js/sheets.js`); si cambia el orden de columnas en la planilla, hay que ajustarlo ahí.
 
@@ -75,8 +75,8 @@ const CONFIG = {
   SHEET_CIUDADANOS:        'Ciudadanos',
   SHEET_PROBLEMATICAS:     'Problematicas',
   SHEET_SOCIOHABITACIONAL: 'Sociohabitacional',
-  SPREADSHEET_ID:          '…',            // padrón (Padron integrado)
-  SHEET_PADRON:            'Padron integrado',
+  SPREADSHEET_ID:          '…',            // padrón (pestaña "Padron")
+  SHEET_PADRON:            'Padron',
   GCS_BUCKET:              'maipu-pba',
 };
 ```

@@ -1,5 +1,68 @@
 # Changelog
 
+## v2.8.7 — 2026-05-30 — Fix completo: nombre real de la pestaña + quoting helper
+
+### Bug
+- v2.8.6 (parallel) agregó comillas simples al sheet name pero seguía
+  apuntando a `'Padron integrado'`. La pestaña real se llama
+  **`Padron`** (sin el sufijo), así que el 400 persistía: `"Unable to
+  parse range"` porque la hoja no existe con ese nombre.
+
+### Fix
+- `CONFIG.SHEET_PADRON: 'Padron'` (era `'Padron integrado'`) en
+  `js/config.js` y bloque CONFIG inline de `severo.html`.
+- `docs/CONFIGURACION.md` actualizado.
+
+### Mejoras sobre el quoting de v2.8.6
+- Helper nuevo `Padron._quoteSheetName(name)` que escapa correctamente
+  single quotes embebidos (`'` → `''`) según la sintaxis A1 del Sheets
+  API. Reemplaza el `"'" + sheetName + "'"` inline introducido en
+  v2.8.6 (que no escapaba quotes).
+- Mismo helper aplicado a `coordRange` / `coordRangeFull` de
+  `_rowToPadronRecord` (usado por `_apiUpdateLatLng` para escribir
+  lat/lng tras la captura).
+
+### Infra
+- `version.json` 2.8.6 → 2.8.7. `APP_VERSION` actualizado en
+  `js/app.js` y `severo.html`. `CACHE = 'severo-v18'` en `sw.js`.
+
+## v2.8.6 — 2026-05-30 — Fix: búsqueda en padrón devolvía 400 (sheet name incorrecto)
+
+### Bug
+- La búsqueda por apellido/DNI/domicilio en el inicio y en la
+  pre-encuesta fallaba con **HTTP 400** del Google Sheets API. Cada
+  request al padrón devolvía `"Unable to parse range"`.
+
+### Causa
+- `CONFIG.SHEET_PADRON` apuntaba a `'Padron integrado'`, pero la
+  pestaña real de la planilla del padrón se llama **`Padron`** (sin
+  el sufijo). El Sheets API rechazaba el range porque la hoja no
+  existía con ese nombre.
+- Bug latente desde el commit `harden(padron)`. La planilla quedó
+  renombrada en algún momento y la config nunca se actualizó.
+
+### Fix
+- `js/config.js` y bloque CONFIG inline en `severo.html`:
+  `SHEET_PADRON: 'Padron'` (era `'Padron integrado'`).
+- `docs/CONFIGURACION.md` actualizado con el nombre correcto.
+- Comentarios en `js/sheets.js` y `severo.html` actualizados.
+
+### Endurecimiento defensivo
+- `Padron._fetchSheet` ahora envuelve el sheet name en single quotes
+  antes de URL-encodearlo (`'Padron'` → `%27Padron%27`). La sintaxis
+  A1 del Sheets API acepta quoting siempre y es **obligatorio** si el
+  nombre llegara a tener espacios o caracteres no-alfanuméricos.
+- Mismo quoting en `coordRange` / `coordRangeFull` de
+  `_rowToPadronRecord` (usado por `_apiUpdateLatLng` para escribir
+  lat/lng tras la captura).
+- Helper nuevo `Padron._quoteSheetName(name)` con escape de `'` a `''`
+  según la sintaxis A1.
+
+### Infra
+- `version.json` 2.8.5 → 2.8.6. `APP_VERSION` actualizado en
+  `js/app.js` y `severo.html`. `CACHE = 'severo-v17'` en `sw.js`
+  para forzar reinstalación del SW.
+
 ## v2.8 — 2026-05-27
 - La pastilla de barrio cae al campo `localidad` del padrón cuando no hay match geográfico (lat/lng fuera de los polígonos)
 

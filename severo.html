@@ -1905,7 +1905,7 @@ const CONFIG = {
   // AC=LOCALIDAD, AD–AF=EMPLEADORES, AG=REGIMEN_IMP,
   // AH–AI=CELULARES, AJ–AK=EMAILS, AL=AUH, AM=IFE, AN=TWITTER
   SPREADSHEET_ID: '1QjhmHFpwL9J7io10v2Ie31avOFrMK4oGYf_zHTi82Vg',
-  SHEET_PADRON:   'Padron integrado',
+  SHEET_PADRON:   'Padron',
 
   // Google Cloud Storage — fotos de problemáticas
   GCS_BUCKET: 'maipu-pba',
@@ -2865,7 +2865,7 @@ const SheetsDB = {
 // LECTURA: API Key de Google (no requiere token del relevador)
 // ESCRITURA (lat/lng/domicilio real): token OAuth del relevador
 //
-// "Padron integrado" — ver CONFIG para mapa completo de columnas
+// Pestaña "Padron" — ver CONFIG para mapa completo de columnas
 
 const Padron = {
   _cache: {},
@@ -2958,9 +2958,18 @@ const Padron = {
 
   // ── API ───────────────────────────────────────────────────────────────────
 
+  // Google Sheets API exige single quotes alrededor de sheet names con
+  // espacios o caracteres no-alfanuméricos. Defensivo: hoy el padrón
+  // vive en la pestaña "Padron" (un solo word), pero quoting evita
+  // futuros 400 "Unable to parse range" si se renombra con espacios.
+  _quoteSheetName(name) {
+    return `'${String(name).replace(/'/g, "''")}'`;
+  },
+
   async _fetchSheet(sheetName) {
     if (this._cache[sheetName]) return this._cache[sheetName];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent("'" + sheetName + "'")}${this._apiKeyParam()}`;
+    const range = this._quoteSheetName(sheetName);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(range)}${this._apiKeyParam()}`;
     console.log('[Padron] GET', sheetName, url.replace(/key=[^&]+/, 'key=…'));
     const res = await fetch(url);
     console.log('[Padron] status', res.status, sheetName);
@@ -3026,8 +3035,8 @@ const Padron = {
       beneficiario_ife: row[38] || '',
       twitter:        row[39] || '',
       _meta: {
-        coordRange:     `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:R${rowIdx}`,
-        coordRangeFull: `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:S${rowIdx}`,
+        coordRange:     `${this._quoteSheetName(CONFIG.SHEET_PADRON)}!Q${rowIdx}:R${rowIdx}`,
+        coordRangeFull: `${this._quoteSheetName(CONFIG.SHEET_PADRON)}!Q${rowIdx}:S${rowIdx}`,
       },
     };
   },
@@ -3233,7 +3242,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.8.6';
+const APP_VERSION = '2.8.7';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
