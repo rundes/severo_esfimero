@@ -401,7 +401,7 @@ const Padron = {
     if (!token) {
       throw new Error('Sesión requerida para leer el padrón. Iniciá sesión con Google.');
     }
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent("'" + sheetName + "'")}`;
     console.log('[Padron] GET', sheetName);
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     console.log('[Padron] status', res.status, sheetName);
@@ -469,8 +469,8 @@ const Padron = {
       beneficiario_ife: row[38] || '',
       twitter:        row[39] || '',
       _meta: {
-        coordRange:     `${CONFIG.SHEET_PADRON}!Q${rowIdx}:R${rowIdx}`,
-        coordRangeFull: `${CONFIG.SHEET_PADRON}!Q${rowIdx}:S${rowIdx}`,
+        coordRange:     `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:R${rowIdx}`,
+        coordRangeFull: `'${CONFIG.SHEET_PADRON}'!Q${rowIdx}:S${rowIdx}`,
       },
     };
   },
