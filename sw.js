@@ -1,4 +1,4 @@
-const CACHE = 'severo-v19';
+const CACHE = 'severo-v20';
 const PRECACHE = [
   './',
   './index.html',
@@ -32,10 +32,13 @@ self.addEventListener('fetch', (e) => {
   if (url.hostname !== location.hostname) return;
 
   const path = url.pathname;
-  // Network-first para HTML, JS y version.json: garantiza que los deploys se sirven frescos
+  // Network-first para HTML, JS y version.json: garantiza que los deploys
+  // se sirven frescos. cache: 'no-cache' fuerza revalidación con el origen
+  // y evita que el HTTP cache del browser sirva JS stale después de un
+  // deploy (los `?_v=` del index.html + esto = sin chance de stale).
   if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('/') || path.endsWith('version.json')) {
     e.respondWith(
-      fetch(e.request).then((res) => {
+      fetch(e.request, { cache: 'no-cache' }).then((res) => {
         const clone = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, clone));
         return res;
