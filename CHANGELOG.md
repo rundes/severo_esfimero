@@ -1,5 +1,38 @@
 # Changelog
 
+## v2.8.10 — 2026-06-01 — Bump de versión centralizado en `version.json` + `scripts/bump.js`
+
+### Problema
+- La versión vivía duplicada en 5 lugares: `version.json`, `js/app.js`
+  (`APP_VERSION`), `severo.html` (`APP_VERSION`), `index.html`
+  (`BUILD` del IIFE) y `sw.js` (`CACHE`). En cada release había que
+  editar los 5 a mano y era fácil olvidarse de alguno (la app
+  publicada decía v2.8 cuando internamente era v2.8.7).
+
+### Solución
+- **Fuente única de verdad**: `version.json`.
+- **Nuevo script** `scripts/bump.js` (Node, sin dependencias) que
+  propaga el valor de `version.json` a las otras 4 ubicaciones.
+- Acepta `patch` / `minor` / `major` para bumpear semver, una versión
+  explícita `X.Y.Z`, o ningún argumento (solo re-propaga la versión
+  actual de `version.json`).
+- `sw.js` `CACHE` ahora es semver (`severo-v2.8.10`) en vez de
+  contador (`severo-v20`) → un solo formato consistente.
+
+### Uso
+```bash
+node scripts/bump.js patch       # bump + propagación
+node scripts/bump.js 3.1.4       # versión explícita + propagación
+node scripts/bump.js             # solo propagación (post-edit manual)
+```
+
+El script no commitea ni pushea: solo escribe. El usuario revisa el
+diff y decide cuándo commit + deploy.
+
+### Doc
+- `docs/DESPLIEGUE.md` actualizado con el flujo nuevo y la tabla
+  de las 5 ubicaciones que el script mantiene en sync.
+
 ## v2.8.9 — 2026-05-30 — Force-update propaga `?_v=` a todos los JS desde el primer load
 
 ### Bug

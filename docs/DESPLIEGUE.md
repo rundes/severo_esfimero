@@ -40,16 +40,33 @@ URL: https://rundes.github.io/severo_esfimero/ · `basePath` efectivo: `/severo_
 
 ## Subir versión (force-update)
 
-La actualización forzada compara `version.json` (servidor) contra `APP_VERSION` (código). Si no subís la versión, **los dispositivos en campo no reciben el aviso de actualización**. Subí estos valores en **ambos builds**:
+La actualización forzada compara `version.json` (servidor) contra `APP_VERSION` (código). Si no subís la versión, **los dispositivos en campo no reciben el aviso de actualización**.
 
-| Lugar | Archivo |
-|-------|---------|
-| `{"version":"X.Y"}` | `version.json` |
-| `const APP_VERSION = 'X.Y'` | `js/app.js` **y** `severo.html` |
-| `<span class="auth-version">vX.Y</span>` | `js/app.js` **y** `severo.html` |
-| `<span class="footer-version">vX.Y</span>` | `js/app.js` **y** `severo.html` |
+**Fuente única de verdad**: `version.json`. El resto se propaga automáticamente con un script:
 
-> `VERSION` y `CHANGELOG.md` históricamente quedaron rezagados respecto de la versión real; la fuente de verdad para el force-update es `version.json` + `APP_VERSION`.
+```bash
+node scripts/bump.js patch     # 2.8.9 → 2.8.10
+node scripts/bump.js minor     # 2.8.9 → 2.9.0
+node scripts/bump.js major     # 2.8.9 → 3.0.0
+node scripts/bump.js 3.1.4     # versión explícita
+node scripts/bump.js           # solo re-propaga (si editaste version.json a mano)
+```
+
+El script escribe (no commitea):
+
+| Lugar | Archivo | Patrón |
+|-------|---------|--------|
+| Versión publicada | `version.json` | `{"version":"X.Y.Z"}` |
+| `APP_VERSION` JS | `js/app.js` | `const APP_VERSION = 'X.Y.Z';` |
+| `APP_VERSION` JS | `severo.html` (build monolítico) | `const APP_VERSION = 'X.Y.Z';` |
+| `BUILD` cache-bust de scripts | `index.html` (IIFE) | `var BUILD = 'X.Y.Z';` |
+| Cache del SW | `sw.js` | `const CACHE = 'severo-vX.Y.Z';` |
+
+El header `vX.Y.Z` en pantalla de auth y footer se renderiza con `v${APP_VERSION}` (template literal); no hay copy hardcoded ya.
+
+Tras correr el script: `git diff`, commit, push, deploy a `gh-pages` (ver siguiente sección).
+
+> `VERSION` y `CHANGELOG.md` históricamente quedaron rezagados respecto de la versión real; la fuente de verdad para el force-update es `version.json` + `APP_VERSION` (sincronizados por el script).
 
 ## Mantener `severo.html` en sync
 
