@@ -1,5 +1,43 @@
 # Changelog
 
+## v2.9.4 — 2026-06-03 — Watchdog escalonado + UI manual de recuperación
+
+### Bug
+- En Android la barra del splash llegaba al 100% y **nada pasaba**.
+- v2.9.1 usaba un flag booleano `_bootRetry` en sessionStorage: tras
+  un reintento fallido, el flag quedaba seteado y el segundo intento
+  saltaba el reload silenciosamente. Si la app NUNCA llegaba a
+  `render()` (que limpia el flag), el usuario quedaba colgado mirando
+  la barra al 100% sin recuperación automática.
+
+### Fix
+- Reemplazado el flag booleano por **estado escalonado** en
+  `_bootAttempts` = `{ count, last }` (JSON en sessionStorage):
+  - **Intento 1** (count=0): reload silencioso con `?_v=Date.now()`.
+  - **Intento 2** (count=1): reload silencioso.
+  - **Intento 3** (count=2): **UI manual** con texto explicativo +
+    botón **"Limpiar y reintentar"**.
+- El botón desregistra todos los `ServiceWorker` y borra todas las
+  entradas de `caches.keys()` antes de recargar con cache-bust. Es la
+  misma recuperación de tierra arrasada del force-update overlay,
+  pero accesible sin necesidad de que `app.js` haya bootear.
+- **Cooldown**: si pasaron > 2 minutos desde el último intento,
+  reseteamos el estado a 0 (asumimos que el usuario reabrió la app
+  a propósito y queremos volver a intentar el reload silencioso).
+
+### Cleanup en `render()`
+- `js/app.js` y `severo.html` ahora limpian **tanto** `_bootRetry`
+  (compat hacia atrás v2.9.1) **como** `_bootAttempts`.
+
+### Por qué no más de 2 reloads silenciosos
+- Si dos recargas no resolvieron, el problema es más profundo (SW
+  corrupto, datos persistentes inválidos, network completamente
+  offline). El reload n+1 silencioso no aporta. Mejor mostrar UI
+  accionable.
+
+### Infra
+- `version.json` 2.9.3 → 2.9.4 vía `node scripts/bump.js patch`.
+
 ## v2.9.3 — 2026-06-03 — Splash con barra de progreso sincronizada al watchdog
 
 ### Cambio UX

@@ -74,7 +74,7 @@
     // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
     // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var BUILD = '2.9.3';
+      var BUILD = '2.9.4';
       var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];
@@ -89,18 +89,73 @@
 
   <script>
     // Boot watchdog: si .loading-init sigue visible tras 10s, el JS no
-    // bootearon (SW colgado, scripts fallados, parse error). Hard reload
-    // con cache-bust para recuperar al usuario sin que tenga que
-    // desinstalar la app. 10s = umbral generoso para mobile lento.
-    // sessionStorage evita loop si el watchdog dispara y la recarga
-    // tampoco arranca.
+    // bootearon (SW colgado, scripts fallados, parse error).
+    //
+    // Estrategia escalonada (3 niveles), no un toggle ON/OFF:
+    //   intento 1 → reload con cache-bust único (?_v=Date.now()).
+    //   intento 2 → reload con cache-bust único.
+    //   intento 3 → UI manual con botón "Limpiar y reintentar" que
+    //               desregistra SW + borra todos los cachés antes de
+    //               recargar. No reintento silencioso porque si dos
+    //               recargas no resolvieron, el problema necesita
+    //               intervención (el bug previo dejaba al usuario
+    //               viendo la barra al 100% sin que pase nada).
+    //
+    // _bootAttempts vive en sessionStorage. render() en app.js lo limpia
+    // al booter OK. Si pasan >2 min entre intentos, reseteamos
+    // (asumimos que el usuario reabrió la app a propósito).
     setTimeout(function() {
-      var stuck = document.querySelector('#app .loading-init');
-      if (!stuck) return;
-      if (sessionStorage.getItem('_bootRetry')) return;
-      sessionStorage.setItem('_bootRetry', '1');
-      console.warn('[boot] app no arranco en 10s, hard reload con cache-bust');
-      location.href = location.pathname + '?_v=' + Date.now();
+      if (!document.querySelector('#app .loading-init')) return;
+
+      var now = Date.now();
+      var raw = sessionStorage.getItem('_bootAttempts');
+      var state = { count: 0, last: 0 };
+      if (raw) {
+        try { state = JSON.parse(raw); } catch (_) {}
+      }
+      // Cooldown: si pasaron >2 min, tratá como sesión nueva
+      if (now - (state.last || 0) > 120000) state = { count: 0, last: 0 };
+
+      if (state.count >= 2) {
+        // 3er fallo seguido → UI manual de recuperación
+        var app = document.getElementById('app');
+        if (!app) return;
+        app.innerHTML =
+          '<div class="loading-init" role="alert">' +
+          '  <div class="loading-init-text" style="max-width:280px;line-height:1.4;text-align:center;">' +
+          '    No pudimos cargar la app después de 2 intentos. Esto suele resolverse limpiando el caché.' +
+          '  </div>' +
+          '  <button id="_bootResetBtn" type="button" style="background:#0D47A1;color:#fff;border:none;padding:14px 24px;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:8px;">' +
+          '    Limpiar y reintentar' +
+          '  </button>' +
+          '</div>';
+        var btn = document.getElementById('_bootResetBtn');
+        btn.addEventListener('click', function() {
+          btn.textContent = 'Limpiando…';
+          btn.disabled = true;
+          (async function() {
+            try {
+              if (navigator.serviceWorker) {
+                var regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(function(r) { return r.unregister(); }));
+              }
+              if (window.caches) {
+                var keys = await caches.keys();
+                await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              }
+            } catch (_) {}
+            sessionStorage.removeItem('_bootAttempts');
+            location.href = location.pathname + '?_v=' + Date.now();
+          })();
+        });
+        return;
+      }
+
+      state.count++;
+      state.last = now;
+      sessionStorage.setItem('_bootAttempts', JSON.stringify(state));
+      console.warn('[boot] intento ' + state.count + ' fallido, recargando con cache-bust');
+      location.href = location.pathname + '?_v=' + now;
     }, 10000);
   </script>
 

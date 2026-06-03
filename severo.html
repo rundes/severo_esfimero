@@ -1924,15 +1924,55 @@ html, body {
           integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
           crossorigin="anonymous"></script>
   <script>
-    // Boot watchdog: si .loading-init sigue visible tras 10s, hard reload
-    // con cache-bust para recuperar al usuario (SW colgado / scripts
-    // fallados). sessionStorage evita loop si la recarga tampoco arranca.
+    // Boot watchdog escalonado: intentos 1-2 reload silencioso, intento 3
+    // muestra UI manual con botón "Limpiar y reintentar" (desregistra
+    // SW + borra cachés). Reset si pasan >2 min entre intentos.
     setTimeout(function() {
-      var stuck = document.querySelector('#app .loading-init');
-      if (!stuck) return;
-      if (sessionStorage.getItem('_bootRetry')) return;
-      sessionStorage.setItem('_bootRetry', '1');
-      location.href = location.pathname + '?_v=' + Date.now();
+      if (!document.querySelector('#app .loading-init')) return;
+      var now = Date.now();
+      var raw = sessionStorage.getItem('_bootAttempts');
+      var state = { count: 0, last: 0 };
+      if (raw) { try { state = JSON.parse(raw); } catch (_) {} }
+      if (now - (state.last || 0) > 120000) state = { count: 0, last: 0 };
+
+      if (state.count >= 2) {
+        var app = document.getElementById('app');
+        if (!app) return;
+        app.innerHTML =
+          '<div class="loading-init" role="alert">' +
+          '  <div class="loading-init-text" style="max-width:280px;line-height:1.4;text-align:center;">' +
+          '    No pudimos cargar la app después de 2 intentos. Esto suele resolverse limpiando el caché.' +
+          '  </div>' +
+          '  <button id="_bootResetBtn" type="button" style="background:#0D47A1;color:#fff;border:none;padding:14px 24px;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:8px;">' +
+          '    Limpiar y reintentar' +
+          '  </button>' +
+          '</div>';
+        var btn = document.getElementById('_bootResetBtn');
+        btn.addEventListener('click', function() {
+          btn.textContent = 'Limpiando…';
+          btn.disabled = true;
+          (async function() {
+            try {
+              if (navigator.serviceWorker) {
+                var regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(function(r) { return r.unregister(); }));
+              }
+              if (window.caches) {
+                var keys = await caches.keys();
+                await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              }
+            } catch (_) {}
+            sessionStorage.removeItem('_bootAttempts');
+            location.href = location.pathname + '?_v=' + Date.now();
+          })();
+        });
+        return;
+      }
+
+      state.count++;
+      state.last = now;
+      sessionStorage.setItem('_bootAttempts', JSON.stringify(state));
+      location.href = location.pathname + '?_v=' + now;
     }, 10000);
   </script>
   <script>
@@ -3295,7 +3335,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.9.3';
+const APP_VERSION = '2.9.4';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -3506,7 +3546,10 @@ function go(screen, updates = {}) {
 
 function render() {
   // Boot watchdog OK: si llegamos a render(), la app arrancó.
-  try { sessionStorage.removeItem('_bootRetry'); } catch (_) {}
+  try {
+    sessionStorage.removeItem('_bootRetry');
+    sessionStorage.removeItem('_bootAttempts');
+  } catch (_) {}
   // Destruir el mapa Leaflet si salimos de la pantalla geo
   if (_map && State.screen !== 'geo' && State.screen !== 'datosGeo') {
     _map.remove();
