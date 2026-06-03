@@ -37,9 +37,16 @@
   <meta name="twitter:description" content="Sistema de relevamientos territoriales del Proyecto Severo: vecinos, problemáticas urbanas y condiciones del hogar.">
   <meta name="twitter:image" content="https://rundes.github.io/severo_esfimero/icons/icon-512.png">
 
-  <!-- Leaflet CSS is only needed on the geo screen: load it off the critical path -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
+  <!-- Leaflet CSS is only needed on the geo screen: load it off the critical path.
+       integrity + crossorigin: Subresource Integrity contra compromiso del CDN.
+       Hash sha384 calculado contra leaflet@1.9.4 (fijo, no rotativo). -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+        crossorigin="anonymous"
+        media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+                  integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+                  crossorigin="anonymous"></noscript>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -47,7 +54,9 @@
     <div class="loading-init">Cargando…</div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+          crossorigin="anonymous"></script>
   <script>
     // Propaga ?_v= a todos los scripts locales para forzar descarga fresca.
     // Default = BUILD literal del release: en primera visita el browser
@@ -60,7 +69,7 @@
     // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
     // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var BUILD = '2.9.1';
+      var BUILD = '2.9.2';
       var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];
@@ -94,6 +103,10 @@
     Google Identity Services (OAuth).
     Solo actúa si CONFIG.GOOGLE_CLIENT_ID está configurado.
     Ver: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
+
+    Nota SRI: este script NO lleva integrity= porque Google lo rotea sin
+    avisar (no hay un hash estable que documenten). Aceptamos confiar en
+    accounts.google.com como origen, igual que cualquier OAuth flow.
   -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 

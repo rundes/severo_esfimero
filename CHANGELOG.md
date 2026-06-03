@@ -1,5 +1,36 @@
 # Changelog
 
+## v2.9.2 — 2026-06-03 — Subresource Integrity (SRI) en assets de CDN externos
+
+### Hardening
+- Los assets de Leaflet 1.9.4 servidos desde unpkg.com (`leaflet.css`
+  y `leaflet.js`) ahora llevan `integrity="sha384-..."` +
+  `crossorigin="anonymous"`. Si el CDN entregara un contenido
+  distinto al hash esperado, el browser **bloquea** el asset en vez
+  de ejecutarlo / aplicarlo. Mitiga compromisos del CDN o ataques
+  MITM en transit.
+- Hashes calculados localmente contra el contenido oficial de
+  `unpkg.com/leaflet@1.9.4/dist/` (versión fija pinned en el HTML).
+  Si se sube la versión de Leaflet, los hashes hay que regenerar.
+
+### Excepción documentada
+- `https://accounts.google.com/gsi/client` (Google Identity Services)
+  **no lleva SRI**: Google rotea el script sin avisar y no publica un
+  hash estable. Se documentó la decisión inline en `index.html` y
+  `severo.html`. Confiamos en `accounts.google.com` como origen —
+  postura coherente con cualquier flow OAuth.
+
+### Cómo regenerar hashes (cuando se actualiza Leaflet)
+```bash
+curl -s https://unpkg.com/leaflet@X.Y.Z/dist/leaflet.css | \
+  openssl dgst -sha384 -binary | openssl base64 -A
+curl -s https://unpkg.com/leaflet@X.Y.Z/dist/leaflet.js | \
+  openssl dgst -sha384 -binary | openssl base64 -A
+```
+
+### Infra
+- `version.json` 2.9.1 → 2.9.2 vía `node scripts/bump.js patch`.
+
 ## v2.9.1 — 2026-06-03 — Fix: app colgada en splash tras update (boot watchdog + SW fallback)
 
 ### Bug
