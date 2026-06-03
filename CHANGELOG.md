@@ -1,5 +1,32 @@
 # Changelog
 
+## v2.9.0 — 2026-06-03 — Milestone: consolidación de v2.8.x (búsqueda + force-update + tooling)
+
+Minor bump que consolida los fixes acumulados en v2.8.6 → v2.8.10. Sin
+features nuevas, pero la línea v2.9 deja saneados los tres frentes que
+estaban quebrados o frágiles:
+
+- **Búsqueda en padrón** (v2.8.6 → v2.8.7): `CONFIG.SHEET_PADRON`
+  apuntaba a una pestaña inexistente (`Padron integrado`) y el
+  endpoint devolvía 400. Corregido a `Padron`. Helper
+  `Padron._quoteSheetName(name)` para defensa futura.
+- **Versión en pantalla** (v2.8.8): la copy de auth y footer mostraba
+  `v2.8` hardcoded. Ahora renderea `v${APP_VERSION}` y refleja la
+  versión publicada automáticamente.
+- **Force-update + cache-busting** (v2.8.9): el IIFE de `index.html`
+  ahora siempre adjunta `?_v=BUILD` a los scripts (no solo cuando la
+  URL viene del overlay). El SW usa `fetch(_, { cache: 'no-cache' })`
+  para bypasear el HTTP cache del browser. Combinación = los JS files
+  no se quedan stale tras un deploy.
+- **Tooling de release** (v2.8.10): `scripts/bump.js` centraliza el
+  bump en `version.json` y propaga a los otros 4 lugares
+  (`APP_VERSION` × 2, `BUILD`, `CACHE`). `sw.js` CACHE pasó de
+  contador a semver (`severo-v2.9.0`).
+
+### Infra
+- `version.json` 2.8.10 → 2.9.0 vía `node scripts/bump.js minor`.
+  Resto sincronizado por el script.
+
 ## v2.8.10 — 2026-06-01 — Bump de versión centralizado en `version.json` + `scripts/bump.js`
 
 ### Problema
