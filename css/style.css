@@ -979,10 +979,41 @@ html, body {
 .center { text-align: center; }
 .loading-init {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  gap: 14px;
   color: var(--text-2);
+}
+.loading-init-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(13, 71, 161, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loading-init-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: #0D47A1;
+  border-radius: 2px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  /* 10s sincronizado con el watchdog del boot (index.html setTimeout
+     10000ms). Si la barra llega al 100% el hard-reload se dispara en
+     ese mismo instante. */
+  animation: loading-init-fill 10s linear forwards;
+}
+@keyframes loading-init-fill {
+  to { transform: scaleX(1); }
+}
+.loading-init-text {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-init-bar-fill { animation: none; transform: scaleX(0.3); }
 }
 
 /* ── Citizen search ──────────────────────────────────────────────────────────── */

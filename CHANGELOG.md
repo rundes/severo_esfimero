@@ -1,5 +1,38 @@
 # Changelog
 
+## v2.9.3 — 2026-06-03 — Splash con barra de progreso sincronizada al watchdog
+
+### Cambio UX
+- El splash "Cargando…" pasa de **texto estático** a **barra de
+  progreso** que se llena linealmente en **10 segundos**, exactamente
+  sincronizada con el watchdog del boot (v2.9.1). Si la app no
+  arranca, la barra llega al 100% justo cuando dispara el hard reload
+  → señal coherente para el usuario de que algo se está recuperando
+  en vez de quedarse mirando texto inerte.
+
+### Detalle
+- HTML: `.loading-init` ahora contiene `.loading-init-bar` +
+  `.loading-init-text`. `role="status"` y `aria-label` para
+  accesibilidad. La barra lleva `aria-hidden="true"` (decorativa, la
+  info la da el texto).
+- CSS: `animation: loading-init-fill 10s linear forwards` con
+  `transform: scaleX(0 → 1)`. Color de la barra: `#0D47A1` (theme).
+  Width 200px, height 4px.
+- `prefers-reduced-motion: reduce`: deshabilita la animación y deja
+  la barra estática al 30% como indicador visual sin movimiento.
+- Aplica a ambos builds (`index.html` + `severo.html`); el CSS vive
+  en `css/style.css` (modular) y embebido en `severo.html`.
+
+### Verificación de carga (sanity check)
+```bash
+curl -s -o /dev/null -w "HTTP %{http_code} %{time_total}s" \
+  https://rundes.github.io/severo_esfimero/
+# HTTP 200 ~0.6s — sirve fresh, scripts ?_v=2.9.3 también HTTP 200
+```
+
+### Infra
+- `version.json` 2.9.2 → 2.9.3 vía `node scripts/bump.js patch`.
+
 ## v2.9.2 — 2026-06-03 — Subresource Integrity (SRI) en assets de CDN externos
 
 ### Hardening
