@@ -1,4 +1,4 @@
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -220,6 +220,10 @@ function go(screen, updates = {}) {
 }
 
 function render() {
+  // Boot watchdog OK: si llegamos a render(), la app arrancó. Limpiar
+  // el flag para que futuras cargas lentas vuelvan a poder disparar el
+  // watchdog si hace falta.
+  try { sessionStorage.removeItem('_bootRetry'); } catch (_) {}
   // Destruir el mapa Leaflet si salimos de una pantalla con mapa
   if (_map && State.screen !== 'geo' && State.screen !== 'datosGeo') {
     _map.remove();

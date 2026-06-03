@@ -1883,6 +1883,18 @@ html, body {
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // Boot watchdog: si .loading-init sigue visible tras 10s, hard reload
+    // con cache-bust para recuperar al usuario (SW colgado / scripts
+    // fallados). sessionStorage evita loop si la recarga tampoco arranca.
+    setTimeout(function() {
+      var stuck = document.querySelector('#app .loading-init');
+      if (!stuck) return;
+      if (sessionStorage.getItem('_bootRetry')) return;
+      sessionStorage.setItem('_bootRetry', '1');
+      location.href = location.pathname + '?_v=' + Date.now();
+    }, 10000);
+  </script>
+  <script>
 const CONFIG = {
   // Client ID de Google Cloud Console (proyecto maipu-datos)
   GOOGLE_CLIENT_ID: '821059657602-44t1k4nshuf25qkc83j72u9k5ienl9gb.apps.googleusercontent.com',
@@ -3242,7 +3254,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -3452,6 +3464,8 @@ function go(screen, updates = {}) {
 }
 
 function render() {
+  // Boot watchdog OK: si llegamos a render(), la app arrancó.
+  try { sessionStorage.removeItem('_bootRetry'); } catch (_) {}
   // Destruir el mapa Leaflet si salimos de la pantalla geo
   if (_map && State.screen !== 'geo' && State.screen !== 'datosGeo') {
     _map.remove();

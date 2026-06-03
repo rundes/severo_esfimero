@@ -1,5 +1,59 @@
 # Changelog
 
+## v2.9.1 — 2026-06-03 — Fix: app colgada en splash tras update (boot watchdog + SW fallback)
+
+### Bug
+- En Android, algunos relevadores reportaban que tras abrir la app
+  quedaba pegada en la pantalla "Cargando…" indefinidamente. Solo se
+  recuperaba desinstalando y reinstalando la PWA.
+
+### Causa probable
+- Tras el deploy de v2.9.0, el SW viejo (v2.8.x) tenía cacheados los
+  scripts con URLs *sin query string* (`js/app.js`). El IIFE nuevo de
+  `index.html` los pide con `?_v=2.9.1` (URL distinta).
+- Si el SW pasaba a network y el network estaba en flap (cellular,
+  app abierta en background, etc.), el `.catch()` hacía
+  `caches.match(e.request)` — pero el cache no tenía la URL con query
+  → undefined → script no cargaba → `app.js` no se ejecutaba → boot
+  screen permanente.
+- El SW también queda en estado "waiting" hasta que el usuario use
+  la app, durante ese tiempo controla con código viejo.
+
+### Fix defensivo (dos capas)
+
+**1. SW fallback offline más robusto** (`sw.js`):
+   ```js
+   .catch(() => caches.match(e.request).then((r) => r || caches.match(path)))
+   ```
+   Si el match exacto con query falla, intenta sin query (pathname
+   pelado). Bridge entre el cache del SW viejo y las URLs nuevas.
+
+**2. Boot watchdog** (`index.html` + `severo.html`):
+   ```js
+   setTimeout(function() {
+     if (document.querySelector('#app .loading-init') &&
+         !sessionStorage.getItem('_bootRetry')) {
+       sessionStorage.setItem('_bootRetry', '1');
+       location.href = location.pathname + '?_v=' + Date.now();
+     }
+   }, 10000);
+   ```
+   Si la app no booteó en 10s, hard reload con cache-bust único
+   (`Date.now()`). El `sessionStorage` previene loops: si el segundo
+   intento tampoco arranca, no se reintenta automáticamente.
+   `render()` en `js/app.js` y `severo.html` limpia el flag al
+   booter OK, así futuras cargas lentas pueden volver a disparar el
+   watchdog.
+
+### Por qué watchdog y no force-update overlay
+- El overlay de force-update solo funciona si `app.js` cargó (vive en
+  ahí). Si el bug ocurre ANTES de que `app.js` ejecute, el overlay
+  nunca aparece. El watchdog es código inline en `index.html`, corre
+  aunque ningún script local haya bootear.
+
+### Infra
+- `version.json` 2.9.0 → 2.9.1 vía `node scripts/bump.js patch`.
+
 ## v2.9.0 — 2026-06-03 — Milestone: consolidación de v2.8.x (búsqueda + force-update + tooling)
 
 Minor bump que consolida los fixes acumulados en v2.8.6 → v2.8.10. Sin
