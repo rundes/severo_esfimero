@@ -1,4 +1,4 @@
-const APP_VERSION = '2.9.5';
+const APP_VERSION = '2.9.6';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -197,7 +197,7 @@ const State = {
 
 // ── Entrada ──────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+function _bootApp() {
   Auth.init();
   if (Auth.isLoggedIn()) {
     go('home', { user: Auth.getUser() });
@@ -205,7 +205,21 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   }
   checkForUpdate();
-});
+}
+
+// app.js se carga dinámicamente desde el IIFE de index.html
+// (createElement + appendChild). Esos scripts DOM-inserted con
+// async=false NO demoran DOMContentLoaded (solo los parser-inserted lo
+// hacen). Por eso para el momento que este archivo ejecuta, document
+// puede estar ya en 'interactive' o 'complete' — el addEventListener
+// se registraba pero el evento ya había disparado, así que _bootApp
+// nunca corría y la app quedaba colgada en el splash. Bug detectado
+// con DevTools MCP en producción (v2.9.5).
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _bootApp);
+} else {
+  _bootApp();
+}
 
 // Compatibilidad: si GSI carga antes que initGoogleTokenClient se llame
 window.addEventListener('load', () => {

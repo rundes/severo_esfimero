@@ -1,5 +1,61 @@
 # Changelog
 
+## v2.9.6 — 2026-06-03 — Root cause del splash colgado: DOMContentLoaded ya disparó cuando app.js bootea
+
+### Bug raíz (FINALMENTE)
+- v2.9.1 → v2.9.5 atacaron síntomas (watchdog, UI manual, bypass SW,
+  localStorage clear). El **bug raíz** seguía ahí: la app NUNCA
+  llamaba a `render()` automáticamente. Solo arrancaba si la
+  recuperación accidental disparaba algo.
+- Detectado con Chrome DevTools MCP emulando Android Pixel 8:
+  `document.readyState === "complete"`, todos los globals
+  (`APP_VERSION`, `render`, `Auth`, `Padron`, etc.) **definidos**,
+  pero `<div class="loading-init">` seguía visible. Llamar `render()`
+  manualmente desde DevTools mostraba la pantalla de auth normal.
+
+### Causa
+- `index.html` carga `js/app.js` dinámicamente vía
+  `document.createElement('script')` + `appendChild` con
+  `async = false` (introducido en v2.8.9 para evitar `document.write`).
+- Per HTML spec, los scripts **DOM-inserted** con `async=false` NO
+  demoran `DOMContentLoaded`. **Solo los parser-inserted lo hacen.**
+- Resultado: para el momento que `app.js` ejecuta, `document.readyState`
+  ya es `'interactive'` o `'complete'` → DCL ya disparó.
+- `document.addEventListener('DOMContentLoaded', _bootApp)` registra
+  un listener para un evento que ya pasó → handler nunca ejecuta →
+  `_bootApp` (que llama `render()`) nunca corre.
+
+### Fix
+- `js/app.js` + `severo.html` ahora chequean `document.readyState`:
+```js
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _bootApp);
+} else {
+  _bootApp();  // DCL ya pasó, arrancar ahora
+}
+```
+
+### Por qué los fixes anteriores parecían ayudar
+- v2.9.1 watchdog: forzaba reload. Algunas veces el reload coincidía
+  con un timing donde DCL no había disparado todavía cuando app.js
+  bootea — boot funcionaba por accidente.
+- v2.9.5 `_bypass=1` cleanup: limpiaba todo, pero al recargar caía
+  en el mismo bug. El cleanup era correcto, el boot no.
+- En síntesis: los fixes hacían más rápido el ciclo de reintento
+  pero NO arreglaban el motivo por el cual la app no arrancaba sola.
+
+### Validación
+- Antes (v2.9.5 en producción, vía DevTools MCP):
+  - `document.readyState`: complete
+  - `typeof render`: function
+  - `appHTML`: contains `loading-init` (stuck)
+- Después (v2.9.6 local, mismo flow):
+  - `_bootApp()` corre en el branch del else → render() llama →
+    `loading-init` se reemplaza con `screen-auth`.
+
+### Infra
+- `version.json` 2.9.5 → 2.9.6 vía `node scripts/bump.js patch`.
+
 ## v2.9.5 — 2026-06-03 — Botón "Limpiar y reintentar" funciona en PWA Android
 
 ### Bug
