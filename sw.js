@@ -1,4 +1,4 @@
-const CACHE = 'severo-v2.9.4';
+const CACHE = 'severo-v2.9.5';
 const PRECACHE = [
   './',
   './index.html',
@@ -30,6 +30,14 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // Solo gestionar assets del propio dominio
   if (url.hostname !== location.hostname) return;
+
+  // Bypass total: el botón "Limpiar y reintentar" del watchdog navega
+  // con ?_bypass=1. Si no llamamos respondWith(), el browser hace la
+  // request sin el SW. Imprescindible para recuperar usuarios que
+  // tienen un SW viejo/colgado: unregister() marca el registro como
+  // removido pero el SW activo sigue controlando la nav actual hasta
+  // que todos los clients se vayan. Con _bypass salimos del medio.
+  if (url.searchParams.has('_bypass')) return;
 
   const path = url.pathname;
   // Network-first para HTML, JS y version.json: garantiza que los deploys

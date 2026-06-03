@@ -1,4 +1,4 @@
-const APP_VERSION = '2.9.4';
+const APP_VERSION = '2.9.5';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -223,10 +223,18 @@ function render() {
   // Boot watchdog OK: si llegamos a render(), la app arrancó. Limpiar
   // los flags para que futuras cargas lentas vuelvan a poder disparar
   // el watchdog si hace falta. _bootRetry queda por compat hacia atrás
-  // (era el flag de v2.9.1; v2.9.4 usa _bootAttempts).
+  // (era el flag de v2.9.1; v2.9.4+ usa _bootAttempts).
   try {
     sessionStorage.removeItem('_bootRetry');
     sessionStorage.removeItem('_bootAttempts');
+  } catch (_) {}
+  // Si venimos de un boot via "Limpiar y reintentar" (URL trae _bypass=1
+  // y _v=TS), limpiar la URL ahora que arrancamos OK. Evita que el
+  // usuario vea "?_bypass=1&_v=..." en la barra.
+  try {
+    if (/[?&]_bypass=/.test(location.search)) {
+      history.replaceState(null, '', location.pathname);
+    }
   } catch (_) {}
   // Destruir el mapa Leaflet si salimos de una pantalla con mapa
   if (_map && State.screen !== 'geo' && State.screen !== 'datosGeo') {

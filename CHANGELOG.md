@@ -1,5 +1,54 @@
 # Changelog
 
+## v2.9.5 — 2026-06-03 — Botón "Limpiar y reintentar" funciona en PWA Android
+
+### Bug
+- En PWA Android, el botón "Limpiar y reintentar" (introducido en
+  v2.9.4) hacía el cleanup pero la app volvía a quedarse colgada en
+  el mismo estado. El usuario no podía salir del loop.
+
+### Causa
+- Per spec del Service Worker: `registration.unregister()` marca el
+  registro para remoción, **pero el SW activo sigue controlando los
+  clients existentes** hasta que todos navegan fuera o se cierran.
+- En PWA standalone Android, la "navegación" del `location.href =
+  ...` post-unregister sigue siendo interceptada por el SW viejo
+  que está corriendo. Resultado: caches borrados → SW reinstala
+  todo igual → mismo bug.
+- Además, si el problema raíz estaba en `localStorage` corrupto
+  (token inválido, padrón cache roto, etc.), borrar SW + caches no
+  cambia nada.
+
+### Fix (3 capas)
+**1. Bypass del SW vía query param** (`sw.js`):
+```js
+if (url.searchParams.has('_bypass')) return;
+```
+Si la URL trae `?_bypass=1`, el SW no llama `respondWith()` y el
+browser hace la request directamente al network. Necesario para
+el primer load post-recuperación cuando el SW viejo todavía está
+controlando.
+
+**2. Botón limpia más cosas** (`index.html` + `severo.html`):
+   - `serviceWorker.unregister()` (todos)
+   - `caches.delete()` (todos)
+   - `localStorage.clear()` **preservando** los relevamientos
+     pendientes (`severo_ciudadano`, `severo_problematica`,
+     `severo_sociohabitacional`) — son drafts offline que el
+     usuario no quiere perder.
+   - `sessionStorage.clear()` entero.
+
+**3. Navegación con `_bypass=1`**:
+   - `location.replace(pathname + '?_bypass=1&_v=' + Date.now())`
+   - `replace` evita pushear al historial (Back no vuelve al
+     estado roto).
+   - Una vez que `render()` ejecuta, limpia `_bypass=1` de la URL
+     vía `history.replaceState` para que el usuario no vea query
+     params raros.
+
+### Infra
+- `version.json` 2.9.4 → 2.9.5 vía `node scripts/bump.js patch`.
+
 ## v2.9.4 — 2026-06-03 — Watchdog escalonado + UI manual de recuperación
 
 ### Bug
