@@ -51,7 +51,12 @@
 </head>
 <body>
   <div id="app">
-    <div class="loading-init">Cargando…</div>
+    <div class="loading-init" role="status" aria-label="Cargando la aplicación">
+      <div class="loading-init-bar" aria-hidden="true">
+        <div class="loading-init-bar-fill"></div>
+      </div>
+      <div class="loading-init-text">Cargando…</div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -69,7 +74,7 @@
     // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
     // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var BUILD = '2.9.2';
+      var BUILD = '2.9.3';
       var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];

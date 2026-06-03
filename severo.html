@@ -1020,10 +1020,39 @@ html, body {
 .center { text-align: center; }
 .loading-init {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  gap: 14px;
   color: var(--text-2);
+}
+.loading-init-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(13, 71, 161, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loading-init-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: #0D47A1;
+  border-radius: 2px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  /* 10s sincronizado con el watchdog del boot. */
+  animation: loading-init-fill 10s linear forwards;
+}
+@keyframes loading-init-fill {
+  to { transform: scaleX(1); }
+}
+.loading-init-text {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-init-bar-fill { animation: none; transform: scaleX(0.3); }
 }
 
 /* ── Citizen search ──────────────────────────────────────────────────────────── */
@@ -1884,7 +1913,12 @@ html, body {
 </head>
 <body>
   <div id="app">
-    <div class="loading-init">Cargando…</div>
+    <div class="loading-init" role="status" aria-label="Cargando la aplicación">
+      <div class="loading-init-bar" aria-hidden="true">
+        <div class="loading-init-bar-fill"></div>
+      </div>
+      <div class="loading-init-text">Cargando…</div>
+    </div>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
@@ -3261,7 +3295,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.9.2';
+const APP_VERSION = '2.9.3';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
