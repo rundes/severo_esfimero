@@ -1,4 +1,4 @@
-const CACHE = 'severo-v2.9.0';
+const CACHE = 'severo-v2.9.1';
 const PRECACHE = [
   './',
   './index.html',
@@ -42,7 +42,14 @@ self.addEventListener('fetch', (e) => {
         const clone = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, clone));
         return res;
-      }).catch(() => caches.match(e.request))
+      }).catch(() =>
+        // Fallback offline: si el cache no tiene la URL exacta (típico
+        // tras un deploy nuevo, donde js/app.js?_v=2.9.0 no está pero
+        // js/app.js sí — quedó cacheado por el SW anterior), intentar
+        // match por pathname pelado. Sin esto, un device sin red con
+        // SW viejo se quedaba colgado en el splash.
+        caches.match(e.request).then((r) => r || caches.match(path))
+      )
     );
     return;
   }

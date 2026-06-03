@@ -60,7 +60,7 @@
     // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
     // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var BUILD = '2.9.0';
+      var BUILD = '2.9.1';
       var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];
@@ -71,6 +71,23 @@
         document.head.appendChild(s);
       });
     })();
+  </script>
+
+  <script>
+    // Boot watchdog: si .loading-init sigue visible tras 10s, el JS no
+    // bootearon (SW colgado, scripts fallados, parse error). Hard reload
+    // con cache-bust para recuperar al usuario sin que tenga que
+    // desinstalar la app. 10s = umbral generoso para mobile lento.
+    // sessionStorage evita loop si el watchdog dispara y la recarga
+    // tampoco arranca.
+    setTimeout(function() {
+      var stuck = document.querySelector('#app .loading-init');
+      if (!stuck) return;
+      if (sessionStorage.getItem('_bootRetry')) return;
+      sessionStorage.setItem('_bootRetry', '1');
+      console.warn('[boot] app no arranco en 10s, hard reload con cache-bust');
+      location.href = location.pathname + '?_v=' + Date.now();
+    }, 10000);
   </script>
 
   <!--
