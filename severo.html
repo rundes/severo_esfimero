@@ -34,8 +34,13 @@
   <meta name="twitter:title" content="Proyecto Severo — Relevamientos">
   <meta name="twitter:description" content="Sistema de relevamientos territoriales del Proyecto Severo: vecinos, problemáticas urbanas y condiciones del hogar.">
   <meta name="twitter:image" content="https://rundes.github.io/severo_esfimero/icons/icon-512.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+        crossorigin="anonymous"
+        media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+                  integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+                  crossorigin="anonymous"></noscript>
   <style>
 /* ════════════════════════════════════════════════════════════════════════════
    Proyecto Severo — Relevamientos
@@ -1881,7 +1886,9 @@ html, body {
   <div id="app">
     <div class="loading-init">Cargando…</div>
   </div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+          crossorigin="anonymous"></script>
   <script>
     // Boot watchdog: si .loading-init sigue visible tras 10s, hard reload
     // con cache-bust para recuperar al usuario (SW colgado / scripts
@@ -3254,7 +3261,7 @@ const BARRIOS_LAYER_OPTIONS = {
 };
   </script>
   <script>
-const APP_VERSION = '2.9.1';
+const APP_VERSION = '2.9.2';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -5648,6 +5655,7 @@ function showToast(msg) {
 }
 
   </script>
+  <!-- GSI: sin SRI porque Google rotea el script (no hay hash estable). Confiamos en el origen accounts.google.com. -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleTokenClient()"></script>
   <script>
     window._deferredInstallPrompt = null;
