@@ -74,7 +74,7 @@
     // reemplaza el document.write() previo (XSS-prone aunque BUILD sea
     // literal hardcoded; este patrón es más seguro y compatible con CSP).
     (function() {
-      var BUILD = '2.9.4';
+      var BUILD = '2.9.5';
       var _v = new URLSearchParams(location.search).get('_v') || BUILD;
       var scripts = ['js/config.js','js/gcs.js','js/questions.js','js/geo.js',
                      'js/sheets.js','js/barrios.js','js/auth.js','js/app.js'];
@@ -135,17 +135,42 @@
           btn.disabled = true;
           (async function() {
             try {
+              // 1. Desregistrar todos los SWs.
               if (navigator.serviceWorker) {
                 var regs = await navigator.serviceWorker.getRegistrations();
                 await Promise.all(regs.map(function(r) { return r.unregister(); }));
               }
+              // 2. Borrar todos los caches (CacheStorage).
               if (window.caches) {
                 var keys = await caches.keys();
                 await Promise.all(keys.map(function(k) { return caches.delete(k); }));
               }
+              // 3. Limpiar localStorage corrupto pero preservar los
+              //    relevamientos pendientes (cosas que el usuario cargó
+              //    offline y todavía no se subieron a Sheets).
+              var preservar = [
+                'severo_ciudadano',
+                'severo_problematica',
+                'severo_sociohabitacional'
+              ];
+              var preservados = {};
+              preservar.forEach(function(k) {
+                var v = localStorage.getItem(k);
+                if (v) preservados[k] = v;
+              });
+              localStorage.clear();
+              Object.keys(preservados).forEach(function(k) {
+                localStorage.setItem(k, preservados[k]);
+              });
+              // 4. Limpiar sessionStorage entero (incluye _bootAttempts).
+              sessionStorage.clear();
             } catch (_) {}
-            sessionStorage.removeItem('_bootAttempts');
-            location.href = location.pathname + '?_v=' + Date.now();
+            // 5. Navegar con _bypass=1 para que el SW (si todavía está
+            //    controlando esta nav, lo cual ocurre en PWA Android
+            //    aunque hayamos llamado unregister) no intercepte la
+            //    request. location.replace evita que esta página entre
+            //    al historial.
+            location.replace(location.pathname + '?_bypass=1&_v=' + Date.now());
           })();
         });
         return;
