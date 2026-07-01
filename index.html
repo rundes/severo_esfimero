@@ -50,6 +50,28 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Consola móvil de depuración (eruda) — SOLO para pruebas en dispositivo.
+       Gated: se activa con ?debug=1 y se recuerda en localStorage para
+       sobrevivir los reloads con cache-bust del boot watchdog. Se apaga con
+       ?debug=0. Los usuarios normales nunca lo cargan.
+       ⚠ TEST BRANCH: quitar este bloque antes de mergear a main / gh-pages. -->
+  <script>
+    (function () {
+      try {
+        var qs = new URLSearchParams(location.search);
+        if (qs.get('debug') === '0') { localStorage.removeItem('severo_debug'); }
+        else if (qs.get('debug') === '1') { localStorage.setItem('severo_debug', '1'); }
+        if (localStorage.getItem('severo_debug') !== '1') return;
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.4.1/eruda.min.js';
+        s.integrity = 'sha384-HLDsaa31HjuN7tEsKVEpAV7fgp5VmiFQW6h2RIwXA9LPW1XpyjzTbNExDYs9YfHB';
+        s.crossOrigin = 'anonymous';
+        s.onload = function () { if (window.eruda) eruda.init(); };
+        document.head.appendChild(s);
+      } catch (_) {}
+    })();
+  </script>
+
   <div id="app">
     <div class="loading-init" role="status" aria-label="Cargando la aplicación">
       <div class="loading-init-bar" aria-hidden="true">
