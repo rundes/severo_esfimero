@@ -12,7 +12,7 @@ const Auth = {
   isLoggedIn() { return !!this._user; },
 
   // Called after OAuth2 token flow + userinfo fetch
-  handleGoogleToken(accessToken, userInfo) {
+  handleGoogleToken(accessToken, userInfo, expiresIn) {
     this._user = {
       name: userInfo.name,
       email: userInfo.email,
@@ -20,8 +20,10 @@ const Auth = {
     };
     localStorage.setItem('severo_user', JSON.stringify(this._user));
     localStorage.setItem('severo_access_token', accessToken);
-    // Tokens duran 3600 s; refrescamos a los 55 min (300 s de margen)
-    localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
+    // Usa el expires_in real de Google (fallback 3600 s). El margen de 5 min
+    // lo aplica _isTokenNearExpiry() al decidir cuándo refrescar.
+    const ttlMs = (parseInt(expiresIn, 10) || 3600) * 1000;
+    localStorage.setItem('severo_token_expiry', String(Date.now() + ttlMs));
     return this._user;
   },
 
