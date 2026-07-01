@@ -1,4 +1,4 @@
-const APP_VERSION = '2.9.6';
+const APP_VERSION = '2.10.0';
 
 // ── Mapa Leaflet (instancias globales) ───────────────────────────────────────
 
@@ -11,8 +11,17 @@ let _familiaSearchDebounce = null;
 let _tokenClient = null;
 let _silentRefreshResolve = null;
 let _silentRefreshReject   = null;
+let _tokenTimer = null;
 let _listFilter = 'todos';
 let _photoBlobs  = {}; // blob URLs keyed by questionId, in-session preview only
+
+// Guarda token + expiry usando el expires_in real que devuelve Google
+// (antes se asumía 55 min fijos; el real puede diferir por clock skew).
+function _storeToken(tokenResponse) {
+  const ttlMs = (parseInt(tokenResponse.expires_in, 10) || 3600) * 1000;
+  localStorage.setItem('severo_access_token', tokenResponse.access_token);
+  localStorage.setItem('severo_token_expiry', String(Date.now() + ttlMs));
+}
 
 // Inicializar el cliente OAuth2 de Google (llamado por onload del script GSI)
 function initGoogleTokenClient() {
@@ -24,15 +33,14 @@ function initGoogleTokenClient() {
     client_id: id,
     scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/devstorage.read_write',
     callback: async (tokenResponse) => {
-      // Refresh silencioso iniciado por ensureFreshToken()
+      // Refresh (silencioso o interactivo) iniciado por requestToken()
       if (_silentRefreshResolve) {
         const resolve = _silentRefreshResolve;
         const reject  = _silentRefreshReject;
         _silentRefreshResolve = null;
         _silentRefreshReject  = null;
         if (tokenResponse.error) return reject(new Error(tokenResponse.error));
-        localStorage.setItem('severo_access_token', tokenResponse.access_token);
-        localStorage.setItem('severo_token_expiry', String(Date.now() + 55 * 60 * 1000));
+        _storeToken(tokenResponse);
         return resolve(tokenResponse.access_token);
       }
       // Login normal
@@ -42,11 +50,22 @@ function initGoogleTokenClient() {
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } });
         if (res.ok) {
           const info = await res.json();
-          const user = Auth.handleGoogleToken(tokenResponse.access_token, info);
+          const user = Auth.handleGoogleToken(
+            tokenResponse.access_token, info, tokenResponse.expires_in);
+          _startTokenTimer();
           go('home', { user });
         }
       } catch (e) {
         console.error('Error al obtener datos del usuario:', e);
+      }
+    },
+    // Cancelación / popup cerrado / interaction_required → rechaza el pendiente
+    error_callback: (err) => {
+      if (_silentRefreshReject) {
+        const reject = _silentRefreshReject;
+        _silentRefreshResolve = null;
+        _silentRefreshReject  = null;
+        reject(new Error(err?.type || 'oauth_error'));
       }
     },
   });
@@ -56,21 +75,29 @@ function googleLogin() {
   if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
 }
 
-// Renueva el token silenciosamente sin mostrar popup.
-function ensureFreshToken() {
+// Pide un token. prompt '' = silencioso; 'consent' = interactivo (gesto usuario).
+// timeoutMs 0 = sin timeout (para el flujo interactivo, que espera al usuario).
+function requestToken(prompt, timeoutMs) {
   return new Promise((resolve, reject) => {
     if (!_tokenClient) return reject(new Error('Cliente OAuth no disponible'));
     _silentRefreshResolve = resolve;
     _silentRefreshReject  = reject;
-    _tokenClient.requestAccessToken({ prompt: '' });
-    setTimeout(() => {
-      if (_silentRefreshResolve) {
-        _silentRefreshResolve = null;
-        _silentRefreshReject  = null;
-        reject(new Error('Timeout al renovar sesión. Volvé a ingresar'));
-      }
-    }, 15000);
+    _tokenClient.requestAccessToken({ prompt });
+    if (timeoutMs > 0) {
+      setTimeout(() => {
+        if (_silentRefreshResolve) {
+          _silentRefreshResolve = null;
+          _silentRefreshReject  = null;
+          reject(new Error('Timeout al renovar sesión. Volvé a ingresar'));
+        }
+      }, timeoutMs);
+    }
   });
+}
+
+// Renueva el token silenciosamente sin mostrar popup (15 s de timeout).
+function ensureFreshToken() {
+  return requestToken('', 15000);
 }
 
 // Retorna true si el token está vencido o a menos de 5 min de vencer
@@ -79,21 +106,82 @@ function _isTokenNearExpiry() {
   return !expiry || Date.now() >= expiry - 5 * 60 * 1000;
 }
 
-// Refresca el token sólo si es necesario. Silencioso — no lanza en caso de fallo.
+// Refresca el token sólo si es necesario. Si el silencioso falla, escala a
+// reconexión interactiva (overlay) en vez de tragar el error en silencio.
 async function ensureFreshTokenIfNeeded() {
   if (!SheetsDB._hasToken()) return;
   if (!_isTokenNearExpiry()) return;
-  try { await ensureFreshToken(); } catch (_) {}
+  try { await ensureFreshToken(); }
+  catch (_) { _showReauthOverlay(); }
 }
 
-// Envuelve una llamada a la API: si falla con 401 renueva el token y reintenta una vez.
+// Envuelve una llamada a la API: si falla con 401 renueva el token y reintenta
+// una vez. Si el refresh silencioso falla, muestra el overlay de reconexión.
 async function withTokenRetry(fn) {
   try { return await fn(); }
   catch (err) {
     if (!String(err.message).includes('401')) throw err;
-    await ensureFreshToken();
+    try { await ensureFreshToken(); }
+    catch (_) { _showReauthOverlay(); throw err; }
     return fn();
   }
+}
+
+// ── Reconexión interactiva ────────────────────────────────────────────────────
+// Overlay bloqueante cuando la sesión murió y el refresh silencioso ya no sirve
+// (cookies de terceros bloqueadas, PWA standalone, sesión de Google expirada).
+// Sin este fallback las funciones morían calladas y la app "parecía rota".
+
+function _showReauthOverlay() {
+  if (document.getElementById('_reauthOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = '_reauthOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,71,161,0.92);z-index:99998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.4);">
+      <div style="font-size:2.4rem;margin-bottom:12px;">🔄</div>
+      <h2 style="margin:0 0 8px;font-size:1.15rem;color:#0D47A1;font-weight:700;">Sesión expirada</h2>
+      <p style="margin:0 0 28px;color:#555;font-size:0.92rem;line-height:1.5;">Reconectá para seguir trabajando. Tus datos no se pierden.</p>
+      <button id="_reauthBtn" style="background:#0D47A1;color:#fff;border:none;padding:14px 0;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;width:100%;">Reconectar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('_reauthBtn').addEventListener('click', _doReauth);
+}
+
+function _hideReauthOverlay() {
+  const overlay = document.getElementById('_reauthOverlay');
+  if (overlay) overlay.remove();
+}
+
+async function _doReauth() {
+  const btn = document.getElementById('_reauthBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Conectando…'; }
+  try {
+    // prompt:'consent' es interactivo → funciona aunque el silencioso no,
+    // porque corre sobre un gesto del usuario (el tap del botón).
+    await requestToken('consent', 0);
+    _hideReauthOverlay();
+  } catch (_) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  }
+}
+
+// ── Timer proactivo de refresh ────────────────────────────────────────────────
+// Cubre el caso de relevador con la app siempre en primer plano (pantalla
+// encendida puerta a puerta): visibilitychange nunca dispara, así que sin este
+// timer el token vence a los 60 min y la primera acción posterior da 401.
+
+function _startTokenTimer() {
+  if (_tokenTimer) return;
+  _tokenTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
+      ensureFreshTokenIfNeeded();
+    }
+  }, 4 * 60 * 1000);
+}
+
+function _stopTokenTimer() {
+  if (_tokenTimer) { clearInterval(_tokenTimer); _tokenTimer = null; }
 }
 
 // ── Chequeo de versión contra servidor ───────────────────────────────────────
@@ -200,6 +288,7 @@ const State = {
 function _bootApp() {
   Auth.init();
   if (Auth.isLoggedIn()) {
+    _startTokenTimer();
     go('home', { user: Auth.getUser() });
   } else {
     render();
@@ -546,6 +635,8 @@ function renderHome() {
 }
 
 function logout() {
+  _stopTokenTimer();
+  _hideReauthOverlay();
   Auth.logout();
   go('auth', { user: null });
 }

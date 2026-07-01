@@ -1,5 +1,36 @@
 # Changelog
 
+## v2.10.0 — 2026-07-01 — Reconexión de sesión: fin de las funciones que morían calladas
+
+### Problema
+- En algunos dispositivos, tras un rato la sesión de Google se perdía y la
+  app **no forzaba un refresco**: las funcionalidades (búsqueda en padrón,
+  guardado en Sheets, subida a GCS) dejaban de andar sin aviso y la app
+  **parecía rota**.
+
+### Causa raíz
+- El único camino de recuperación era el **refresh silencioso**
+  `requestAccessToken({ prompt: '' })`. Ese flujo solo funciona si el iframe
+  de Google Identity puede leer una cookie de sesión viva de Google.
+- Falla en PWA instalada standalone (WebView), iOS con ITP, cookies de
+  terceros bloqueadas o sesión de Google ya expirada.
+- Al fallar: `ensureFreshTokenIfNeeded()` **tragaba el error** (`catch(_){}`)
+  y `withTokenRetry()` tiraba un error genérico. **No había fallback a
+  re-login interactivo** → las funciones morían en silencio.
+
+### Fix
+- **Overlay de reconexión bloqueante**: cuando el refresh silencioso falla,
+  se muestra "Sesión expirada — Reconectar". El botón dispara
+  `requestAccessToken({ prompt: 'consent' })`, que corre sobre el gesto del
+  usuario y funciona aunque el silencioso no.
+- **Escalado, no tragado**: `ensureFreshTokenIfNeeded` y `withTokenRetry`
+  ahora escalan al overlay en vez de silenciar el error.
+- **Timer proactivo** (cada 4 min, logged-in + foreground): cubre al
+  relevador con la app siempre en primer plano, donde `visibilitychange`
+  nunca dispara y el token vencía a los 60 min.
+- **`expires_in` real**: se usa el TTL que devuelve Google en vez de asumir
+  55 min fijos.
+
 ## v2.9.6 — 2026-06-03 — Root cause del splash colgado: DOMContentLoaded ya disparó cuando app.js bootea
 
 ### Bug raíz (FINALMENTE)
